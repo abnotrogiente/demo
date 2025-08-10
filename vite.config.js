@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
+import { resolve } from 'path'
 import glsl from 'vite-plugin-glsl';
 
 export default defineConfig({
@@ -18,6 +19,13 @@ export default defineConfig({
         }
     },
     build: {
+        rollupOptions: {
+            input: {
+                main: resolve(__dirname, 'index.html'),
+                demo1: resolve(__dirname, 'demo1/index.html'),
+                // ajoute autant de démos que nécessaire
+            }
+        },
         sourcemap: true,
         chunkSizeWarningLimit: 1024
     },
