@@ -1,0 +1,29 @@
+{
+  "name": "three_vite",
+  "version": "0.0.5",
+  "author": "fdoganis",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "clean": "rm -rf dist",
+    "purge": "npm run clean && rm -rf node_modules",
+    "serve": "http-server dist",
+    "cloud": "cloudflared --url http://localhost:5173/"
+  },
+  "devDependencies": {
+    "@types/three": "^0.173.0",
+    "http-server": "^14.1.1",
+    "vite": "^6.1.1",
+    "vite-plugin-glsl": "^0.4.0",
+    "vite-plugin-static-copy": "^2.2.0"
+  },
+  "overrides": {
+    "esbuild": "^0.25.0"
+  },
+  "dependencies": {
+    "three": "^0.173.0"
+  }
+}
