@@ -1,4 +1,4 @@
-import { Mesh, MeshPhongMaterial, MeshStandardMaterial, PlaneGeometry, Scene, SphereGeometry, Vector2, Vector3 } from "three";
+import { Mesh, MeshNormalMaterial, MeshPhongMaterial, MeshStandardMaterial, PlaneGeometry, Scene, SphereGeometry, Vector2, Vector3 } from "three";
 
 const WIDTH = 100;
 const HEIGHT = 100;
@@ -12,8 +12,8 @@ export class Ground {
         this.width_px = Math.round(WIDTH / precision);
         this.height_px = Math.round(HEIGHT / precision);
         const geom = new PlaneGeometry(WIDTH, HEIGHT, this.width_px, this.height_px);
-        geom.rotateX(-Math.PI / 2);
-        this.plane = new Mesh(geom, new MeshPhongMaterial({ color: 0xff0000, wireframe: true }));
+        geom.rotateX(Math.PI / 2);
+        this.plane = new Mesh(geom, new MeshPhongMaterial({ color: 0x0050ff}));
 
         scene.add(this.plane);
 
@@ -60,5 +60,9 @@ export class Ground {
             positions.setY(i, y);
         }
         positions.needsUpdate = true;
+        this.plane.geometry.computeVertexNormals();
+    //     this.plane.geometry.computeTangents();
+    //     this.plane.geometry.attributes.normal.needsUpdate = true;
+    //     this.plane.geometry.attributes.tangent.needsUpdate = true;
     }
 }

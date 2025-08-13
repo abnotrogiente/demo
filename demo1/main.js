@@ -9,7 +9,8 @@ import {
   MeshNormalMaterial,
   AmbientLight,
   Clock,
-  Camera
+  Camera,
+  DirectionalLight
 } from 'three';
 
 import {
@@ -45,8 +46,11 @@ const init = () => {
   const aspect = window.innerWidth / window.innerHeight;
   camera = new PerspectiveCamera(75, aspect, 0.1, 1000);
 
-  const light = new AmbientLight(0xffffff, 1.0);
+  const light = new AmbientLight(0xffffff, 0.6);
   scene.add(light);
+
+  const directionnalLight = new DirectionalLight(0xffffff, 0.8);
+  scene.add(directionnalLight);
 
   renderer = new WebGLRenderer();
   renderer.setSize(window.innerWidth, window.innerHeight);
