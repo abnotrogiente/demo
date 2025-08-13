@@ -34,6 +34,8 @@ let clock = null;
 /**@type {Mesh} */
 let cube = null;
 
+/**@type {Ground} */
+let ground = null;
 
 
 const init = () => {
@@ -53,11 +55,6 @@ const init = () => {
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.listenToKeyEvents(window);
 
-  const geometry = new BoxGeometry(1, 1, 1);
-  const material = new MeshNormalMaterial();
-  cube = new Mesh(geometry, material);
-
-
   scene.add(cube);
 
 
@@ -67,7 +64,7 @@ const init = () => {
 
   clock = new Clock();
 
-  const ground = new Ground(scene, 0.5);
+  ground = new Ground(scene, 0.5);
 }
 
 
@@ -84,9 +81,7 @@ const animation = () => {
   const delta = clock.getDelta();
   const elapsed = clock.getElapsedTime();
 
-
-  cube.rotation.x = elapsed / 2;
-  cube.rotation.y = elapsed / 1;
+  ground.update(elapsed);  
 
   renderer.render(scene, camera);
 };

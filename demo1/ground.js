@@ -1,4 +1,4 @@
-import { Mesh, MeshPhongMaterial, MeshStandardMaterial, PlaneGeometry, Scene } from "three";
+import { Mesh, MeshPhongMaterial, MeshStandardMaterial, PlaneGeometry, Scene, SphereGeometry, Vector2, Vector3 } from "three";
 
 const WIDTH = 100;
 const HEIGHT = 100;
@@ -17,29 +17,48 @@ export class Ground {
 
         scene.add(this.plane);
 
-        const zeroPlane = new Mesh(new PlaneGeometry(WIDTH, HEIGHT), new MeshStandardMaterial({ color: 0xffffff }));
-        zeroPlane.geometry.rotateX(-Math.PI / 2);
-        scene.add(zeroPlane);
-
-
-        const positions = geom.attributes.position;
-        // for (let i = 0; i < positions.count; i++) {
-        //     positions.setY(i, i / 10000);
-        // }
-
-        for (let i = 0; i <= this.width_px; i++) {
-            for (let j = 0; j <= this.height_px; j++) {
-                const vertexIndex = this.getVertexIndex(i, j);
-                positions.setY(vertexIndex, Math.sqrt((i - this.width_px / 2) * (i - this.width_px / 2) + (j - this.height_px / 2) * (j - this.height_px / 2)) / 10);
-            }
-        }
-        // positions.setY(this.getVertexIndex(100, 0), 5);
-        positions.needsUpdate = true;
+        const f      = 0.5;
+        this.omega   = 2 * Math.PI * f;
+        this.amplitude = 1;
+        this.order = 10;
+        this.initializeWaveParameters(this.order);
     }
 
-    getVertexIndex(i, j) {
-        if (i < 0 || i >= this.width_px) console.log("i out of bounds");
-        if (j < 0 || j >= this.height_px) console.log("j out of bounds");
-        return i * (this.width_px + 1) + j;
+    initializeWaveParameters(order) {
+        /**@type {ArrayLike<Vector2>} */
+        this.k_array = [];
+        for (let i = 0; i < order; i++) {
+            const lambda = 20 / Math.pow(2, i);
+            const pulse = 2 * Math.PI / lambda;
+            const k = new Vector2(Math.random(), Math.random());
+            k.normalize();
+            k.multiplyScalar(pulse);
+            this.k_array.push(k)
+        }
+    }
+
+    /**
+     * 
+     * @param {Vector2} xy 
+     * @returns 
+     */
+    waveFunction(xz, t) {
+        let y = 0;
+        for (let i = 0; i < this.order; i++) {
+            y += Math.sin(this.k_array[i].dot(xz) + this.omega * t) * this.amplitude / Math.pow(2, i);
+        }
+        return y;
+        //return Math.sin(this.k * x + this.omega * t);
+    }
+
+    update(t) {
+        const positions = this.plane.geometry.attributes.position;
+        for (let i = 0; i < positions.count; i++) {
+            const x = positions.getX(i);
+            const z = positions.getZ(i);
+            const y = this.waveFunction(new Vector2(x, z), t);
+            positions.setY(i, y);
+        }
+        positions.needsUpdate = true;
     }
 }
