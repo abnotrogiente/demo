@@ -11,10 +11,86 @@
 
 <body>
   <div id="container"></div>
+
+  <script type="x-shader/x-vertex" id="vertexShader">
+
+    varying vec3 vWorldPosition;
+    varying vec3 fragNormal;
+    varying vec3 fragPos;
+
+    void main() {
+      fragPos = vec3(modelViewMatrix * vec4(position, 1.0));
+      fragPos = position;
+      fragNormal = normal;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+    }
+
+  </script>
+
+  <script type="x-shader/x-fragment" id="fragmentShader">
+
+    uniform vec3 deepColor;
+    uniform vec3 shallowColor;
+    uniform vec3 lightColor;
+    uniform vec3 lightDirection;
+    uniform vec3 viewPos;
+
+    varying vec3 vWorldPosition;
+    varying vec3 fragPos;
+    varying vec3 fragNormal;
+
+    vec3 getAmbient() {
+      float ambientStrength = 0.2;
+      vec3 ambient = ambientStrength * lightColor;
+      return ambient;
+    }
+
+    vec3 getDiffuse(vec3 normal) {
+      float diffuseIntensity = max(-dot(lightDirection, normal), 0.0);
+      vec3 diffuse = diffuseIntensity * lightColor;
+      return diffuse;
+    }
+
+    vec3 getSpecular(vec3 normal) {
+      vec3 viewDir = normalize(viewPos - fragPos);
+      vec3 h = normalize(-lightDirection + viewDir);
+      float specularStrength = pow(max(dot(h, normal), 0.0), 200.0);
+      vec3 specular = specularStrength * lightColor;
+      return specular;
+    }
+
+
+    void main() {
+      
+
+
+      vec3 normal = normalize(fragNormal);
+
+      float h = (fragPos.y + 1.0) / 2.0;
+      float s = h*h;
+      vec3 color = s * shallowColor + (1.0-s) * deepColor;
+      
+
+
+      //vec3 ey = vec3(0.0, 1.0, 0.0);
+      //float deepness = abs(dot(ey, normal));
+      //vec3 color = deepness * deepColor + (1.0 - deepness) * shallowColor;
+
+      
+      //float h = normalize( vWorldPosition + offset ).y;
+
+      //gl_FragColor = vec4((getAmbient() + getDiffuse(normal)) * deepColor, 1.0);
+      gl_FragColor = vec4((getAmbient() + getDiffuse(normal) + getSpecular(normal)) * color, 1.0);
+      //gl_FragColor = vec4(0.0, 0.0, 1.0, 1.0);
+
+    }
+
+  </script>
+
   <!--
   <script src="./jsm/libs/ammo.wasm.js"></script>
   -->
- <script type="module" src="./main.js"></script>
+  <script type="module" src="./main.js"></script>
 </body>
 
 </html>

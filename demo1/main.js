@@ -59,7 +59,7 @@ const init = () => {
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.listenToKeyEvents(window);
 
-  scene.add(cube);
+  // scene.add(cube);
 
 
   camera.position.z = 2;
@@ -68,7 +68,7 @@ const init = () => {
 
   clock = new Clock();
 
-  ground = new Ground(scene, 0.5);
+  ground = new Ground(scene, camera, 0.5);
 }
 
 
@@ -85,7 +85,7 @@ const animation = () => {
   const delta = clock.getDelta();
   const elapsed = clock.getElapsedTime();
 
-  ground.update(elapsed);  
+  ground.update(elapsed);
 
   renderer.render(scene, camera);
 };
