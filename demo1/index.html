@@ -14,15 +14,52 @@
 
   <script type="x-shader/x-vertex" id="vertexShader">
 
+
+    uniform vec2[20] k_array;
+    uniform float[20] omega_array;
+    uniform float amplitude_factor;
+    uniform float amplitude;
+
+    uniform float t;
+
+    int order = 20;
+
     varying vec3 vWorldPosition;
     varying vec3 fragNormal;
     varying vec3 fragPos;
 
+    float waveFunction(vec3 pos, float t) {
+      float y = 0.0;
+      for (int i = 0; i < order; i++) {
+        float s = sin(dot(k_array[i], pos.xz) + omega_array[i] * t) * amplitude * pow(amplitude_factor, float(i));
+        y += exp(s - 1.0);
+      }
+      return y;
+    }
+
+    vec3 getNormal(vec3 pos, float t) {
+      float dx = 0.0;
+      float dz = 0.0;
+      for (int i = 0; i < order; i++) {
+        float s = sin(dot(k_array[i], pos.xz) + omega_array[i] * t) * amplitude * pow(amplitude_factor, float(i));
+        float dx_sin = k_array[i].x * cos(dot(k_array[i], pos.xz) + omega_array[i] * t) * amplitude * pow(amplitude_factor, float(i));
+        float dz_sin = k_array[i].y * cos(dot(k_array[i], pos.xz) + omega_array[i] * t) * amplitude * pow(amplitude_factor, float(i));
+        float e = exp(s - 1.0);
+        dx += dx_sin * e;
+        dz += dz_sin * e;
+      }
+      vec3 tangent = vec3(1.0, dx, 0.0);
+      vec3 binormal = vec3(0.0, dz, 1.0);
+      vec3 normal = -normalize(cross(tangent, binormal));
+      return normal;
+    }
+
     void main() {
-      fragPos = vec3(modelViewMatrix * vec4(position, 1.0));
-      fragPos = position;
-      fragNormal = normal;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+      vec3 newPos = vec3(position.x, waveFunction(position, t), position.z );
+      fragPos = vec3(modelViewMatrix * vec4(newPos, 1.0));
+      fragPos = newPos;
+      fragNormal = getNormal(position, t);
+      gl_Position = projectionMatrix * modelViewMatrix * vec4( newPos, 1.0 );
     }
 
   </script>
@@ -34,6 +71,7 @@
     uniform vec3 lightColor;
     uniform vec3 lightDirection;
     uniform vec3 viewPos;
+    uniform float shininess;
 
     varying vec3 vWorldPosition;
     varying vec3 fragPos;
@@ -41,20 +79,20 @@
 
     vec3 getAmbient() {
       float ambientStrength = 0.2;
-      vec3 ambient = ambientStrength * lightColor;
+      vec3 ambient = ambientStrength * deepColor;
       return ambient;
     }
 
     vec3 getDiffuse(vec3 normal) {
       float diffuseIntensity = max(-dot(lightDirection, normal), 0.0);
-      vec3 diffuse = diffuseIntensity * lightColor;
+      vec3 diffuse = diffuseIntensity * deepColor;
       return diffuse;
     }
 
     vec3 getSpecular(vec3 normal) {
       vec3 viewDir = normalize(viewPos - fragPos);
       vec3 h = normalize(-lightDirection + viewDir);
-      float specularStrength = pow(max(dot(h, normal), 0.0), 200.0);
+      float specularStrength = pow(max(dot(h, normal), 0.0), shininess);
       vec3 specular = specularStrength * lightColor;
       return specular;
     }
@@ -80,7 +118,7 @@
       //float h = normalize( vWorldPosition + offset ).y;
 
       //gl_FragColor = vec4((getAmbient() + getDiffuse(normal)) * deepColor, 1.0);
-      gl_FragColor = vec4((getAmbient() + getDiffuse(normal) + getSpecular(normal)) * color, 1.0);
+      gl_FragColor = vec4((getAmbient() + getDiffuse(normal)) + getSpecular(normal), 1.0);
       //gl_FragColor = vec4(0.0, 0.0, 1.0, 1.0);
 
     }

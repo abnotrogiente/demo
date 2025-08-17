@@ -68,7 +68,7 @@ const init = () => {
 
   clock = new Clock();
 
-  ground = new Ground(scene, camera, 0.5);
+  ground = new Ground(scene, camera, 0.2);
 }
 
 
