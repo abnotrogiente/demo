@@ -62,13 +62,13 @@ const init = () => {
   // scene.add(cube);
 
 
-  camera.position.z = 2;
-  camera.position.y = 2;
+  camera.position.x = 60;
+  camera.position.y = 20;
   camera.lookAt(0, 0, 0);
 
   clock = new Clock();
 
-  ground = new Ground(scene, camera, 0.2);
+  ground = new Ground(scene, camera, 0.1);
 }
 
 

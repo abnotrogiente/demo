@@ -4,8 +4,8 @@ import { thickness } from "three/tsl";
 
 const editMode = true;
 
-const WIDTH = 400;
-const HEIGHT = 400;
+const WIDTH = 200;
+const HEIGHT = 200;
 
 export class Ground {
     /**
@@ -21,28 +21,29 @@ export class Ground {
         // const geom = new SphereGeometry(50);
         geom.rotateX(-Math.PI / 2);
         this.sunAngleWrapper = {
-            'val': Math.PI / 6
+            'val': Math.PI / 20
         }
         const sunAngle = this.sunAngleWrapper.val;
         const lightDir = new Vector3(Math.cos(sunAngle), -Math.sin(sunAngle), 0);
         lightDir.normalize();
 
-        const f = 0.75;
+        const f = 0.4;
         this.omega = 2 * Math.PI * f;
         this.amplitude = 1.0;
-        this.order = 20;
-        this.pulsationFactor = 1.25;
-        this.amplitudeFactor = 0.68;
-        this.lambda0 = 50;
-        this.amplitude0 = 2;
+        this.order = 35;
+        this.frequencyVariation = 1;
+        this.pulsationFactor = 1.15;
+        this.amplitudeFactor = 0.72;
+        this.lambda0 = 30;
+        this.amplitude0 = 1.5;
         this.initializeWaveParameters(this.order);
         const shaderUniforms = {
-            'deepColor': { value: new Color(0x0000aa) },
+            'deepColor': { value: new Color(0x4477ff) },
             'shallowColor': { value: new Color(0x2255ff) },
             'lightDirection': { type: 'v3', value: lightDir },
             'lightColor': { value: new Color(0xffff55) },
             'viewPos': { type: 'v3', value: camera.position },
-            'shininess': { value: 100 },
+            'shininess': { value: 300 },
             'k_array': { value: this.k_array },
             'omega_array': { value: this.omega_array },
             'amplitude_factor': { value: this.amplitudeFactor },
@@ -86,42 +87,15 @@ export class Ground {
             k.multiplyScalar(pulse);
             this.k_array.push(k)
 
-            const rand = ((2 * Math.random()) - 1) / 3;
+            const rand = ((2 * Math.random()) - 1) * this.frequencyVariation;
             this.omega_array.push(this.omega + rand);
         }
     }
 
-    /**
-     * 
-     * @param {Vector2} xy 
-     * @returns 
-     */
-    waveFunction(xz, t) {
-        let y = 0;
-        for (let i = 0; i < this.order; i++) {
-            y += Math.sin(this.k_array[i].dot(xz) + this.omega_array[i] * t) * this.amplitude * Math.pow(this.amplitudeFactor, i);
-        }
-        return y;
-        //return Math.sin(this.k * x + this.omega * t);
-    }
-
     update(t) {
-        // const positions = this.plane.geometry.attributes.position;
-        // for (let i = 0; i < positions.count; i++) {
-        //     const x = positions.getX(i);
-        //     const z = positions.getZ(i);
-        //     const y = this.waveFunction(new Vector2(x, z), t);
-        //     positions.setY(i, y);
-        // }
-        // positions.needsUpdate = true;
-        // this.plane.geometry.computeVertexNormals();
 
         this.plane.material.uniforms['t'].value = t;
 
-
-        // this.plane.geometry.computeTangents();
-        // this.plane.geometry.attributes.normal.needsUpdate = true;
-        // this.plane.geometry.attributes.tangent.needsUpdate = true;
         this.plane.material.uniforms['viewPos'].value = this.camera.position;
         const sunAngle = this.sunAngleWrapper.val;
         const lightDir = new Vector3(Math.cos(sunAngle), -Math.sin(sunAngle), 0);
