@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
   <title>three_vite</title>
   <link rel="icon" href="favicon.png">
-  <script type="module" crossorigin src="/demo/assets/demo1-ChQEc5NS.js"></script>
+  <script type="module" crossorigin src="/demo/assets/demo1-Dp_yh8d7.js"></script>
   <link rel="stylesheet" crossorigin href="/demo/assets/demo1-Dwsp8QLK.css">
 </head>
 
@@ -16,14 +16,14 @@
   <script type="x-shader/x-vertex" id="vertexShader">
 
 
-    uniform vec2[20] k_array;
-    uniform float[20] omega_array;
+    #define order 25
+    uniform vec2[order] k_array;
+    uniform float[order] omega_array;
     uniform float amplitude_factor;
     uniform float amplitude;
 
     uniform float t;
 
-    int order = 20;
 
     varying vec3 vWorldPosition;
     varying vec3 fragNormal;
