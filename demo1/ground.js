@@ -21,7 +21,7 @@ export class Ground {
         // const geom = new SphereGeometry(50);
         geom.rotateX(-Math.PI / 2);
         this.sunAngleWrapper = {
-            'val': Math.PI / 20
+            'val': Math.PI / 15
         }
         const sunAngle = this.sunAngleWrapper.val;
         const lightDir = new Vector3(Math.cos(sunAngle), -Math.sin(sunAngle), 0);
@@ -30,15 +30,15 @@ export class Ground {
         const f = 0.4;
         this.omega = 2 * Math.PI * f;
         this.amplitude = 1.0;
-        this.order = 35;
-        this.frequencyVariation = 1;
-        this.pulsationFactor = 1.15;
-        this.amplitudeFactor = 0.72;
-        this.lambda0 = 30;
+        this.order = 100;
+        this.frequencyVariation = 0;
+        this.pulsationFactor = 1.1;
+        this.amplitudeFactor = 0.86;
+        this.lambda0 = 40;
         this.amplitude0 = 1.5;
         this.initializeWaveParameters(this.order);
         const shaderUniforms = {
-            'deepColor': { value: new Color(0x4477ff) },
+            'deepColor': { value: new Color(0x3580BB) },
             'shallowColor': { value: new Color(0x2255ff) },
             'lightDirection': { type: 'v3', value: lightDir },
             'lightColor': { value: new Color(0xffff55) },
@@ -72,7 +72,9 @@ export class Ground {
 
         const sunFolder = gui.addFolder('sun');
         sunFolder.add(this.sunAngleWrapper, 'val', 0, Math.PI).name('angle');
-        sunFolder.add(this.plane.material.uniforms['shininess'], 'value', 10, 500, 1);
+
+        const waterFolder = gui.addFolder('water');
+        waterFolder.add(this.plane.material.uniforms['shininess'], 'value', 10, 500, 1).name('shininess');
     }
 
     initializeWaveParameters(order) {
@@ -98,7 +100,13 @@ export class Ground {
 
         this.plane.material.uniforms['viewPos'].value = this.camera.position;
         const sunAngle = this.sunAngleWrapper.val;
-        const lightDir = new Vector3(Math.cos(sunAngle), -Math.sin(sunAngle), 0);
+        const sinSunAngle = Math.sin(sunAngle);
+        const lightDir = new Vector3(Math.cos(sunAngle), -sinSunAngle, 0);
         this.plane.material.uniforms['lightDirection'].value = lightDir;
+
+        const lightColor = new Color().setFromVector3(new Vector3(1, 1, sinSunAngle + 0.1));
+        this.plane.material.uniforms['lightColor'].value = lightColor;
+
+
     }
 }
