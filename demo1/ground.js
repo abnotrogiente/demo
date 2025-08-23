@@ -4,8 +4,8 @@ import { thickness } from "three/tsl";
 
 const editMode = true;
 
-const WIDTH = 200;
-const HEIGHT = 200;
+const WIDTH = 300;
+const HEIGHT = 300;
 
 export class Ground {
     /**
@@ -14,6 +14,7 @@ export class Ground {
      * @param {Camera} camera
      */
     constructor(scene, camera, precision) {
+        console.log("enter ground constructor");
         this.camera = camera;
         this.width_px = Math.round(WIDTH / precision);
         this.height_px = Math.round(HEIGHT / precision);
@@ -21,7 +22,7 @@ export class Ground {
         // const geom = new SphereGeometry(50);
         geom.rotateX(-Math.PI / 2);
         this.sunAngleWrapper = {
-            'val': Math.PI / 15
+            'val': Math.PI / 4
         }
         const sunAngle = this.sunAngleWrapper.val;
         const lightDir = new Vector3(Math.cos(sunAngle), -Math.sin(sunAngle), 0);
@@ -32,8 +33,8 @@ export class Ground {
         this.amplitude = 1.0;
         this.order = 100;
         this.frequencyVariation = 0;
-        this.pulsationFactor = 1.1;
-        this.amplitudeFactor = 0.86;
+        this.pulsationFactor = 1.06;
+        this.amplitudeFactor = 0.9;
         this.lambda0 = 40;
         this.amplitude0 = 1.5;
         this.initializeWaveParameters(this.order);
@@ -90,7 +91,9 @@ export class Ground {
             this.k_array.push(k)
 
             const rand = ((2 * Math.random()) - 1) * this.frequencyVariation;
-            this.omega_array.push(this.omega + rand);
+            // this.omega_array.push(this.omega + rand);
+            this.omega_array.push(this.omega * Math.pow(this.amplitudeFactor, i))
+
         }
     }
 

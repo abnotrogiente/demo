@@ -17,6 +17,7 @@ import {
   OrbitControls
 } from 'three/addons/controls/OrbitControls.js';
 import { Ground } from './ground';
+import { Sky } from './sky';
 
 
 
@@ -63,12 +64,15 @@ const init = () => {
 
 
   camera.position.x = 60;
-  camera.position.y = 20;
+  camera.position.y = 50;
   camera.lookAt(0, 0, 0);
 
   clock = new Clock();
 
-  ground = new Ground(scene, camera, 0.1);
+  ground = new Ground(scene, camera, 0.2);
+  console.log("before sky");
+  const sky = new Sky(scene, 500);
+  console.log("after sky");
 }
 
 
