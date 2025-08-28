@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
   <title>three_vite</title>
   <link rel="icon" href="favicon.png">
-  <script type="module" crossorigin src="/demo/assets/demo1-DkX_J-F-.js"></script>
+  <script type="module" crossorigin src="/demo/assets/demo1-CD03ZC0P.js"></script>
   <link rel="stylesheet" crossorigin href="/demo/assets/demo1-Dwsp8QLK.css">
 </head>
 
@@ -26,7 +26,8 @@
 
 
     varying vec3 vWorldPosition;
-    varying vec3 fragNormal;
+    varying float fragTime;
+    //varying vec3 fragNormal;
     varying vec3 fragPos;
 
     float waveFunction(vec3 pos, float t) {
@@ -59,13 +60,19 @@
       vec3 newPos = vec3(position.x, waveFunction(position, t), position.z );
       fragPos = vec3(modelViewMatrix * vec4(newPos, 1.0));
       fragPos = newPos;
-      fragNormal = getNormal(position, t);
+      fragTime = t;
+      //fragNormal = getNormal(position, t);
       gl_Position = projectionMatrix * modelViewMatrix * vec4( newPos, 1.0 );
     }
 
   </script>
 
   <script type="x-shader/x-fragment" id="fragmentShader">
+    #define order 17
+    uniform vec2[order] frag_k_array;
+    uniform float[order] frag_omega_array;
+    uniform float frag_amplitude_factor;
+    uniform float frag_amplitude;
 
     uniform vec3 deepColor;
     uniform vec3 shallowColor;
@@ -76,7 +83,25 @@
 
     varying vec3 vWorldPosition;
     varying vec3 fragPos;
-    varying vec3 fragNormal;
+    varying float fragTime;
+    //varying vec3 fragNormal;
+
+    vec3 getNormal(vec3 pos, float t) {
+      float dx = 0.0;
+      float dz = 0.0;
+      for (int i = 0; i < order; i++) {
+        float s = sin(dot(frag_k_array[i], pos.xz) + frag_omega_array[i] * t) * frag_amplitude * pow(frag_amplitude_factor, float(i));
+        float dx_sin = frag_k_array[i].x * cos(dot(frag_k_array[i], pos.xz) + frag_omega_array[i] * t) * frag_amplitude * pow(frag_amplitude_factor, float(i));
+        float dz_sin = frag_k_array[i].y * cos(dot(frag_k_array[i], pos.xz) + frag_omega_array[i] * t) * frag_amplitude * pow(frag_amplitude_factor, float(i));
+        float e = exp(s - 1.0);
+        dx += dx_sin * e;
+        dz += dz_sin * e;
+      }
+      vec3 tangent = vec3(1.0, dx, 0.0);
+      vec3 binormal = vec3(0.0, dz, 1.0);
+      vec3 normal = -normalize(cross(tangent, binormal));
+      return normal;
+    }
 
     vec3 getAmbient() {
       float ambientStrength = 0.1;
@@ -101,6 +126,7 @@
 
     void main() {
       
+      vec3 fragNormal = getNormal(fragPos, fragTime);
 
 
       vec3 normal = normalize(fragNormal);
@@ -120,6 +146,59 @@
 
       //gl_FragColor = vec4((getAmbient() + getDiffuse(normal)) * deepColor, 1.0);
       gl_FragColor = vec4((getAmbient() + getDiffuse(normal)) + getSpecular(normal), 1.0);
+      //gl_FragColor = vec4(0.0, 0.0, 1.0, 1.0);
+
+    }
+
+  </script>
+
+  <!--
+  <script src="./jsm/libs/ammo.wasm.js"></script>
+  -->
+
+
+
+
+  <script type="x-shader/x-vertex" id="vertexShaderSky">
+
+
+    varying vec3 vWorldPosition;
+    varying float fragTime;
+    //varying vec3 fragNormal;
+    varying vec3 fragPos;
+
+
+    void main() {
+      fragPos = position;
+      //fragNormal = getNormal(position, t);
+      gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+    }
+
+  </script>
+
+  <script type="x-shader/x-fragment" id="fragmentShaderSky">
+    uniform vec3 sunColor;
+    uniform vec3 skyColor;
+    uniform float shininess;
+    uniform vec3 sunDirection;
+    uniform vec3 viewPos;
+
+    varying vec3 fragPos;
+
+
+
+
+    void main() {
+      float dotProduct = dot(sunDirection, normalize(viewPos - fragPos));
+      float intensity = pow(max(dotProduct, 0.0), shininess);
+
+      float closeness = (dotProduct + 1.0) * 0.5;
+
+      //vec3 color = vec3(1.0 * abs(dotProduct), closeness, 1.0 - closeness);
+
+      float saturation = -sunDirection.y * 0.5; 
+      
+      gl_FragColor = vec4((1.0 - intensity)*skyColor + intensity * 1.2* sunColor, 1.0);
       //gl_FragColor = vec4(0.0, 0.0, 1.0, 1.0);
 
     }
