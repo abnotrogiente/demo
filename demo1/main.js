@@ -68,12 +68,12 @@ const init = () => {
   // scene.add(cube);
 
 
-  camera.position.x = 60;
-  camera.position.y = 50;
+  camera.position.x = 100;
+  camera.position.y = 30;
   camera.lookAt(0, 0, 0);
 
   const sunAngleWrapper = {
-    'angle': Math.PI / 4,
+    'angle': Math.PI / 12,
     'color': new Color()
   };
 
