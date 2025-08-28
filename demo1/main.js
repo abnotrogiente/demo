@@ -10,7 +10,8 @@ import {
   AmbientLight,
   Clock,
   Camera,
-  DirectionalLight
+  DirectionalLight,
+  Color
 } from 'three';
 
 import {
@@ -18,6 +19,7 @@ import {
 } from 'three/addons/controls/OrbitControls.js';
 import { Ground } from './ground';
 import { Sky } from './sky';
+import GUI from 'three/examples/jsm/libs/lil-gui.module.min.js';
 
 
 
@@ -38,6 +40,9 @@ let cube = null;
 
 /**@type {Ground} */
 let ground = null;
+
+/**@type {Sky} */
+let sky = null;
 
 
 const init = () => {
@@ -67,11 +72,19 @@ const init = () => {
   camera.position.y = 50;
   camera.lookAt(0, 0, 0);
 
+  const sunAngleWrapper = {
+    'angle': Math.PI / 4,
+    'color': new Color()
+  };
+
+  const gui = new GUI();
+
+
   clock = new Clock();
 
-  ground = new Ground(scene, camera, 0.2);
+  ground = new Ground(scene, camera, 0.2, gui, sunAngleWrapper);
   console.log("before sky");
-  const sky = new Sky(scene, 500);
+  sky = new Sky(scene, 500, camera, gui, sunAngleWrapper);
   console.log("after sky");
 }
 
@@ -90,6 +103,7 @@ const animation = () => {
   const elapsed = clock.getElapsedTime();
 
   ground.update(elapsed);
+  sky.update();
 
   renderer.render(scene, camera);
 };
