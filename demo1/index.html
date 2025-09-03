@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
   <title>three_vite</title>
   <link rel="icon" href="favicon.png">
-  <script type="module" crossorigin src="/demo/assets/demo1-BcPwkMIG.js"></script>
+  <script type="module" crossorigin src="/demo/assets/demo1-CPXLl1bU.js"></script>
   <link rel="stylesheet" crossorigin href="/demo/assets/demo1-Dwsp8QLK.css">
 </head>
 
@@ -16,7 +16,7 @@
   <script type="x-shader/x-vertex" id="vertexShader">
 
 
-    #define order 40
+    #define order 20
     uniform vec2[order] k_array;
     uniform float[order] omega_array;
     uniform float amplitude_factor;
@@ -30,11 +30,20 @@
     //varying vec3 fragNormal;
     varying vec3 fragPos;
 
-    float waveFunction(vec3 pos, float t) {
+    float waveFunctionExp(vec3 pos, float t) {
       float y = 0.0;
       for (int i = 0; i < order; i++) {
         float s = sin(dot(k_array[i], pos.xz) + omega_array[i] * t) * amplitude * pow(amplitude_factor, float(i));
         y += exp(s - 1.0);
+      }
+      return y;
+    }
+
+    float waveFunction(vec3 pos, float t) {
+      float y = 0.0;
+      for (int i = 0; i < order; i++) {
+        float s = sin(dot(k_array[i], pos.xz) + omega_array[i] * t) * amplitude * pow(amplitude_factor, float(i));
+        y += s;
       }
       return y;
     }
@@ -57,7 +66,7 @@
     }
 
     void main() {
-      vec3 newPos = vec3(position.x, waveFunction(position, t), position.z );
+      vec3 newPos = vec3(position.x, waveFunctionExp(position, t), position.z );
       fragPos = vec3(modelViewMatrix * vec4(newPos, 1.0));
       fragPos = newPos;
       fragTime = t;
@@ -68,7 +77,7 @@
   </script>
 
   <script type="x-shader/x-fragment" id="fragmentShader">
-    #define order 17
+    #define order 30
     uniform vec2[order] frag_k_array;
     uniform float[order] frag_omega_array;
     uniform float frag_amplitude_factor;
@@ -86,7 +95,7 @@
     varying float fragTime;
     //varying vec3 fragNormal;
 
-    vec3 getNormal(vec3 pos, float t) {
+    vec3 getNormalExp(vec3 pos, float t) {
       float dx = 0.0;
       float dz = 0.0;
       for (int i = 0; i < order; i++) {
@@ -96,6 +105,22 @@
         float e = exp(s - 1.0);
         dx += dx_sin * e;
         dz += dz_sin * e;
+      }
+      vec3 tangent = vec3(1.0, dx, 0.0);
+      vec3 binormal = vec3(0.0, dz, 1.0);
+      vec3 normal = -normalize(cross(tangent, binormal));
+      return normal;
+    }
+
+    vec3 getNormal(vec3 pos, float t) {
+      float dx = 0.0;
+      float dz = 0.0;
+      for (int i = 0; i < order; i++) {
+        float s = sin(dot(frag_k_array[i], pos.xz) + frag_omega_array[i] * t) * frag_amplitude * pow(frag_amplitude_factor, float(i));
+        float dx_sin = frag_k_array[i].x * cos(dot(frag_k_array[i], pos.xz) + frag_omega_array[i] * t) * frag_amplitude * pow(frag_amplitude_factor, float(i));
+        float dz_sin = frag_k_array[i].y * cos(dot(frag_k_array[i], pos.xz) + frag_omega_array[i] * t) * frag_amplitude * pow(frag_amplitude_factor, float(i));
+        dx += dx_sin;
+        dz += dz_sin;
       }
       vec3 tangent = vec3(1.0, dx, 0.0);
       vec3 binormal = vec3(0.0, dz, 1.0);
@@ -126,7 +151,7 @@
 
     void main() {
       
-      vec3 fragNormal = getNormal(fragPos, fragTime);
+      vec3 fragNormal = getNormalExp(fragPos, fragTime);
 
 
       vec3 normal = normalize(fragNormal);
