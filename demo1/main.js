@@ -69,11 +69,11 @@ const init = () => {
 
 
   camera.position.x = 100;
-  camera.position.y = 30;
+  camera.position.y = 20;
   camera.lookAt(0, 0, 0);
 
   const sunAngleWrapper = {
-    'angle': Math.PI / 12,
+    'angle': Math.PI / 7,
     'color': new Color()
   };
 
@@ -82,7 +82,7 @@ const init = () => {
 
   clock = new Clock();
 
-  ground = new Ground(scene, camera, 0.2, gui, sunAngleWrapper);
+  ground = new Ground(scene, camera, 0.5, gui, sunAngleWrapper);
   console.log("before sky");
   sky = new Sky(scene, 500, camera, gui, sunAngleWrapper);
   console.log("after sky");

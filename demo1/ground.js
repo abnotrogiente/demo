@@ -32,10 +32,10 @@ export class Ground {
         this.omega = 2 * Math.PI * f;
         this.amplitude = 1.0;
         this.order = 100;
-        this.frequencyVariation = 0;
-        this.pulsationFactor = 1.12;
-        this.amplitudeFactor = 0.8;
-        this.lambda0 = 40;
+        this.frequencyVariation = 0.;
+        this.pulsationFactor = 1.18; // 1.18
+        this.amplitudeFactor = 0.82; // 0.82
+        this.lambda0 = 50;
         this.amplitude0 = 1.5;
         this.initializeWaveParameters(this.order);
         const shaderUniforms = {
@@ -81,11 +81,13 @@ export class Ground {
     }
 
     initializeWaveParameters(order) {
+        const g = 9.81;
+        const h = 50;
         /**@type {ArrayLike<Vector2>} */
         this.k_array = [];
         this.omega_array = [];
         for (let i = 0; i < order; i++) {
-            const lambda = this.lambda0 / Math.pow(this.pulsationFactor, i);
+            const lambda = this.lambda0 * Math.pow(this.pulsationFactor, -i);
             const pulse = 2 * Math.PI / lambda;
             const k = new Vector2(Math.random(), Math.random());
             k.normalize();
@@ -93,8 +95,12 @@ export class Ground {
             this.k_array.push(k)
 
             const rand = ((2 * Math.random()) - 1) * this.frequencyVariation;
-            this.omega_array.push(this.omega + rand);
+            // this.omega_array.push(this.omega + rand);
             // this.omega_array.push(this.omega * Math.pow(this.amplitudeFactor, i))
+
+            // const omega = Math.sqrt(g * pulse * Math.tanh(pulse * h));
+            const omega = this.omega * Math.pow(this.pulsationFactor, 0.5 * i);
+            this.omega_array.push(omega);
 
         }
     }
