@@ -23,6 +23,7 @@ export default defineConfig({
             input: {
                 main: resolve(__dirname, 'index.html'),
                 demo1: resolve(__dirname, 'demo1/index.html'),
+                square: resolve(__dirname, 'square/index.html'),
                 // ajoute autant de démos que nécessaire
             }
         },
