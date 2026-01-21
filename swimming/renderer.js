@@ -6,6 +6,8 @@
  * Released under the MIT license
  */
 
+import GL from './lightgl.js';
+
 var helperFunctions = '\
   const float IOR_AIR = 1.0;\
   const float IOR_WATER = 1.333;\
@@ -107,16 +109,17 @@ var helperFunctions = '\
   }\
 ';
 
-function Renderer() {
+function Renderer(gl) {
+  this.gl = gl;
   this.tileTexture = GL.Texture.fromImage(document.getElementById('tiles'), {
-    minFilter: gl.LINEAR_MIPMAP_LINEAR,
-    wrap: gl.REPEAT,
-    format: gl.RGB
+    minFilter: this.gl.LINEAR_MIPMAP_LINEAR,
+    wrap: this.gl.REPEAT,
+    format: this.gl.RGB
   });
   this.flagTexture = GL.Texture.fromImage(document.getElementById('flag'), {
-    minFilter: gl.LINEAR_MIPMAP_LINEAR,
-    wrap: gl.REPEAT,
-    format: gl.RGB
+    minFilter: this.gl.LINEAR_MIPMAP_LINEAR,
+    wrap: this.gl.REPEAT,
+    format: this.gl.RGB
   });
   this.flagSize = 0.5;
   this.flagCenter = new GL.Vector(0., 0.);
@@ -254,7 +257,7 @@ function Renderer() {
   ');
   this.sphereCenter = new GL.Vector();
   this.sphereRadius = 0;
-  var hasDerivatives = !!gl.getExtension('OES_standard_derivatives');
+  var hasDerivatives = !!this.gl.getExtension('OES_standard_derivatives');
   this.causticsShader = new GL.Shader(helperFunctions + '\
     varying vec3 oldPos;\
     varying vec3 newPos;\
@@ -320,7 +323,7 @@ Renderer.prototype.updateCaustics = function (water) {
   if (!this.causticsShader) return;
   var this_ = this;
   this.causticTex.drawTo(function () {
-    gl.clear(gl.COLOR_BUFFER_BIT);
+    this_.gl.clear(this_.gl.COLOR_BUFFER_BIT);
     water.textureA.bind(0);
     this_.causticsShader.uniforms({
       light: this_.lightDir,
@@ -339,9 +342,9 @@ Renderer.prototype.renderWater = function (water, sky) {
   this.causticTex.bind(3);
   this.flagTexture.bind(4); // TODO make the texture work
   water.areaConservationTexture.bind(5);
-  gl.enable(gl.CULL_FACE);
+  this.gl.enable(this.gl.CULL_FACE);
   for (var i = 0; i < 2; i++) {
-    gl.cullFace(i ? gl.BACK : gl.FRONT);
+    this.gl.cullFace(i ? this.gl.BACK : this.gl.FRONT);
     this.waterShaders[i].uniforms({
       light: this.lightDir,
       water: 0,
@@ -358,10 +361,10 @@ Renderer.prototype.renderWater = function (water, sky) {
       sphereRadius: this.sphereRadius
     }).draw(this.waterMesh);
   }
-  gl.disable(gl.CULL_FACE);
+  this.gl.disable(this.gl.CULL_FACE);
 };
 
-Renderer.prototype.renderSphere = function () {
+Renderer.prototype.renderSphere = function (water) {
   water.textureA.bind(0);
   this.causticTex.bind(1);
   this.sphereShader.uniforms({
@@ -373,8 +376,8 @@ Renderer.prototype.renderSphere = function () {
   }).draw(this.sphereMesh);
 };
 
-Renderer.prototype.renderCube = function () {
-  gl.enable(gl.CULL_FACE);
+Renderer.prototype.renderCube = function (water) {
+  this.gl.enable(this.gl.CULL_FACE);
   water.textureA.bind(0);
   this.tileTexture.bind(1);
   this.causticTex.bind(2);
@@ -386,5 +389,7 @@ Renderer.prototype.renderCube = function () {
     sphereCenter: this.sphereCenter,
     sphereRadius: this.sphereRadius
   }).draw(this.cubeMesh);
-  gl.disable(gl.CULL_FACE);
+  this.gl.disable(this.gl.CULL_FACE);
 };
+
+export { Renderer };

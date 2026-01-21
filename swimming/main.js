@@ -6,6 +6,13 @@
  * Released under the MIT license
  */
 
+import { Water } from './water.js';
+import { Renderer } from './renderer.js';
+import { Cubemap } from './cubemap.js';
+import GL from './lightgl.js';
+import * as THREE from 'three';
+
+
 function text2html(text) {
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
 }
@@ -22,8 +29,7 @@ function handleError(text) {
   loading.style.zIndex = 1;
 }
 
-window.onerror = handleError;
-
+window.onerror = handleError
 var gl = GL.create();
 var water;
 var cubemap;
@@ -45,7 +51,7 @@ window.onload = function () {
   var help = document.getElementById('help');
 
   function onresize() {
-    var width = innerWidth - help.clientWidth - 20;
+    var width = innerWidth;
     var height = innerHeight;
     gl.canvas.width = width * ratio;
     gl.canvas.height = height * ratio;
@@ -62,10 +68,10 @@ window.onload = function () {
   document.body.appendChild(gl.canvas);
   gl.clearColor(0, 0, 0, 1);
 
-  water = new Water();
+  water = new Water(gl);
   water.initAreaConservation();
   console.log("Area conservation initialized.");
-  renderer = new Renderer();
+  renderer = new Renderer(gl);
   cubemap = new Cubemap({
     xneg: document.getElementById('xneg'),
     xpos: document.getElementById('xpos'),
@@ -73,7 +79,7 @@ window.onload = function () {
     ypos: document.getElementById('ypos'),
     zneg: document.getElementById('zneg'),
     zpos: document.getElementById('zpos')
-  });
+  }, gl);
 
   if (!water.textureA.canDrawTo() || !water.textureB.canDrawTo()) {
     throw new Error('Rendering to floating-point textures is required but not supported');
@@ -284,9 +290,9 @@ window.onload = function () {
     gl.enable(gl.DEPTH_TEST);
     renderer.sphereCenter = center;
     renderer.sphereRadius = radius;
-    renderer.renderCube();
+    renderer.renderCube(water);
     renderer.renderWater(water, cubemap);
-    renderer.renderSphere();
+    renderer.renderSphere(water);
     gl.disable(gl.DEPTH_TEST);
   }
 };

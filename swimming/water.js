@@ -6,8 +6,11 @@
  * Released under the MIT license
  */
 
+import GL from './lightgl.js';
+
 // The data in the texture is (position.y, velocity.y, normal.x, normal.z)
-function Water() {
+function Water(gl) {
+  this.gl = gl;
   var vertexShader = '\
     varying vec2 coord;\
     void main() {\
@@ -200,12 +203,12 @@ Water.prototype.updateAreaConservation = function () {
   var this_ = this;
 
   var readType, readArrayType, readExt;
-  if (this.textureA.type === gl.FLOAT) {
-    readType = gl.FLOAT;
+  if (this.textureA.type === this.gl.FLOAT) {
+    readType = this.gl.FLOAT;
     readArrayType = Float32Array;
     readExt = 'WEBGL_color_buffer_float';
-  } else if (this.textureA.type === gl.HALF_FLOAT_OES) {
-    readType = gl.HALF_FLOAT_OES;
+  } else if (this.textureA.type === this.gl.HALF_FLOAT_OES) {
+    readType = this.gl.HALF_FLOAT_OES;
     readArrayType = Uint16Array; // Assuming 4 components * 2 bytes each
     readExt = 'EXT_color_buffer_half_float';
   } else {
@@ -213,37 +216,37 @@ Water.prototype.updateAreaConservation = function () {
     return;
   }
 
-  if (!gl.getExtension(readExt)) {
+  if (!this.gl.getExtension(readExt)) {
     console.warn(readExt + ' not available; cannot read pixels');
     return;
   }
 
   // Create framebuffer if not exists
   if (!this.fb) {
-    this.fb = gl.createFramebuffer();
+    this.fb = this.gl.createFramebuffer();
   }
 
   // Attach textureA to framebuffer
-  gl.bindFramebuffer(gl.FRAMEBUFFER, this.fb);
-  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.textureA.id, 0);
+  this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.fb);
+  this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, this.gl.COLOR_ATTACHMENT0, this.gl.TEXTURE_2D, this.textureA.id, 0);
 
   // Check framebuffer
-  const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
-  if (status !== gl.FRAMEBUFFER_COMPLETE) {
+  const status = this.gl.checkFramebufferStatus(this.gl.FRAMEBUFFER);
+  if (status !== this.gl.FRAMEBUFFER_COMPLETE) {
     console.error('Framebuffer incomplete: ' + status + ' for texture type ' + this.textureA.type);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
     return;
   }
 
   // Read pixels
-  gl.pixelStorei(gl.PACK_ALIGNMENT, 1);
+  this.gl.pixelStorei(this.gl.PACK_ALIGNMENT, 1);
   const readBuf = new readArrayType(this.W * this.H * 4);
   // const writeBuf = new readArrayType(this.W * this.H * 4);
   const writeBuf = new Float32Array(this.W * this.H * 4);
-  gl.readPixels(0, 0, this.W, this.H, gl.RGBA, readType, readBuf);
+  this.gl.readPixels(0, 0, this.W, this.H, this.gl.RGBA, readType, readBuf);
 
   // Example: modify and write back (only for float)
-  if (this.textureA.type === gl.FLOAT) {
+  if (this.textureA.type === this.gl.FLOAT) {
     // Increase red channel
     for (let i = 0; i < this.H; i += 1) {
       for (let j = 0; j < this.W; j += 1) {
@@ -265,14 +268,15 @@ Water.prototype.updateAreaConservation = function () {
 
 
     // Write back to textureA
-    gl.bindTexture(gl.TEXTURE_2D, this.areaConservationTexture.id);
-    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, this.W, this.H, gl.RGBA, gl.FLOAT, writeBuf);
+    this.gl.bindTexture(this.gl.TEXTURE_2D, this.areaConservationTexture.id);
+    this.gl.pixelStorei(this.gl.UNPACK_ALIGNMENT, 1);
+    this.gl.texSubImage2D(this.gl.TEXTURE_2D, 0, 0, 0, this.W, this.H, this.gl.RGBA, this.gl.FLOAT, writeBuf);
   }
 
   // Cleanup
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  gl.bindTexture(gl.TEXTURE_2D, null);
+  this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+  this.gl.bindTexture(this.gl.TEXTURE_2D, null);
 };
 
+export { Water };
 
