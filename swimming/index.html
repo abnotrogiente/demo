@@ -12,18 +12,18 @@ Released under the MIT license
 <head>
   <title>WebGL Water</title>
   <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
-  <script src="OES_texture_float_linear-polyfill.js"></script>
-  <script src="lightgl.js"></script>
-  <script src="cubemap.js"></script>
-  <script src="renderer.js"></script>
-  <script src="water.js"></script>
-  <script src="main.js"></script>
+  <!-- <script type="module" src="./OES_texture_float_linear-polyfill.js"></script> -->
+  <!-- <script type="module" src="./cubemap.js"></script>
+    <script type="module" src="./renderer.js"></script>
+    <script type="module" src="./water.js"></script> -->
   <style type="text/css">
     body {
       font: 13px/140% Arial, sans-serif;
       background: black;
       color: white;
       overflow: hidden;
+      margin: 0;
+      padding: 0;
     }
 
     a {
@@ -64,11 +64,13 @@ Released under the MIT license
     #help {
       position: absolute;
       top: 0;
-      right: 0;
+      left: 0;
       bottom: 0;
       width: 280px;
       padding-right: 20px;
       overflow: auto;
+      z-index: 1;
+      pointer-events: none;
     }
 
     #loading {
@@ -93,46 +95,21 @@ Released under the MIT license
       }
     }
   </style>
-</head>
+
+
+<script type="module" crossorigin src="/demo/assets/swimming-CesAxEzZ.js"></script>
+<link rel="modulepreload" crossorigin href="/demo/assets/modulepreload-polyfill-B5Qt9EMX.js">
 
 <body>
   <div id="loading">Loading...</div>
-  <div id="help">
-    <h1>WebGL Water</h1>
-    <p>Made by <a href="http://madebyevan.com/">Evan Wallace</a></p>
-    <p>This demo requires a decent graphics card and up-to-date drivers. If you can't run the demo, you can still <a
-        href="http://youtube.com/watch?v=R0O_9bp3EKQ">see it on YouTube</a>.</p>
-    <h2>Interactions:</h2>
-    <ul>
-      <li>Draw on the water to make ripples</li>
-      <li>Drag the background to rotate the camera</li>
-      <li>Press SPACEBAR to pause and unpause</li>
-      <li>Drag the sphere to move it around</li>
-      <li>Press the L key to set the light direction</li>
-      <li>Press the G key to toggle gravity</li>
-    </ul>
-    <h2>Features:</h2>
-    <ul>
-      <li>Raytraced reflections and refractions</li>
-      <li>Analytic ambient occlusion</li>
-      <li>Heightfield water simulation *</li>
-      <li>Soft shadows</li>
-      <li>Caustics (see <a
-          href="https://medium.com/@evanwallace/rendering-realtime-caustics-in-webgl-2a99a29a0b2c">this</a> for details)
-        **</li>
-    </ul>
-    <p><small>* requires the OES_texture_float extension<br>** requires the OES_standard_derivatives extension</small>
-    </p>
-    <p><small>Tile texture from <a href="http://www.flickr.com/photos/zooboing/3682834083/">zooboing</a> on
-        Flickr</small></p>
-  </div>
-  <img id="tiles" src="/demo/assets/tiles-CyC06c8e.jpg">
-  <img id="flag" src="/demo/assets/flag-texture-HaLaNimp.jpg">
-  <img id="xneg" src="/demo/assets/xneg-DFRUa4fb.jpg">
-  <img id="xpos" src="/demo/assets/xpos-C3S1fUeD.jpg">
-  <img id="ypos" src="/demo/assets/ypos-CXmTcgPB.jpg">
-  <img id="zneg" src="/demo/assets/zneg-DlcQZ-Y5.jpg">
-  <img id="zpos" src="/demo/assets/zpos-ia2D58dH.jpg">
+
+  <img hidden="true" id="tiles" src="/demo/assets/tiles-CyC06c8e.jpg">
+  <img hidden="true" id="flag" src="/demo/assets/flag-texture-HaLaNimp.jpg">
+  <img hidden="true" id="xneg" src="/demo/assets/xneg-DFRUa4fb.jpg">
+  <img hidden="true" id="xpos" src="/demo/assets/xpos-C3S1fUeD.jpg">
+  <img hidden="true" id="ypos" src="/demo/assets/ypos-CXmTcgPB.jpg">
+  <img hidden="true" id="zneg" src="/demo/assets/zneg-DlcQZ-Y5.jpg">
+  <img hidden="true" id="zpos" src="/demo/assets/zpos-ia2D58dH.jpg">
 </body>
 
 </html>
