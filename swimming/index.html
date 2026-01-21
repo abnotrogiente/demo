@@ -82,6 +82,16 @@ Released under the MIT license
       margin-top: -8px;
     }
 
+    #overlay-text {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      color: white;
+      font-size: 24px;
+      z-index: 2;
+      pointer-events: none;
+    }
+
     @media (max-width: 600px) {
       small {
         font-size: 8px;
@@ -102,6 +112,8 @@ Released under the MIT license
 
 <body>
   <div id="loading">Loading...</div>
+  <div id="overlay-text">Press 'C' to enable or disable area conservation. <br /> <br />
+    Press 'J' to simulate a jump.</div>
 
   <img hidden="true" id="tiles" src="/demo/assets/tiles-CyC06c8e.jpg">
   <img hidden="true" id="flag" src="/demo/assets/flag-texture-HaLaNimp.jpg">
