@@ -10,7 +10,6 @@ import { Water } from './water.js';
 import { Renderer } from './renderer.js';
 import { Cubemap } from './cubemap.js';
 import GL from './lightgl.js';
-import * as THREE from 'three';
 
 
 function text2html(text) {
@@ -33,9 +32,11 @@ window.onerror = handleError
 var gl = GL.create();
 var water;
 var cubemap;
+/**@type {Renderer} */
 var renderer;
 var angleX = -25;
 var angleY = -200.5;
+var zoomDistance = 4.0;
 
 // Sphere physics info
 var useSpherePhysics = false;
@@ -71,7 +72,7 @@ window.onload = function () {
   water = new Water(gl);
   water.initAreaConservation();
   console.log("Area conservation initialized.");
-  renderer = new Renderer(gl);
+  renderer = new Renderer(gl, water);
   cubemap = new Cubemap({
     xneg: document.getElementById('xneg'),
     xpos: document.getElementById('xpos'),
@@ -190,7 +191,20 @@ window.onload = function () {
     return element === help || element.parentNode && isHelpElement(element.parentNode);
   }
 
+  function zoom(delta) {
+    zoomDistance *= 1 - delta * 0.001;
+    zoomDistance = Math.max(2, Math.min(50, zoomDistance));
+    if (paused) draw();
+  };
+
+  addEventListener('wheel', function (e) {
+    console.log("wheel");
+    var delta = e.deltaY;
+    zoom(-delta);
+  });
+
   document.onmousedown = function (e) {
+    console.log("mousedown");
     if (!isHelpElement(e.target)) {
       e.preventDefault();
       startDrag(e.pageX, e.pageY);
@@ -282,7 +296,7 @@ window.onload = function () {
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.loadIdentity();
-    gl.translate(0, 0, -4);
+    gl.translate(0, 0, -zoomDistance);
     gl.rotate(-angleX, 1, 0, 0);
     gl.rotate(-angleY, 0, 1, 0);
     gl.translate(0, 0.5, 0);
