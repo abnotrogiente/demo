@@ -184,7 +184,7 @@ Water.prototype.stepSimulation = function () {
   this.textureB.drawTo(function () {
     this_.textureA.bind();
     this_.updateShader.uniforms({
-      delta: [this_.poolSize.z / this_.poolSize.x / this_.textureA.width, this_.poolSize.z / this_.poolSize.z / this_.textureA.height]
+      delta: [Math.max(this_.poolSize.x, this_.poolSize.z) / this_.poolSize.x / this_.textureA.width, Math.max(this_.poolSize.x, this_.poolSize.z) / this_.poolSize.z / this_.textureA.height] // WARNING only works if poolSize.z is bigger th
     }).draw(this_.plane);
   });
   this.textureB.swapWith(this.textureA);
@@ -197,7 +197,7 @@ Water.prototype.updateNormals = function () {
   this.textureB.drawTo(function () {
     this_.textureA.bind();
     this_.normalShader.uniforms({
-      delta: [this_.poolSize.z / this_.poolSize.x / this_.textureA.width, this_.poolSize.z / this_.poolSize.z / this_.textureA.height]
+      delta: [Math.max(this_.poolSize.x, this_.poolSize.z) / this_.poolSize.x / this_.textureA.width, Math.max(this_.poolSize.x, this_.poolSize.z) / this_.poolSize.z / this_.textureA.height]
     }).draw(this_.plane);
   });
   this.textureB.swapWith(this.textureA);
