@@ -267,6 +267,14 @@ window.onload = function () {
       water.setAreaConservation(!water.areaConservationEnabled);
       console.log("Area conservation " + (water.areaConservationEnabled ? "enabled." : "disabled."));
     }
+    else if (e.which == 'P'.charCodeAt(0)) {
+      water.showProjectionGrid = !water.showProjectionGrid;
+      console.log("Projection grid " + (water.showProjectionGrid ? "enabled." : "disabled."));
+    }
+    else if (e.which == 'A'.charCodeAt(0)) {
+      water.showAreaConservedGrid = !water.showAreaConservedGrid;
+      console.log("Area conserved grid " + (water.showAreaConservedGrid ? "enabled." : "disabled."));
+    }
   };
 
   var frame = 0;

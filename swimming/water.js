@@ -29,6 +29,8 @@ function Water(gl, poolSize) {
   this.textureB = new GL.Texture(this.W, this.H, { type: gl.FLOAT, filter: filter });
   this.areaConservationTexture = new GL.Texture(this.W, this.H, { type: gl.FLOAT, filter: filter });
   this.areaConservationEnabled = true;
+  this.showAreaConservedGrid = false;
+  this.showProjectionGrid = false;
 
   this.poolSize = poolSize;
   // this.poolSize = new GL.Vector(2., 2.);
@@ -257,6 +259,10 @@ Water.prototype.updateAreaConservation = function () {
     writeBuf[i * 4 + 1] = 1.0;
   }
   // Example: modify and write back (only for float)
+  const dx_proj = this.poolSize.x / this.W;
+  const dz_proj = this.poolSize.z / this.H;
+  const dx_proj_sq = dx_proj * dx_proj;
+  const dz_proj_sq = dz_proj * dz_proj;
   if (this.textureA.type === this.gl.FLOAT) {
     // Increase red channel
     for (let j = 0; j < this.H; j += 1) {
@@ -267,12 +273,12 @@ Water.prototype.updateAreaConservation = function () {
         const z = writeBuf[indexAreaConservation + 1];
         if (i + 1 < this.W) {
           const dy = readBuf[index] - readBuf[index + 4];
-          const dx = Math.sqrt(dy * dy + 1 / (this.W * this.W));
+          const dx = Math.sqrt(dy * dy + dx_proj_sq);
           writeBuf[indexAreaConservation + 4] = x + dx;
         }
         if (j + 1 < this.H) {
           const dy = readBuf[index] - readBuf[index + this.W * 4];
-          const dz = Math.sqrt(dy * dy + 1 / (this.H * this.H));
+          const dz = Math.sqrt(dy * dy + dz_proj_sq);
           writeBuf[indexAreaConservation - 4 * this.W + 1] = z + dz;
         }
       }

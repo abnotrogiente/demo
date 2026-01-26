@@ -144,7 +144,13 @@ function Renderer(gl, water, flagCenter, flagSize) {
       uniform vec3 eye;\
       varying vec3 position;\
       uniform samplerCube sky;\
+      uniform bool showProjectionGrid;\
+      uniform bool showAreaConservedGrid;\
       \
+      bool isOnConservedAreaGrid(vec2 pos, float size) {\
+        vec2 gridCoord = pos / size;\
+        return abs(fract(gridCoord.x) - 0.5) < 0.05 || abs(fract(gridCoord.y) - 0.5) < 0.05;\
+      }\
       vec3 getSurfaceRayColor(vec3 origin, vec3 ray, vec3 waterColor) {\
         vec3 color;\
         float q = intersectSphere(origin, ray, sphereCenter, sphereRadius);\
@@ -167,13 +173,13 @@ function Renderer(gl, water, flagCenter, flagSize) {
           color *= waterColor;\
           vec2 position = origin.xz;\
           vec2 flagCorner = flagCenter - flagSize / 2.;\
+          if (showProjectionGrid && isOnConservedAreaGrid(position, 0.1)) color = vec3(1., 1., 0.); /* Debug conserved area grid */\
           if (areaConservation) {\
-            vec2 coord = origin.xz / poolSize.xz + 0.5;\
-            vec2 areaConservedCoord = texture2D(areaConservationTexture, coord).xy;\
-            position = (areaConservedCoord - 0.5) * poolSize.xz;\
-            vec2 coordFlag = texture2D(areaConservationTexture, flagCorner / poolSize.xz + 0.5).xy;\
-            flagCorner = (coordFlag - 0.5) * poolSize.xz;\
+          vec2 coord = origin.xz / poolSize.xz + 0.5;\
+          position = texture2D(areaConservationTexture, coord).xy;\
+          flagCorner = texture2D(areaConservationTexture, flagCorner / poolSize.xz + 0.5).xy;\
           }\
+          if (showAreaConservedGrid && isOnConservedAreaGrid(position, 0.1)) color = vec3(1., 0., 0.); /* Debug conserved area grid */\
           float xFlag = position.x - flagCenter.x;\
           float yFlag = position.y - flagCenter.y;\
           vec2 posFlag = position - flagCenter;\
@@ -371,7 +377,9 @@ Renderer.prototype.renderWater = function (water, sky) {
       poolSizeVertexShader: [water.poolSize.x, water.poolSize.y, water.poolSize.z],
       eye: tracer.eye,
       sphereCenter: this.sphereCenter,
-      sphereRadius: this.sphereRadius
+      sphereRadius: this.sphereRadius,
+      showProjectionGrid: water.showProjectionGrid,
+      showAreaConservedGrid: water.showAreaConservedGrid
     }).draw(water.waterMesh);
   }
   this.gl.disable(this.gl.CULL_FACE);
