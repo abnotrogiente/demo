@@ -1137,12 +1137,14 @@ var GL = (function () {
     var mesh = new Mesh(options);
     var detailX = options.detailX || options.detail || 1;
     var detailY = options.detailY || options.detail || 1;
+    var W = options.width || 2;
+    var H = options.height || 2;
 
     for (var y = 0; y <= detailY; y++) {
       var t = y / detailY;
       for (var x = 0; x <= detailX; x++) {
         var s = x / detailX;
-        mesh.vertices.push([2 * s - 1, 2 * t - 1, 0]);
+        mesh.vertices.push([(s - 0.5) * W, (t - 0.5) * H, 0]);
         if (mesh.coords) mesh.coords.push([s, t]);
         if (mesh.normals) mesh.normals.push([0, 0, 1]);
         if (x < detailX && y < detailY) {
@@ -1176,12 +1178,19 @@ var GL = (function () {
   // specifies options to pass to the mesh constructor.
   Mesh.cube = function (options) {
     var mesh = new Mesh(options);
+    var w = options && options.width || 2;
+    var h = options && options.height || 2;
+    var d = options && options.depth || 2;
 
     for (var i = 0; i < cubeData.length; i++) {
       var data = cubeData[i], v = i * 4;
       for (var j = 0; j < 4; j++) {
-        var d = data[j];
-        mesh.vertices.push(pickOctant(d).toArray());
+        var cd = data[j];
+        const vertex = pickOctant(cd).toArray();
+        vertex[0] *= w / 2;
+        vertex[1] *= h / 2;
+        vertex[2] *= d / 2;
+        mesh.vertices.push(vertex);
         if (mesh.coords) mesh.coords.push([j & 1, (j & 2) / 2]);
         if (mesh.normals) mesh.normals.push(data.slice(4, 7));
       }

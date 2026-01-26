@@ -10,7 +10,7 @@ Released under the MIT license
 <html>
 
 <head>
-  <title>WebGL Water</title>
+  <title>Swimming</title>
   <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
   <!-- <script type="module" src="./OES_texture_float_linear-polyfill.js"></script> -->
   <!-- <script type="module" src="./cubemap.js"></script>
@@ -86,7 +86,7 @@ Released under the MIT license
     #overlay-text {
       position: absolute;
       top: 10px;
-      right: 10px;
+      left: 10px;
       color: white;
       font-size: 24px;
       z-index: 2;
@@ -111,7 +111,8 @@ Released under the MIT license
 <body>
   <div id="loading">Loading...</div>
   <div id="overlay-text">Press 'C' to enable or disable area conservation. <br /> <br />
-    Press 'J' to simulate a jump.</div>
+    Press 'J' to simulate a jump.<br /> <br />
+    Drag on the water to start ripples.</div>
 
   <img hidden="true" id="tiles" src="./assets/tiles.jpg">
   <img hidden="true" id="flag" src="./assets/flag-texture.jpg">

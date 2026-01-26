@@ -10,6 +10,7 @@ import { Water } from './water.js';
 import { Renderer } from './renderer.js';
 import { Cubemap } from './cubemap.js';
 import GL from './lightgl.js';
+import GUI from 'three/examples/jsm/libs/lil-gui.module.min.js';
 
 
 function text2html(text) {
@@ -46,6 +47,20 @@ var velocity;
 var gravity;
 var radius;
 var paused = false;
+var flagCenter;
+var flagSize;
+var poolSize = new GL.Vector(2.0, 1.0, 3.0);
+const gui = new GUI();
+function reset() {
+  //water = new Water(gl, poolSize);
+  flagCenter = new GL.Vector(0., -poolSize.z / 2. + 1.);
+  water = new Water(gl, poolSize);
+  renderer = new Renderer(gl, water, flagCenter, flagSize);
+}
+const folder = gui.addFolder('variables');
+folder.add(poolSize, 'x', 1, 25).name('pool width').onChange(function (value) { reset(); });
+folder.add(poolSize, 'y', 1, 3).name('pool height').onChange(function (value) { reset(); });
+folder.add(poolSize, 'z', 1, 50).name('pool depth').onChange(function (value) { reset(); });
 
 window.onload = function () {
   var ratio = window.devicePixelRatio || 1;
@@ -69,10 +84,13 @@ window.onload = function () {
   document.body.appendChild(gl.canvas);
   gl.clearColor(0, 0, 0, 1);
 
-  water = new Water(gl);
+  flagCenter = new GL.Vector(0., -poolSize.z / 2. + 1.);
+  flagSize = 0.7;
+  water = new Water(gl, poolSize);
+
   water.initAreaConservation();
   console.log("Area conservation initialized.");
-  renderer = new Renderer(gl, water);
+  renderer = new Renderer(gl, water, flagCenter, flagSize);
   cubemap = new Cubemap({
     xneg: document.getElementById('xneg'),
     xpos: document.getElementById('xpos'),
@@ -137,7 +155,7 @@ window.onload = function () {
       mode = MODE_MOVE_SPHERE;
       prevHit = sphereHitTest.hit;
       planeNormal = tracer.getRayForPixel(gl.canvas.width / 2, gl.canvas.height / 2).negative();
-    } else if (Math.abs(pointOnPlane.x) < 1 && Math.abs(pointOnPlane.z) < 1) {
+    } else if (Math.abs(pointOnPlane.x) < poolSize.x / 2 && Math.abs(pointOnPlane.z) < poolSize.z / 2) {
       mode = MODE_ADD_DROPS;
       duringDrag(x, y);
     } else {
@@ -151,7 +169,7 @@ window.onload = function () {
         var tracer = new GL.Raytracer();
         var ray = tracer.getRayForPixel(x * ratio, y * ratio);
         var pointOnPlane = tracer.eye.add(ray.multiply(-tracer.eye.y / ray.y));
-        water.addDrop(pointOnPlane.x, pointOnPlane.z, 0.03, 0.01);
+        water.addDrop(pointOnPlane.x / poolSize.x * 2, pointOnPlane.z / poolSize.z * 2, 0.03, 0.01);
         if (paused) {
           water.updateNormals();
           renderer.updateCaustics(water);
@@ -198,13 +216,11 @@ window.onload = function () {
   };
 
   addEventListener('wheel', function (e) {
-    console.log("wheel");
     var delta = e.deltaY;
     zoom(-delta);
   });
 
   document.onmousedown = function (e) {
-    console.log("mousedown");
     if (!isHelpElement(e.target)) {
       e.preventDefault();
       startDrag(e.pageX, e.pageY);
@@ -244,7 +260,7 @@ window.onload = function () {
     else if (e.which == 'L'.charCodeAt(0) && paused) draw();
     else if (e.which == 'J'.charCodeAt(0)) {
       velocity = new GL.Vector(0, 0, 1.5);
-      center = new GL.Vector(0, 1, -1);
+      center = new GL.Vector(0, 1, -poolSize.z / 2.);
       useSpherePhysics = true;
     }
     else if (e.which == 'C'.charCodeAt(0)) {
