@@ -40,6 +40,7 @@ var angleY = -200.5;
 var zoomDistance = 4.0;
 
 // Sphere physics info
+let swimming = false;
 var useSpherePhysics = false;
 var center;
 var oldCenter;
@@ -169,7 +170,7 @@ window.onload = function () {
         var tracer = new GL.Raytracer();
         var ray = tracer.getRayForPixel(x * ratio, y * ratio);
         var pointOnPlane = tracer.eye.add(ray.multiply(-tracer.eye.y / ray.y));
-        water.addDrop(pointOnPlane.x / poolSize.x * 2, pointOnPlane.z / poolSize.z * 2, 0.03, 0.01);
+        water.addDrop(pointOnPlane.x / poolSize.x * 2, pointOnPlane.z / poolSize.z * 2, 0.03, 0.03);
         if (paused) {
           water.updateNormals();
           renderer.updateCaustics(water);
@@ -275,6 +276,15 @@ window.onload = function () {
       water.showAreaConservedGrid = !water.showAreaConservedGrid;
       console.log("Area conserved grid " + (water.showAreaConservedGrid ? "enabled." : "disabled."));
     }
+    else if (e.which == 'S'.charCodeAt(0)) {
+      swimming = !swimming;
+      if (swimming) {
+        useSpherePhysics = true;
+        center.z = -poolSize.z / 2.;
+        center.x = 0.;
+      }
+      console.log("Swimming " + (swimming ? "enabled." : "disabled."));
+    }
   };
 
   var frame = 0;
@@ -289,7 +299,11 @@ window.onload = function () {
     } else if (useSpherePhysics) {
       // Fall down with viscosity under water
       var percentUnderWater = Math.max(0, Math.min(1, (radius - center.y) / (2 * radius)));
-      velocity = velocity.add(gravity.multiply(seconds - 1.1 * seconds * percentUnderWater));
+      velocity = velocity.add(gravity.multiply(seconds - 1.35 * seconds * percentUnderWater)); // 1.1 before
+      if (swimming) {
+        velocity = velocity.add(new GL.Vector(0, 0, 0.05));
+        // center.y = -2 * radius / 3;
+      }
       velocity = velocity.subtract(velocity.unit().multiply(percentUnderWater * seconds * velocity.dot(velocity)));
       center = center.add(velocity.multiply(seconds));
 
