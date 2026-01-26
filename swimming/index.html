@@ -10,7 +10,7 @@ Released under the MIT license
 <html>
 
 <head>
-  <title>WebGL Water</title>
+  <title>Swimming</title>
   <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
   <!-- <script type="module" src="./OES_texture_float_linear-polyfill.js"></script> -->
   <!-- <script type="module" src="./cubemap.js"></script>
@@ -85,7 +85,7 @@ Released under the MIT license
     #overlay-text {
       position: absolute;
       top: 10px;
-      right: 10px;
+      left: 10px;
       color: white;
       font-size: 24px;
       z-index: 2;
@@ -107,13 +107,15 @@ Released under the MIT license
   </style>
 
 
-<script type="module" crossorigin src="/demo/assets/swimming-CesAxEzZ.js"></script>
+<script type="module" crossorigin src="/demo/assets/swimming-C-MkFZuH.js"></script>
 <link rel="modulepreload" crossorigin href="/demo/assets/modulepreload-polyfill-B5Qt9EMX.js">
+<link rel="modulepreload" crossorigin href="/demo/assets/lil-gui.module.min-Vka56b52.js">
 
 <body>
   <div id="loading">Loading...</div>
   <div id="overlay-text">Press 'C' to enable or disable area conservation. <br /> <br />
-    Press 'J' to simulate a jump.</div>
+    Press 'J' to simulate a jump.<br /> <br />
+    Drag on the water to start ripples.</div>
 
   <img hidden="true" id="tiles" src="/demo/assets/tiles-CyC06c8e.jpg">
   <img hidden="true" id="flag" src="/demo/assets/flag-texture-HaLaNimp.jpg">
