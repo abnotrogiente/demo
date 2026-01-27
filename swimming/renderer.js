@@ -88,7 +88,7 @@ var helperFunctions = '\
       normal = vec3(0.0, 1.0, 0.0);\
     }\
     \
-    scale /= length(point); /* pool ambient occlusion */\
+    /*scale /= length(point) * 10;*/ /* pool ambient occlusion */\
     scale *= 1.0 - 0.9 / pow(length(point - sphereCenter) / sphereRadius, 4.0); /* sphere ambient occlusion */\
     \
     /* caustics */\
@@ -175,9 +175,9 @@ function Renderer(gl, water, flagCenter, flagSize) {
           vec2 flagCorner = flagCenter - flagSize / 2.;\
           if (showProjectionGrid && isOnConservedAreaGrid(position, 0.1)) color = vec3(1., 1., 0.); /* Debug conserved area grid */\
           if (areaConservation) {\
-          vec2 coord = origin.xz / poolSize.xz + 0.5;\
-          position = texture2D(areaConservationTexture, coord).xy;\
-          flagCorner = texture2D(areaConservationTexture, flagCorner / poolSize.xz + 0.5).xy;\
+            vec2 coord = origin.xz / poolSize.xz + 0.5;\
+            position = texture2D(areaConservationTexture, coord).xy;\
+            flagCorner = texture2D(areaConservationTexture, flagCorner / poolSize.xz + 0.5).xy;\
           }\
           if (showAreaConservedGrid && isOnConservedAreaGrid(position, 0.1)) color = vec3(1., 0., 0.); /* Debug conserved area grid */\
           float xFlag = position.x - flagCenter.x;\
