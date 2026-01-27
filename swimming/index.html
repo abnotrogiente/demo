@@ -92,6 +92,24 @@ Released under the MIT license
       pointer-events: none;
     }
 
+    #warning {
+      top: 10px;
+      left: 10px;
+      color: red;
+      font-size: 10px;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    #resolution {
+      top: 10px;
+      left: 10px;
+      color: blue;
+      font-size: 10px;
+      z-index: 2;
+      pointer-events: none;
+    }
+
     @media (max-width: 600px) {
       small {
         font-size: 8px;
@@ -107,7 +125,7 @@ Released under the MIT license
   </style>
 
 
-<script type="module" crossorigin src="/demo/assets/swimming-DhS-0D55.js"></script>
+<script type="module" crossorigin src="/demo/assets/swimming-D7srkuWg.js"></script>
 <link rel="modulepreload" crossorigin href="/demo/assets/modulepreload-polyfill-B5Qt9EMX.js">
 <link rel="modulepreload" crossorigin href="/demo/assets/lil-gui.module.min-Vka56b52.js">
 
@@ -118,7 +136,14 @@ Released under the MIT license
     Press 'S' to simulate swimming.<br /> <br />
     Press 'P' to toggle projection grid display.<br /> <br />
     Press 'A' to toggle area conserved grid display.<br /> <br />
-    Drag on the water to start ripples.</div>
+    Press 'O' to set olympic settings.<br /> <br />
+    Use up and down arrow keys to adjust x resolution.<br /> <br />
+    Use left and right arrow keys to adjust z resolution.<br /> <br />
+    Drag on the water to start ripples. <br /> <br />
+    <div id="resolution">Resolution: 256 x 256</div>
+    <div hidden="true" id="warning">Area conservation should be disabled for best performance.</div>
+  </div>
+
 
   <img hidden="true" id="tiles" src="/demo/assets/tiles-CyC06c8e.jpg">
   <img hidden="true" id="flag" src="/demo/assets/flag-texture-HaLaNimp.jpg">
