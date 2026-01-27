@@ -282,6 +282,11 @@ window.onload = function () {
         useSpherePhysics = true;
         center.z = -poolSize.z / 2.;
         center.x = 0.;
+        center.y = -poolSize.y / 2. + radius + 0.1;
+      }
+      else {
+        velocity = new GL.Vector();
+        center = new GL.Vector(0, 0, 0);
       }
       console.log("Swimming " + (swimming ? "enabled." : "disabled."));
     }
@@ -308,7 +313,7 @@ window.onload = function () {
       center = center.add(velocity.multiply(seconds));
 
       // Bounce off the bottom
-      if (center.y < radius - 1) {
+      if (center.y < radius - poolSize.y) {
         center.y = radius - 1;
         velocity.y = Math.abs(velocity.y) * 0.7;
       }
