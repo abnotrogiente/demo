@@ -248,10 +248,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
       }\
     }\
   ');
-  this.cubeMesh = GL.Mesh.cube({ width: water.poolSize.x, height: 2., depth: water.poolSize.z });
-  // this.cubeMesh = GL.Mesh.cube();
-  this.cubeMesh.triangles.splice(4, 2);
-  this.cubeMesh.compile();
+  this.reset();
   this.cubeShader = new GL.Shader(helperFunctions + '\
     varying vec3 position;\
     void main() {\
@@ -333,6 +330,12 @@ function Renderer(gl, water, flagCenter, flagSize) {
     }\
   ');
 }
+Renderer.prototype.reset = function () {
+  this.cubeMesh = GL.Mesh.cube({ width: this.water.poolSize.x, height: 2., depth: this.water.poolSize.z });
+  // this.cubeMesh = GL.Mesh.cube();
+  this.cubeMesh.triangles.splice(4, 2);
+  this.cubeMesh.compile();
+};
 
 Renderer.prototype.updateCaustics = function (water) {
   return;
@@ -347,7 +350,7 @@ Renderer.prototype.updateCaustics = function (water) {
       sphereCenter: this_.sphereCenter,
       sphereRadius: this_.sphereRadius,
       poolSize: [water.poolSize.x, water.poolSize.y, water.poolSize.z]
-    }).draw(water.waterMesh);
+    }).draw(water.plane);
   });
 };
 
@@ -380,7 +383,7 @@ Renderer.prototype.renderWater = function (water, sky) {
       sphereRadius: this.sphereRadius,
       showProjectionGrid: water.showProjectionGrid,
       showAreaConservedGrid: water.showAreaConservedGrid
-    }).draw(water.waterMesh);
+    }).draw(water.plane);
   }
   this.gl.disable(this.gl.CULL_FACE);
 };

@@ -9,8 +9,9 @@
 import GL from './lightgl.js';
 
 // The data in the texture is (position.y, velocity.y, normal.x, normal.z)
-function Water(gl, poolSize) {
+function Water(gl, poolSize, resolution = null) {
   this.gl = gl;
+  this.areaConservationEnabled = true;
   var vertexShader = '\
     varying vec2 coord;\
     void main() {\
@@ -18,31 +19,12 @@ function Water(gl, poolSize) {
       gl_Position = vec4(gl_Vertex.xyz, 1.0);\
     }\
   ';
-  this.plane = GL.Mesh.plane();
+
+  this.reset(poolSize, resolution);
   if (!GL.Texture.canUseFloatingPointTextures()) {
     throw new Error('This demo requires the OES_texture_float extension');
   }
-  var filter = GL.Texture.canUseFloatingPointLinearFiltering() ? gl.LINEAR : gl.NEAREST;
-  this.W = 256;
-  this.H = 256;
-  this.textureA = new GL.Texture(this.W, this.H, { type: gl.FLOAT, filter: filter });
-  this.textureB = new GL.Texture(this.W, this.H, { type: gl.FLOAT, filter: filter });
-  this.areaConservationTexture = new GL.Texture(this.W, this.H, { type: gl.FLOAT, filter: filter });
-  this.areaConservationEnabled = true;
-  this.showAreaConservedGrid = false;
-  this.showProjectionGrid = false;
 
-  this.poolSize = poolSize;
-  // this.poolSize = new GL.Vector(2., 2.);
-  this.waterMesh = GL.Mesh.plane({ detail: 200, width: this.poolSize.x, height: this.poolSize.z });
-  // this.waterMesh = GL.Mesh.plane({ detail: 200 });
-
-
-  if ((!this.textureA.canDrawTo() || !this.textureB.canDrawTo()) && GL.Texture.canUseHalfFloatingPointTextures()) {
-    filter = GL.Texture.canUseHalfFloatingPointLinearFiltering() ? gl.LINEAR : gl.NEAREST;
-    this.textureA = new GL.Texture(this.W, this.H, { type: gl.HALF_FLOAT_OES, filter: filter });
-    this.textureB = new GL.Texture(this.W, this.H, { type: gl.HALF_FLOAT_OES, filter: filter });
-  }
   this.dropShader = new GL.Shader(vertexShader, '\
     const float PI = 3.141592653589793;\
     uniform sampler2D texture;\
@@ -90,12 +72,6 @@ function Water(gl, poolSize) {
       info.r += info.g;\
       \
       gl_FragColor = info;\
-    }\
-  ');
-  this.AreaConservationInitShader = new GL.Shader(vertexShader, '\
-    varying vec2 coord;\
-    void main() {\
-      gl_FragColor = vec4(coord, 0.0, 0.0);\
     }\
   ');
   this.normalShader = new GL.Shader(vertexShader, '\
@@ -147,6 +123,34 @@ function Water(gl, poolSize) {
   ');
 }
 
+Water.prototype.reset = function (poolSize, resolution = null) {
+  if (resolution !== null) {
+    this.W = resolution.x;
+    this.H = resolution.y;
+    console.log("Using custom resolution:", this.W, this.H);
+  } else {
+    this.W = 256;
+    this.H = 256;
+  }
+  this.plane = GL.Mesh.plane({ detail: 255, width: poolSize.x, height: poolSize.z });
+  const waveVelocity = 5.0; // original value: 2.0
+  this.delta = new GL.Vector(waveVelocity / (256 * poolSize.x), (waveVelocity / (256 * poolSize.z)));
+  console.log("delta:", this.delta);
+  this.textureA = new GL.Texture(this.W, this.H, { type: this.gl.FLOAT, filter: filter });
+  this.textureB = new GL.Texture(this.W, this.H, { type: this.gl.FLOAT, filter: filter });
+  this.areaConservationTexture = new GL.Texture(this.W, this.H, { type: this.gl.FLOAT, filter: filter });
+  this.showAreaConservedGrid = false;
+  this.showProjectionGrid = false;
+
+  this.poolSize = poolSize;
+  var filter = GL.Texture.canUseFloatingPointLinearFiltering() ? this.gl.LINEAR : this.gl.NEAREST;
+  if ((!this.textureA.canDrawTo() || !this.textureB.canDrawTo()) && GL.Texture.canUseHalfFloatingPointTextures()) {
+    filter = GL.Texture.canUseHalfFloatingPointLinearFiltering() ? this.gl.LINEAR : this.gl.NEAREST;
+    this.textureA = new GL.Texture(this.W, this.H, { type: this.gl.HALF_FLOAT_OES, filter: filter });
+    this.textureB = new GL.Texture(this.W, this.H, { type: this.gl.HALF_FLOAT_OES, filter: filter });
+  }
+};
+
 Water.prototype.addDrop = function (x, y, radius, strength) {
   var this_ = this;
   this.textureB.drawTo(function () {
@@ -174,19 +178,13 @@ Water.prototype.moveSphere = function (oldCenter, newCenter, radius) {
   this.textureB.swapWith(this.textureA);
 };
 
-Water.prototype.initAreaConservation = function () {
-  var this_ = this;
-  this.areaConservationTexture.drawTo(function () {
-    this_.AreaConservationInitShader.draw(this_.plane);
-  });
-};
-
 Water.prototype.stepSimulation = function () {
   var this_ = this;
   this.textureB.drawTo(function () {
     this_.textureA.bind();
     this_.updateShader.uniforms({
-      delta: [Math.max(this_.poolSize.x, this_.poolSize.z) / this_.poolSize.x / this_.textureA.width, Math.max(this_.poolSize.x, this_.poolSize.z) / this_.poolSize.z / this_.textureA.height] // WARNING only works if poolSize.z is bigger th
+      delta: [this_.delta.x, this_.delta.y]
+      // delta: [Math.max(this_.poolSize.x, this_.poolSize.z) / this_.poolSize.x / Math.max(this_.textureA.width, this_.textureA.height), Math.max(this_.poolSize.x, this_.poolSize.z) / this_.poolSize.z / Math.max(this_.textureA.width, this_.textureA.height)] // WARNING only works if poolSize.z is bigger th
     }).draw(this_.plane);
   });
   this.textureB.swapWith(this.textureA);
@@ -199,7 +197,8 @@ Water.prototype.updateNormals = function () {
   this.textureB.drawTo(function () {
     this_.textureA.bind();
     this_.normalShader.uniforms({
-      delta: [Math.max(this_.poolSize.x, this_.poolSize.z) / this_.poolSize.x / this_.textureA.width, Math.max(this_.poolSize.x, this_.poolSize.z) / this_.poolSize.z / this_.textureA.height]
+      delta: [this_.delta.x, this_.delta.y]
+      // delta: [Math.max(this_.poolSize.x, this_.poolSize.z) / this_.poolSize.x / Math.max(this_.textureA.width, this_.textureA.height), Math.max(this_.poolSize.x, this_.poolSize.z) / this_.poolSize.z / Math.max(this_.textureA.width, this_.textureA.height)]
     }).draw(this_.plane);
   });
   this.textureB.swapWith(this.textureA);
@@ -210,7 +209,10 @@ Water.prototype.setAreaConservation = function (enabled) {
 }
 
 Water.prototype.updateAreaConservation = function () {
-  // return;
+
+  if (!this.areaConservationEnabled) {
+    return;
+  }
   var this_ = this;
 
   var readType, readArrayType, readExt;

@@ -31,6 +31,7 @@ function handleError(text) {
 
 window.onerror = handleError
 var gl = GL.create();
+/**@type {Water} */
 var water;
 var cubemap;
 /**@type {Renderer} */
@@ -50,18 +51,27 @@ var radius;
 var paused = false;
 var flagCenter;
 var flagSize;
-var poolSize = new GL.Vector(2.0, 1.0, 3.0);
+var poolSize = new GL.Vector(2.0, 1.0, 2.0);
+let resolution = new GL.Vector(256, 256);
 const gui = new GUI();
 function reset() {
+  console.log("reset");
+  document.getElementById('resolution').innerText = `Resolution: ${resolution.x} x ${resolution.y}`;
+  document.getElementById('warning').hidden = !(resolution.x * resolution.y > 300000 && (water && water.areaConservationEnabled));
   //water = new Water(gl, poolSize);
   flagCenter = new GL.Vector(0., -poolSize.z / 2. + 1.);
-  water = new Water(gl, poolSize);
-  renderer = new Renderer(gl, water, flagCenter, flagSize);
+  // water = new Water(gl, poolSize, resolution);
+  water.reset(poolSize, resolution);
+  renderer.flagCenter = flagCenter;
+  renderer.flagSize = flagSize;
+  renderer.reset();
+  // renderer = new Renderer(gl, water, flagCenter, flagSize);
 }
 const folder = gui.addFolder('variables');
 folder.add(poolSize, 'x', 1, 25).name('pool width').onChange(function (value) { reset(); });
 folder.add(poolSize, 'y', 1, 3).name('pool height').onChange(function (value) { reset(); });
 folder.add(poolSize, 'z', 1, 50).name('pool depth').onChange(function (value) { reset(); });
+
 
 window.onload = function () {
   var ratio = window.devicePixelRatio || 1;
@@ -88,9 +98,7 @@ window.onload = function () {
   flagCenter = new GL.Vector(0., -poolSize.z / 2. + 1.);
   flagSize = 0.7;
   water = new Water(gl, poolSize);
-
-  water.initAreaConservation();
-  console.log("Area conservation initialized.");
+  folder.add(water, 'areaConservationEnabled', 'areaConservationEnabled').name('area conservation').listen().onChange(reset);
   renderer = new Renderer(gl, water, flagCenter, flagSize);
   cubemap = new Cubemap({
     xneg: document.getElementById('xneg'),
@@ -100,6 +108,8 @@ window.onload = function () {
     zneg: document.getElementById('zneg'),
     zpos: document.getElementById('zpos')
   }, gl);
+
+  reset();
 
   if (!water.textureA.canDrawTo() || !water.textureB.canDrawTo()) {
     throw new Error('Rendering to floating-point textures is required but not supported');
@@ -266,6 +276,7 @@ window.onload = function () {
     }
     else if (e.which == 'C'.charCodeAt(0)) {
       water.setAreaConservation(!water.areaConservationEnabled);
+      reset();
       console.log("Area conservation " + (water.areaConservationEnabled ? "enabled." : "disabled."));
     }
     else if (e.which == 'P'.charCodeAt(0)) {
@@ -290,6 +301,39 @@ window.onload = function () {
       }
       console.log("Swimming " + (swimming ? "enabled." : "disabled."));
     }
+    else if (e.which == 'O'.charCodeAt(0)) {
+      poolSize = new GL.Vector(25.0, 2.0, 50.0);
+      resolution = new GL.Vector(2048, 4096);
+      water.setAreaConservation(false);
+      reset();
+      reset();
+      console.log("Olympic mode enabled.");
+    }
+    else if (e.which == 40) { // down
+      if (resolution.x > 129)
+        resolution.x = Math.round(resolution.x / 2);
+      reset();
+      console.log("decreasing x resolution");
+    }
+    else if (e.which == 38) { // up
+      if (resolution.x < 4096)
+        resolution.x = Math.round(resolution.x * 2);
+      reset();
+      reset();
+      console.log("increasing x resolution");
+    }
+    else if (e.which == 37) { // left
+      if (resolution.y > 129)
+        resolution.y = Math.round(resolution.y / 2);
+      reset();
+      console.log("decreasing y resolution");
+    }
+    else if (e.which == 39) { // right
+      if (resolution.y < 4096)
+        resolution.y = Math.round(resolution.y * 2);
+      reset();
+      console.log("increasing y resolution");
+    }
   };
 
   var frame = 0;
@@ -306,7 +350,7 @@ window.onload = function () {
       var percentUnderWater = Math.max(0, Math.min(1, (radius - center.y) / (2 * radius)));
       velocity = velocity.add(gravity.multiply(seconds - 1.35 * seconds * percentUnderWater)); // 1.1 before
       if (swimming) {
-        velocity = velocity.add(new GL.Vector(0, 0, 0.05));
+        velocity = velocity.add(new GL.Vector(0, 0, 0.038));
         // center.y = -2 * radius / 3;
       }
       velocity = velocity.subtract(velocity.unit().multiply(percentUnderWater * seconds * velocity.dot(velocity)));
