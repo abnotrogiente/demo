@@ -42,6 +42,11 @@ let swimmerSphere;
 var angleX = -25;
 var angleY = -200.5;
 var zoomDistance = 4.0;
+let armAmplitude = 0.5;
+const armFrequency = 1;
+const armPulsation = 2 * Math.PI * armFrequency;
+const armRadius = .15;
+const AWAY = new GL.Vector(1000, 0, 0)
 
 // Sphere physics info
 let swimming = false;
@@ -120,6 +125,12 @@ window.onload = function () {
   swimmerSphere = new Sphere(center, radius);
   swimmerSphere.cinematic = !useGravity;
   water.addSphere(swimmerSphere);
+  const leftArm = new Sphere(AWAY, armRadius);
+  const rightArm = new Sphere(AWAY, armRadius);
+  leftArm.cinematic = true;
+  rightArm.cinematic = true;
+  water.addSphere(leftArm);
+  water.addSphere(rightArm);
 
   for (var i = 0; i < 20; i++) {
     water.addDrop(Math.random() * 2 - 1, Math.random() * 2 - 1, 0.03, (i & 1) ? 0.01 : -0.01);
@@ -137,7 +148,7 @@ window.onload = function () {
   function animate() {
     var nextTime = new Date().getTime();
     if (!paused) {
-      update((nextTime - prevTime) / 1000);
+      update((nextTime - prevTime) / 1000, nextTime / 1000);
       draw();
     }
     prevTime = nextTime;
@@ -303,6 +314,8 @@ window.onload = function () {
         swimmerSphere.center = new GL.Vector(-poolSize.y / 2. + radius + 0.1, 0, -poolSize.z / 2.);
       }
       else {
+        leftArm.move(AWAY);
+        rightArm.move(AWAY);
         swimmerSphere.velocity = new GL.Vector(0, 0, 0);
         swimmerSphere.center = new GL.Vector(0, 0, 0);
       }
@@ -346,13 +359,22 @@ window.onload = function () {
     }
   };
 
+
+  function getArmOffset(time, phase) {
+    return new GL.Vector(0., Math.cos(armPulsation * time + phase), Math.sin(armPulsation * time + phase)).multiply(armAmplitude);
+  }
+
   var frame = 0;
 
-  function update(seconds) {
-    if (seconds > 1) return;
-    frame += seconds * 2;
+  function update(dt, time) {
+    if (dt > 1) return;
+    frame += dt * 2;
 
-    if (swimming) swimmerSphere.addForce(new GL.Vector(0., 0., 150.5));
+    if (swimming) {
+      swimmerSphere.addForce(new GL.Vector(0., 0., 150.5));
+      rightArm.move(swimmerSphere.center.add(getArmOffset(time, 0)).add(new GL.Vector(.3, 0, 0)));
+      leftArm.move(swimmerSphere.center.add(getArmOffset(time, Math.PI)).add(new GL.Vector(-.3, 0, 0)));
+    }
 
     if (mode == MODE_MOVE_SPHERE) {
       // Start from rest when the player releases the mouse after moving the sphere
@@ -360,7 +382,7 @@ window.onload = function () {
     }
 
     // Displace water around the sphere
-    water.updateSpheres(seconds);
+    water.updateSpheres(dt);
 
     // Update the water simulation and graphics
     water.stepSimulation();

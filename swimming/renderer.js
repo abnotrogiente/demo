@@ -388,7 +388,35 @@ Renderer.prototype.renderWater = function (water, sky) {
   this.gl.disable(this.gl.CULL_FACE);
 };
 
-Renderer.prototype.renderSphere = function (water) {
+/**
+ * 
+ * @param {Water} water 
+ */
+Renderer.prototype.renderSpheres = function (water) {
+  for (let sphere of water.spheres) {
+    this.renderSphere(water, sphere);
+  }
+};
+
+/**
+ * 
+ * @param {Water} water 
+ * @param {Sphere} sphere 
+ */
+Renderer.prototype.renderSphere = function (water, sphere) {
+  water.textureA.bind(0);
+  this.causticTex.bind(1);
+  this.sphereShader.uniforms({
+    light: this.lightDir,
+    water: 0,
+    causticTex: 1,
+    sphereCenter: [sphere.center.x, sphere.center.y, sphere.center.z],
+    sphereRadius: sphere.radius,
+    poolSize: [water.poolSize.x, water.poolSize.y, water.poolSize.z]
+  }).draw(sphere.mesh);
+};
+
+Renderer.prototype.renderSphereOld = function (water) {
   water.textureA.bind(0);
   this.causticTex.bind(1);
   this.sphereShader.uniforms({

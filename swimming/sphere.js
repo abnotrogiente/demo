@@ -18,6 +18,7 @@ class Sphere {
         this.mass = (4 / 3) * Math.PI * Math.pow(radius, 3) * 1000;
         this.invMass = 1 / this.mass;
         this.radiusSquared = radius * radius;
+        this.mesh = GL.Mesh.sphere({ detail: 10 });
     }
 
     /**
