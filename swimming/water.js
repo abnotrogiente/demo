@@ -7,11 +7,15 @@
  */
 
 import GL from './lightgl.js';
+import { Sphere } from './sphere.js';
 
 // The data in the texture is (position.y, velocity.y, normal.x, normal.z)
 function Water(gl, poolSize, resolution = null) {
   this.gl = gl;
   this.areaConservationEnabled = true;
+  this.waveVelocity = 1;
+  /**@type {Sphere[]} */
+  this.spheres = [];
   var vertexShader = '\
     varying vec2 coord;\
     void main() {\
@@ -134,8 +138,7 @@ Water.prototype.reset = function (poolSize, resolution = null) {
   }
   this.plane = GL.Mesh.plane({ detail: 255, width: poolSize.x, height: poolSize.z });
   const waveVelocity = 5.0; // original value: 2.0
-  this.delta = new GL.Vector(waveVelocity / (256 * poolSize.x), (waveVelocity / (256 * poolSize.z)));
-  console.log("delta:", this.delta);
+  this.delta = new GL.Vector(2 * this.waveVelocity / (256 * poolSize.x), (2 * this.waveVelocity / (256 * poolSize.z)));
   this.textureA = new GL.Texture(this.W, this.H, { type: this.gl.FLOAT, filter: filter });
   this.textureB = new GL.Texture(this.W, this.H, { type: this.gl.FLOAT, filter: filter });
   this.areaConservationTexture = new GL.Texture(this.W, this.H, { type: this.gl.FLOAT, filter: filter });
@@ -162,6 +165,18 @@ Water.prototype.addDrop = function (x, y, radius, strength) {
     }).draw(this_.plane);
   });
   this.textureB.swapWith(this.textureA);
+};
+
+Water.prototype.addSphere = function (sphere) {
+  this.spheres.push(sphere);
+};
+
+Water.prototype.updateSpheres = function (dt) {
+  for (let i = 0; i < this.spheres.length; i++) {
+    const sphere = this.spheres[i];
+    sphere.update(dt, this.poolSize);
+    this.moveSphere(sphere.oldCenter, sphere.center, sphere.radius);
+  }
 };
 
 Water.prototype.moveSphere = function (oldCenter, newCenter, radius) {
