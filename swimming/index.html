@@ -12,7 +12,10 @@ Released under the MIT license
 <head>
   <title>Swimming</title>
   <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
-  <script src="./OES_texture_float_linear-polyfill.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"
+    integrity="sha512-zhHQR0/H5SEBL3Wn6yYSaTTZej12z0hVZKOv3TwCUXT1z5qeqGcXJLLrbERYRScEDDpYIJhPC1fk31gqR783iQ=="
+    crossorigin="anonymous" defer></script>
+  <!-- <script src="./OES_texture_float_linear-polyfill.js"></script> -->
   <!-- <script type="module" src="./cubemap.js"></script>
     <script type="module" src="./renderer.js"></script>
     <script type="module" src="./water.js"></script> -->
@@ -125,11 +128,11 @@ Released under the MIT license
   </style>
 
 
-<script type="module" crossorigin src="/demo/assets/swimming-CLCdaxso.js"></script>
+<script type="module" crossorigin src="/demo/assets/swimming-BxPpeWpP.js"></script>
 <link rel="modulepreload" crossorigin href="/demo/assets/modulepreload-polyfill-B5Qt9EMX.js">
-<link rel="modulepreload" crossorigin href="/demo/assets/lil-gui.module.min-Vka56b52.js">
 
 <body>
+  <!-- <canvas id="glcanvas" width="640" height="480"></canvas> -->
   <div id="loading">Loading...</div>
   <div id="overlay-text">Press 'C' to enable or disable area conservation. <br /> <br />
     Press 'J' to simulate a jump.<br /> <br />
