@@ -128,18 +128,25 @@ Released under the MIT license
   </style>
 
 
-<script type="module" crossorigin src="/demo/assets/swimming-BxPpeWpP.js"></script>
+<script type="module" crossorigin src="/demo/assets/swimming-BLaO49FX.js"></script>
 <link rel="modulepreload" crossorigin href="/demo/assets/modulepreload-polyfill-B5Qt9EMX.js">
+<link rel="modulepreload" crossorigin href="/demo/assets/lil-gui.module.min-Vka56b52.js">
 
 <body>
   <!-- <canvas id="glcanvas" width="640" height="480"></canvas> -->
   <div id="loading">Loading...</div>
+  <div id="drop-zone"
+    style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 999; border: 5px dashed white; align-items: center; justify-content: center; font-size: 32px; color: white; pointer-events: none;">
+    Drop MP4 file here
+  </div>
   <div id="overlay-text">Press 'C' to enable or disable area conservation. <br /> <br />
     Press 'J' to simulate a jump.<br /> <br />
     Press 'S' to simulate swimming.<br /> <br />
     Press 'P' to toggle projection grid display.<br /> <br />
     Press 'A' to toggle area conserved grid display.<br /> <br />
     Press 'O' to set olympic settings.<br /> <br />
+    Drag a video file to load it.<br /> <br />
+    Press 'V' to plot video.<br /> <br />
     Use up and down arrow keys to adjust x resolution.<br /> <br />
     Use left and right arrow keys to adjust z resolution.<br /> <br />
     Drag on the water to start ripples. <br /> <br />
