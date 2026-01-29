@@ -12,6 +12,7 @@ import { Cubemap } from './cubemap.js';
 import { Sphere } from './sphere.js';
 import GL from './lightgl.js';
 import GUI from 'three/examples/jsm/libs/lil-gui.module.min.js';
+import { Video } from './video.js';
 
 
 function text2html(text) {
@@ -98,6 +99,42 @@ window.onload = function () {
   flagCenter = new GL.Vector(0., -poolSize.z / 2. + 1.);
   flagSize = 0.7;
   water = new Water(gl, poolSize);
+  const video = new Video("", gl);  // Empty path - use drag-and-drop instead
+
+  // Drop zone for MP4 files
+  const dropZone = document.getElementById('drop-zone');
+  let dragCounter = 0;
+
+  document.addEventListener('dragenter', (e) => {
+    dragCounter++;
+    dropZone.style.display = 'flex';
+  });
+
+  document.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+  });
+
+  document.addEventListener('dragleave', (e) => {
+    dragCounter--;
+    if (dragCounter === 0) {
+      dropZone.style.display = 'none';
+    }
+  });
+
+  document.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dragCounter = 0;
+    dropZone.style.display = 'none';
+    const files = e.dataTransfer.files;
+    if (files.length > 0 && (files[0].type.startsWith('video/') || files[0].name.endsWith('.mp4'))) {
+      const url = URL.createObjectURL(files[0]);
+      video.video.src = url;
+      video.video.play();
+      console.log('Loaded:', files[0].name);
+    }
+  });
+
   const folder = gui.addFolder('variables');
   folder.add(poolSize, 'x', 1, 25).name('pool width').onChange(function (value) { reset(); }).listen();
   folder.add(poolSize, 'z', 1, 50).name('pool height').onChange(function (value) { reset(); }).listen();
@@ -149,7 +186,7 @@ window.onload = function () {
     var nextTime = new Date().getTime();
     if (!paused) {
       update((nextTime - prevTime) / 1000, nextTime / 1000);
-      draw();
+      draw(nextTime);
     }
     prevTime = nextTime;
     requestAnimationFrame(animate);
@@ -295,7 +332,6 @@ window.onload = function () {
     }
     else if (e.which == 'C'.charCodeAt(0)) {
       water.setAreaConservation(!water.areaConservationEnabled);
-      reset();
       console.log("Area conservation " + (water.areaConservationEnabled ? "enabled." : "disabled."));
     }
     else if (e.which == 'P'.charCodeAt(0)) {
@@ -321,6 +357,9 @@ window.onload = function () {
       }
       console.log("Swimming " + (swimming ? "enabled." : "disabled."));
     }
+    else if (e.which == 'V'.charCodeAt(0)) {
+      video.show = !video.show;
+    }
     else if (e.which == 'O'.charCodeAt(0)) {
       poolSize.x = 25;
       poolSize.y = 2;
@@ -339,7 +378,7 @@ window.onload = function () {
       console.log("decreasing x resolution");
     }
     else if (e.which == 38) { // up
-      if (resolution.x < 4096)
+      if (resolution.x < 16384)
         resolution.x = Math.round(resolution.x * 2);
       reset();
       reset();
@@ -352,7 +391,7 @@ window.onload = function () {
       console.log("decreasing y resolution");
     }
     else if (e.which == 39) { // right
-      if (resolution.y < 4096)
+      if (resolution.y < 16384)
         resolution.y = Math.round(resolution.y * 2);
       reset();
       console.log("increasing y resolution");
@@ -389,15 +428,19 @@ window.onload = function () {
     water.stepSimulation();
     water.updateNormals();
     renderer.updateCaustics(water);
+
   }
 
-  function draw() {
+  function draw(time) {
     // Change the light direction to the camera look vector when the L key is pressed
     if (GL.keys.L) {
       renderer.lightDir = GL.Vector.fromAngles((90 - angleY) * Math.PI / 180, -angleX * Math.PI / 180);
       if (paused) renderer.updateCaustics(water);
     }
 
+    /**@type {WebGLRenderingContext} */
+    const g = gl;
+    // g.clearColor(1, 1, 1, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.loadIdentity();
     gl.translate(0, 0, -zoomDistance);
@@ -411,6 +454,7 @@ window.onload = function () {
     renderer.renderCube(water);
     renderer.renderWater(water, cubemap);
     renderer.renderSpheres(water);
+    video.render(time);
     gl.disable(gl.DEPTH_TEST);
   }
 };

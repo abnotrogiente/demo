@@ -1,5 +1,3 @@
-import { initBuffers } from "./init-buffers.js";
-import { drawScene } from "./draw-scene.js";
 import GL from "./lightgl.js";
 
 let cubeRotation = 0.0;
@@ -12,8 +10,10 @@ let cubeRotation = 0.0;
 //
 class Video {
     constructor(path, gl) {
+        /**@type {WebGLRenderingContext} */
         this.gl = gl
         this.copyVideo = false;
+        this.show = false;
         this.deltaTime = 0;
         // Only continue if WebGL is available and working
         if (gl === null) {
@@ -29,79 +29,35 @@ class Video {
 
         // Vertex shader program
 
-        const vsSource = `
-  attribute vec4 aVertexPosition;
-  attribute vec3 aVertexNormal;
-  attribute vec2 aTextureCoord;
+        this.shader = new GL.Shader(`
+    varying highp vec2 vTextureCoord;
 
-  uniform mat4 uNormalMatrix;
-  uniform mat4 uModelViewMatrix;
-  uniform mat4 uProjectionMatrix;
+    void main(void) {
+        gl_Position = vec4(gl_Vertex.xz, 0., 1.);
+        vTextureCoord = gl_TexCoord.st;
+    }
+`, `
+    varying highp vec2 vTextureCoord;
 
-  varying highp vec2 vTextureCoord;
-  varying highp vec3 vLighting;
+    uniform sampler2D uSampler;
 
-  void main(void) {
-    gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
-    vTextureCoord = aTextureCoord;
+    void main(void) {
+        highp vec4 texelColor = texture2D(uSampler, vTextureCoord);
+        gl_FragColor = vec4(texelColor.rgb, 0.5);
+        // gl_FragColor = vec4(1, 0, 0, 1);
+    }
+`);
 
-    // Apply lighting effect
-
-    highp vec3 ambientLight = vec3(0.3, 0.3, 0.3);
-    highp vec3 directionalLightColor = vec3(1, 1, 1);
-    highp vec3 directionalVector = normalize(vec3(0.85, 0.8, 0.75));
-
-    highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);
-
-    highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
-    vLighting = ambientLight + (directionalLightColor * directional);
-  }
-`;
-
-        // Fragment shader program
-
-        const fsSource = `
-  varying highp vec2 vTextureCoord;
-  varying highp vec3 vLighting;
-
-  uniform sampler2D uSampler;
-
-  void main(void) {
-    highp vec4 texelColor = texture2D(uSampler, vTextureCoord);
-
-    gl_FragColor = vec4(texelColor.rgb * vLighting, texelColor.a);
-  }
-`;
-
-        // Initialize a shader program; this is where all the lighting
-        // for the vertices and so forth is established.
-        const shaderProgram = this.initShaderProgram(vsSource, fsSource);
-
-        // Collect all the info needed to use the shader program.
-        // Look up which attributes our shader program is using
-        // for aVertexPosition, aVertexColor and also
-        // look up uniform locations.
-        this.programInfo = {
-            program: shaderProgram,
-            attribLocations: {
-                vertexPosition: gl.getAttribLocation(shaderProgram, "aVertexPosition"),
-                vertexNormal: gl.getAttribLocation(shaderProgram, "aVertexNormal"),
-                textureCoord: gl.getAttribLocation(shaderProgram, "aTextureCoord"),
-            },
-            uniformLocations: {
-                projectionMatrix: gl.getUniformLocation(
-                    shaderProgram,
-                    "uProjectionMatrix"
-                ),
-                modelViewMatrix: gl.getUniformLocation(shaderProgram, "uModelViewMatrix"),
-                normalMatrix: gl.getUniformLocation(shaderProgram, "uNormalMatrix"),
-                uSampler: gl.getUniformLocation(shaderProgram, "uSampler"),
-            },
-        };
+        this.mesh = GL.Mesh.plane({ width: 2., height: 2., coords: true, normals: true });
+        this.mesh.transform(GL.Matrix.rotate(90, 1, 0, 0));
+        this.mesh.transform(GL.Matrix.translate(0, .1, 0));
+        // Using `this.shader` (lightgl) for rendering; skip manual
+        // initShaderProgram/vsSource/fsSource which were undefined.
+        this.programInfo = null;
 
         // Here's where we call the routine that builds all the
         // objects we'll be drawing.
-        this.buffers = initBuffers(gl);
+        // this.buffers = initBuffers(gl);
 
         this.texture = this.initTexture();
         this.video = this.setupVideo(path);
@@ -113,7 +69,9 @@ class Video {
     }
 
     render(now) {
+        if (!this.show) return;
         now *= 0.001; // convert to seconds
+        console.log("rendering : " + this.copyVideo);
         this.deltaTime = now - this.then;
         this.then = now;
 
@@ -121,8 +79,21 @@ class Video {
             this.updateTexture();
         }
 
-        drawScene(this.gl, this.programInfo, this.buffers, this.texture, cubeRotation);
-        cubeRotation += this.deltaTime;
+        // Set up the mesh if not already compiled
+        if (!this.mesh.vertexBuffers || !this.mesh.vertexBuffers.vertex) {
+            this.mesh.compile();
+        }
+
+        // this.gl.enable(this.gl.CULL_FACE);
+        this.gl.enable(this.gl.BLEND);
+        this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
+        this.gl.activeTexture(this.gl.TEXTURE0);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.texture);
+        this.shader.uniforms({
+            uSampler: 0
+        }).draw(this.mesh);
+        this.gl.disable(this.gl.BLEND);
+
     }
 
     //
