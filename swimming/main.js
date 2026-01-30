@@ -383,6 +383,11 @@ window.onload = function () {
       water.waveVelocity = 2.5;
       reset();
       reset();
+      translateX = -17.005;
+      translateY = -0.79;
+      zoomDistance = 29.91;
+      angleX = -18;
+      angleY = -269.5;
       console.log("Olympic mode enabled.");
     }
     else if (e.which == 40) { // down
@@ -457,8 +462,7 @@ window.onload = function () {
     // g.clearColor(1, 1, 1, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.loadIdentity();
-    gl.translate(0, 0, -zoomDistance);
-    gl.translate(translateX, translateY, 0);
+    gl.translate(translateX, translateY, -zoomDistance);
     gl.rotate(-angleX, 1, 0, 0);
     gl.rotate(-angleY, 0, 1, 0);
     gl.translate(0, 0.5, 0);
