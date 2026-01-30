@@ -9,7 +9,7 @@ let cubeRotation = 0.0;
 // start here
 //
 class Video {
-    constructor(path, gl) {
+    constructor(gl) {
         /**@type {WebGLRenderingContext} */
         this.gl = gl
         this.copyVideo = false;
@@ -60,7 +60,7 @@ class Video {
         // this.buffers = initBuffers(gl);
 
         this.texture = this.initTexture();
-        this.video = this.setupVideo(path);
+        this.video = this.setupVideo();
 
         // Flip image pixels into the bottom-to-top order that WebGL expects.
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
@@ -205,7 +205,7 @@ class Video {
         );
     }
 
-    setupVideo(url) {
+    setupVideo() {
         const video = document.createElement("video");
 
         let playing = false;
@@ -236,7 +236,7 @@ class Video {
             true
         );
 
-        video.src = url;
+        //video.src = url;
         video.play();
         const this_ = this;
         const checkReady = () => {

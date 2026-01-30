@@ -42,6 +42,8 @@ var renderer;
 let swimmerSphere;
 var angleX = -25;
 var angleY = -200.5;
+let translateX = 0;
+let translateY = 0;
 var zoomDistance = 4.0;
 let armAmplitude = 0.5;
 const armFrequency = 1;
@@ -94,12 +96,13 @@ window.onload = function () {
   }
 
   document.body.appendChild(gl.canvas);
+  gl.canvas.oncontextmenu = function (e) { e.preventDefault(); };
   gl.clearColor(0, 0, 0, 1);
 
   flagCenter = new GL.Vector(0., -poolSize.z / 2. + 1.);
   flagSize = 0.7;
   water = new Water(gl, poolSize);
-  const video = new Video("", gl);  // Empty path - use drag-and-drop instead
+  const video = new Video(gl);  // Empty path - use drag-and-drop instead
 
   // Drop zone for MP4 files
   const dropZone = document.getElementById('drop-zone');
@@ -201,26 +204,32 @@ window.onload = function () {
   var MODE_ADD_DROPS = 0;
   var MODE_MOVE_SPHERE = 1;
   var MODE_ORBIT_CAMERA = 2;
+  const MODE_TRANSLATE_CAMERA = 3;
 
   var oldX, oldY;
 
-  function startDrag(x, y) {
+  function startDrag(x, y, event) {
     oldX = x;
     oldY = y;
-    var tracer = new GL.Raytracer();
-    var ray = tracer.getRayForPixel(x * ratio, y * ratio);
-    var pointOnPlane = tracer.eye.add(ray.multiply(-tracer.eye.y / ray.y));
-    var sphereHitTest = GL.Raytracer.hitTestSphere(tracer.eye, ray, swimmerSphere.center, swimmerSphere.radius);
-    if (sphereHitTest) {
-      mode = MODE_MOVE_SPHERE;
-      swimmerSphere.cinematic = true;
-      prevHit = sphereHitTest.hit;
-      planeNormal = tracer.getRayForPixel(gl.canvas.width / 2, gl.canvas.height / 2).negative();
-    } else if (Math.abs(pointOnPlane.x) < poolSize.x / 2 && Math.abs(pointOnPlane.z) < poolSize.z / 2) {
-      mode = MODE_ADD_DROPS;
-      duringDrag(x, y);
-    } else {
+    if (!event || event.button === 0) {
+      var tracer = new GL.Raytracer();
+      var ray = tracer.getRayForPixel(x * ratio, y * ratio);
+      var pointOnPlane = tracer.eye.add(ray.multiply(-tracer.eye.y / ray.y));
+      var sphereHitTest = GL.Raytracer.hitTestSphere(tracer.eye, ray, swimmerSphere.center, swimmerSphere.radius);
+      if (sphereHitTest) {
+        mode = MODE_MOVE_SPHERE;
+        swimmerSphere.cinematic = true;
+        prevHit = sphereHitTest.hit;
+        planeNormal = tracer.getRayForPixel(gl.canvas.width / 2, gl.canvas.height / 2).negative();
+      } else if (Math.abs(pointOnPlane.x) < poolSize.x / 2 && Math.abs(pointOnPlane.z) < poolSize.z / 2) {
+        mode = MODE_ADD_DROPS;
+        duringDrag(x, y);
+      }
+    } else if (event.button === 2) {
       mode = MODE_ORBIT_CAMERA;
+    }
+    else if (event.button === 1) {
+      mode = MODE_TRANSLATE_CAMERA;
     }
   }
 
@@ -257,6 +266,11 @@ window.onload = function () {
         angleX = Math.max(-89.999, Math.min(89.999, angleX));
         break;
       }
+      case MODE_TRANSLATE_CAMERA: {
+        const factor = .001 * zoomDistance;
+        translateX += factor * (x - oldX);
+        translateY -= factor * (y - oldY);
+      }
     }
     oldX = x;
     oldY = y;
@@ -286,7 +300,7 @@ window.onload = function () {
   document.onmousedown = function (e) {
     if (!isHelpElement(e.target)) {
       e.preventDefault();
-      startDrag(e.pageX, e.pageY);
+      startDrag(e.pageX, e.pageY, e);
     }
   };
 
@@ -301,7 +315,7 @@ window.onload = function () {
   document.ontouchstart = function (e) {
     if (e.touches.length === 1 && !isHelpElement(e.target)) {
       e.preventDefault();
-      startDrag(e.touches[0].pageX, e.touches[0].pageY);
+      startDrag(e.touches[0].pageX, e.touches[0].pageY, false);
     }
   };
 
@@ -444,6 +458,7 @@ window.onload = function () {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.loadIdentity();
     gl.translate(0, 0, -zoomDistance);
+    gl.translate(translateX, translateY, 0);
     gl.rotate(-angleX, 1, 0, 0);
     gl.rotate(-angleY, 0, 1, 0);
     gl.translate(0, 0.5, 0);
