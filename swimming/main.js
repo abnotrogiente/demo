@@ -407,6 +407,10 @@ window.onload = function () {
     else if (e.which == 'W'.charCodeAt(0)) {
       water.WR_position = 0;
     }
+    else if (e.which == 'H'.charCodeAt(0)) {
+      document.getElementById("commands").hidden = !document.getElementById("commands").hidden;
+      document.getElementById("h").hidden = !document.getElementById("h").hidden;
+    }
     else if (e.which == 40) { // down
       if (resolution.x > 129)
         resolution.x = Math.round(resolution.x / 2);
