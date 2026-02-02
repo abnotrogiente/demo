@@ -8,6 +8,7 @@
 
 import GL from './lightgl.js';
 import { Sphere } from './sphere.js';
+import { Swimmer } from './swimmer.js';
 
 // The data in the texture is (position.y, velocity.y, normal.x, normal.z)
 function Water(gl, poolSize, resolution = null) {
@@ -78,7 +79,7 @@ function Water(gl, poolSize, resolution = null) {
       info.g += (average - info.r) * 2.0;
       
       /* attenuate the velocity a little so waves do not last forever */
-      info.g *= 0.995;/*TODO parametriser ça*/
+      info.g *= 0.98;/*TODO parametriser ça*/
       
       /* move the vertex along the velocity */
       info.r += info.g;
@@ -191,17 +192,24 @@ Water.prototype.addDrop = function (x, y, radius, strength) {
   this.textureB.swapWith(this.textureA);
 };
 
+/**
+ * 
+ * @param {Swimmer} swimmer 
+ */
+Water.prototype.addSwimmer = function (swimmer) {
+  for (let sphere of swimmer.spheres) this.addSphere(sphere);
+}
+
 Water.prototype.addSphere = function (sphere) {
   this.spheres.push(sphere);
 };
 
 Water.prototype.updateSpheres = function (dt) {
-  const speed = 2.5;
+  const speed = 2.1;
   this.prev_WR_position = this.WR_position;
   this.WR_position += dt * speed;
   for (let i = 0; i < this.spheres.length; i++) {
     const sphere = this.spheres[i];
-    sphere.update(dt, this.poolSize);
     this.moveSphere(sphere.oldCenter, sphere.center, sphere.radius);
   }
 };

@@ -9,6 +9,7 @@ class Sphere {
      * @param {float} radius 
      */
     constructor(center, radius) {
+        console.log("center : " + center.x + " , " + center.y + " , " + center.z);
         this.center = new GL.Vector(center.x, center.y, center.z);
         this.oldCenter = new GL.Vector(center.x, center.y, center.z);
         this.radius = radius;
@@ -36,9 +37,6 @@ class Sphere {
             this.addForce(drag);
             this.addForce(floatingForce);
             this.addForce(GRAVITY.multiply(this.mass));
-            if (false /*isSwimming*/) {
-                this.addForce(new GL.Vector(0, 0, 15.5));
-            }
             this.velocity = this.velocity.add(this.acceleration.multiply(dt));
             this.acceleration = new GL.Vector(0, 0, 0);
             this.center = this.center.add(this.velocity.multiply(dt));

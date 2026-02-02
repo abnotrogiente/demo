@@ -13,6 +13,7 @@ import { Sphere } from './sphere.js';
 import GL from './lightgl.js';
 import GUI from 'three/examples/jsm/libs/lil-gui.module.min.js';
 import { Video } from './video.js';
+import { Swimmer } from './swimmer.js';
 
 
 function text2html(text) {
@@ -38,22 +39,16 @@ var water;
 var cubemap;
 /**@type {Renderer} */
 var renderer;
-/**@type {Sphere} */
-let swimmerSphere;
+/**@type {Swimmer[]} */
+const swimmers = [];
+const numSwimmers = 8;
 var angleX = -25;
 var angleY = -200.5;
 let translateX = 0;
 let translateY = 0;
 var zoomDistance = 4.0;
-let armAmplitude = 0.5;
-const armFrequency = 1;
-const armPulsation = 2 * Math.PI * armFrequency;
-const armRadius = .15;
-const AWAY = new GL.Vector(1000, 0, 0)
-
 // Sphere physics info
 let swimming = false;
-var useGravity = false;
 var paused = false;
 var flagCenter;
 var flagSize;
@@ -73,6 +68,14 @@ function reset() {
   renderer.flagCenter = flagCenter;
   renderer.flagSize = flagSize;
   renderer.reset();
+
+  const dx = poolSize.x / numSwimmers;
+  let x = -poolSize.x / 2 + dx / 2;
+  for (let swimmer of swimmers) {
+    swimmer.body.center.x = x;
+    swimmer.startingPoint.x = x;
+    x += dx;
+  }
 }
 
 
@@ -155,31 +158,19 @@ window.onload = function () {
     zpos: document.getElementById('zpos')
   }, gl);
 
-  reset();
 
   if (!water.textureA.canDrawTo() || !water.textureB.canDrawTo()) {
     throw new Error('Rendering to floating-point textures is required but not supported');
   }
 
   const center = new GL.Vector(-0.4, -0.75, 0.2);
-  const radius = 0.25;
-  const f = 1;
-  swimmerSphere = new Sphere(center, radius * f);
-  swimmerSphere.cinematic = !useGravity;
-  water.addSphere(swimmerSphere);
-  const leftArm = new Sphere(AWAY, armRadius * f);
-  const rightArm = new Sphere(AWAY, armRadius * f);
-  const leftFoot = new Sphere(AWAY, armRadius * f);
-  const rightFoot = new Sphere(AWAY, armRadius * f);
-  leftArm.cinematic = true;
-  rightArm.cinematic = true;
-  leftFoot.cinematic = true;
-  rightFoot.cinematic = true;
-
-  water.addSphere(leftArm);
-  water.addSphere(rightArm);
-  water.addSphere(leftFoot);
-  water.addSphere(rightFoot);
+  const center2 = new GL.Vector(0.4, -0.75, 0.2);
+  const s = new Swimmer(center);
+  const s2 = new Swimmer(center2)
+  for (let i = 0; i < 1; i++) swimmers.push(new Swimmer(center));
+  const radius = s.body.radius;
+  for (let swimmer of swimmers) water.addSwimmer(swimmer);
+  reset();
 
   for (var i = 0; i < 20; i++) {
     water.addDrop(Math.random() * 2 - 1, Math.random() * 2 - 1, 0.06, (i & 1) ? 0.01 : -0.01);
@@ -209,6 +200,7 @@ window.onload = function () {
 
   var prevHit;
   var planeNormal;
+  var swimmerSelected;
   var mode = -1;
   var MODE_ADD_DROPS = 0;
   var MODE_MOVE_SPHERE = 1;
@@ -224,13 +216,18 @@ window.onload = function () {
       var tracer = new GL.Raytracer();
       var ray = tracer.getRayForPixel(x * ratio, y * ratio);
       var pointOnPlane = tracer.eye.add(ray.multiply(-tracer.eye.y / ray.y));
-      var sphereHitTest = GL.Raytracer.hitTestSphere(tracer.eye, ray, swimmerSphere.center, swimmerSphere.radius);
-      if (sphereHitTest) {
-        mode = MODE_MOVE_SPHERE;
-        swimmerSphere.cinematic = true;
-        prevHit = sphereHitTest.hit;
-        planeNormal = tracer.getRayForPixel(gl.canvas.width / 2, gl.canvas.height / 2).negative();
-      } else if (Math.abs(pointOnPlane.x) < poolSize.x / 2 && Math.abs(pointOnPlane.z) < poolSize.z / 2) {
+      for (let swimmer of swimmers) {
+        var sphereHitTest = GL.Raytracer.hitTestSphere(tracer.eye, ray, swimmer.body.center, swimmer.body.radius);
+        if (sphereHitTest) {
+          mode = MODE_MOVE_SPHERE;
+          swimmerSelected = swimmer;
+          swimmer.body.cinematic = true;
+          prevHit = sphereHitTest.hit;
+          planeNormal = tracer.getRayForPixel(gl.canvas.width / 2, gl.canvas.height / 2).negative();
+          return;
+        }
+      }
+      if (Math.abs(pointOnPlane.x) < poolSize.x / 2 && Math.abs(pointOnPlane.z) < poolSize.z / 2) {
         mode = MODE_ADD_DROPS;
         duringDrag(x, y);
       }
@@ -260,11 +257,12 @@ window.onload = function () {
         var ray = tracer.getRayForPixel(x * ratio, y * ratio);
         var t = -planeNormal.dot(tracer.eye.subtract(prevHit)) / planeNormal.dot(ray);
         var nextHit = tracer.eye.add(ray.multiply(t));
-        const center = swimmerSphere.center.add(nextHit.subtract(prevHit));
+        const center = swimmerSelected.body.center.add(nextHit.subtract(prevHit));
+        const radius = swimmerSelected.body.radius;
         const x_sphere = Math.max(radius - poolSize.x / 2, Math.min(poolSize.x / 2 - radius, center.x));
         const y_sphere = Math.max(radius - poolSize.y, Math.min(10, center.y));
         const z_sphere = Math.max(radius - poolSize.z / 2, Math.min(poolSize.z / 2 - radius, center.z));
-        swimmerSphere.move(new GL.Vector(x_sphere, y_sphere, z_sphere));
+        swimmerSelected.body.move(new GL.Vector(x_sphere, y_sphere, z_sphere));
         prevHit = nextHit;
         if (paused) renderer.updateCaustics(water);
         break;
@@ -288,7 +286,7 @@ window.onload = function () {
 
   function stopDrag() {
     mode = -1;
-    swimmerSphere.cinematic = !useGravity;
+    if (swimmerSelected) swimmerSelected.body.cinematic = !Swimmer.useGravity;
   }
 
   function isHelpElement(element) {
@@ -343,15 +341,17 @@ window.onload = function () {
   document.onkeydown = function (e) {
     if (e.which == ' '.charCodeAt(0)) paused = !paused;
     else if (e.which == 'G'.charCodeAt(0)) {
-      swimmerSphere.cinematic = !swimmerSphere.cinematic;
-      useGravity = !useGravity;
+      for (let swimmer of swimmers) swimmer.body.cinematic = !swimmer.body.cinematic;
+      Swimmer.useGravity = !Swimmer.useGravity;
     }
     else if (e.which == 'L'.charCodeAt(0) && paused) draw();
     else if (e.which == 'J'.charCodeAt(0)) {
-      useGravity = true;
-      swimmerSphere.cinematic = false;
-      swimmerSphere.velocity = new GL.Vector(0, 0, 1.5);
-      swimmerSphere.center = new GL.Vector(0, 1, -poolSize.z / 2.);
+      Swimmer.useGravity = true;
+      for (let swimmer of swimmers) {
+        swimmer.body.cinematic = false;
+        swimmer.body.velocity = new GL.Vector(0, 0, 1.5);
+        swimmer.body.center = new GL.Vector(swimmer.startingPoint.x, 1, -poolSize.z / 2.);
+      }
     }
     else if (e.which == 'C'.charCodeAt(0)) {
       water.setAreaConservation(!water.areaConservationEnabled);
@@ -367,21 +367,20 @@ window.onload = function () {
       console.log("Area conserved grid " + (water.showAreaConservedGrid ? "enabled." : "disabled."));
     }
     else if (e.which == 'S'.charCodeAt(0)) {
-      swimming = !swimming;
-      if (swimming) {
-        swimmerSphere.cinematic = false;
-        useGravity = true;
-        swimmerSphere.center = new GL.Vector(-poolSize.y / 2. + radius + 0.1, 0, -poolSize.z / 2.);
+      Swimmer.swimming = !Swimmer.swimming;
+      for (let swimmer of swimmers) {
+        if (Swimmer.swimming) {
+
+          swimmer.body.cinematic = false;
+          Swimmer.useGravity = true;
+          swimmer.body.center = new GL.Vector(swimmer.startingPoint.x, 0, -poolSize.z / 2.);
+        }
+        else {
+          swimmer.body.velocity = new GL.Vector(0, 0, 0);
+          swimmer.body.center = new GL.Vector(swimmer.startingPoint.x, 0, 0);
+        }
       }
-      else {
-        leftArm.move(AWAY);
-        rightArm.move(AWAY);
-        leftFoot.move(AWAY);
-        rightFoot.move(AWAY);
-        swimmerSphere.velocity = new GL.Vector(0, 0, 0);
-        swimmerSphere.center = new GL.Vector(0, 0, 0);
-      }
-      console.log("Swimming " + (swimming ? "enabled." : "disabled."));
+      console.log("Swimming " + (Swimmer.swimming ? "enabled." : "disabled."));
     }
     else if (e.which == 'V'.charCodeAt(0)) {
       video.show = !video.show;
@@ -391,10 +390,19 @@ window.onload = function () {
       poolSize.y = 2;
       poolSize.z = 50;
       // resolution = new GL.Vector(2048, 4096);
-      resolution.x = 2048;
-      resolution.y = 4096;
+      resolution.x = 1024;
+      resolution.y = 2048;
       water.setAreaConservation(false);
       water.waveVelocity = 2.5;
+
+      if (swimmers.length != numSwimmers) {
+        for (let i = swimmers.length; i < numSwimmers; i++) {
+          const s = new Swimmer(center);
+          swimmers.push(s);
+          water.addSwimmer(s);
+        }
+      }
+
       reset();
       // reset();
       translateX = -17.005;
@@ -403,8 +411,6 @@ window.onload = function () {
       angleX = -18;
       angleY = -269.5;
       console.log("Olympic mode enabled.");
-      poolSize.y = 3;
-      reset();
     }
     else if (e.which == 'W'.charCodeAt(0)) {
       water.WR_position = 0;
@@ -450,26 +456,13 @@ window.onload = function () {
     if (dt > 1) return;
     frame += dt * 2;
 
-    if (swimming) {
-      swimmerSphere.addForce(new GL.Vector(0., 0., 150.5));
-      const offset1 = getArmOffset(time, 0);
-      const offset2 = getArmOffset(time, Math.PI);
-      const offset3 = getArmOffset(time * 2, 0);
-      const offset4 = getArmOffset(time * 2, Math.PI);
-      rightArm.move(swimmerSphere.center.add(offset1).add(new GL.Vector(.3, 0, 0)));
-      leftArm.move(swimmerSphere.center.add(offset2).add(new GL.Vector(-.3, 0, 0)));
-      rightFoot.move(swimmerSphere.center.add(new GL.Vector(.15, offset3.y * 0.5, -1)));
-      leftFoot.move(swimmerSphere.center.add(new GL.Vector(-.15, offset4.y * 0.5, -1)));
-    }
-
     if (mode == MODE_MOVE_SPHERE) {
       // Start from rest when the player releases the mouse after moving the sphere
-      swimmerSphere.velocity = new GL.Vector(0, 0, 0);
+      for (let swimmer of swimmers) swimmer.body.velocity = new GL.Vector(0, 0, 0);
     }
 
-    // Displace water around the sphere
-
     // Update the water simulation and graphics
+    for (let swimmer of swimmers) swimmer.update(dt, time, poolSize);
     water.updateSpheres(dt);
     for (let i = 0; i < params.numSteps; i++) {
       water.stepSimulation();
@@ -497,8 +490,8 @@ window.onload = function () {
     gl.translate(0, 0.5, 0);
 
     gl.enable(gl.DEPTH_TEST);
-    renderer.sphereCenter = swimmerSphere.center;
-    renderer.sphereRadius = swimmerSphere.radius;
+    renderer.sphereCenter = swimmers[0].body.center;
+    renderer.sphereRadius = radius;
     renderer.renderCube(water);
     renderer.renderWater(water, cubemap);
     renderer.renderSpheres(water);
