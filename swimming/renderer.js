@@ -144,6 +144,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
       uniform vec3 eye;\
       varying vec3 position;\
       uniform samplerCube sky;\
+      uniform float wr;\
       uniform bool showProjectionGrid;\
       uniform bool showAreaConservedGrid;\
       \
@@ -174,6 +175,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
           vec2 position = origin.xz;\
           vec2 flagCorner = flagCenter - flagSize / 2.;\
           if (showProjectionGrid && isOnConservedAreaGrid(position, 0.1)) color = vec3(1., 1., 0.); /* Debug conserved area grid */\
+          if (abs(origin.z + poolSize.z / 2. - wr) < .05) color = vec3(1., 1., 0.); \
           if (areaConservation) {\
             vec2 coord = origin.xz / poolSize.xz + 0.5;\
             position = texture2D(areaConservationTexture, coord).xy;\
@@ -200,10 +202,10 @@ function Renderer(gl, water, flagCenter, flagSize) {
         vec4 info = texture2D(water, coord);\
         \
         /* make water look more "peaked" */\
-        for (int i = 0; i < 5; i++) {\
+        /*for (int i = 0; i < 5; i++) {\
           coord += info.ba * 0.005;\
           info = texture2D(water, coord);\
-        }\
+        }*/\
         \
         vec3 normal = vec3(info.b, sqrt(1.0 - dot(info.ba, info.ba)), info.a);\
         vec3 incomingRay = normalize(position - eye);\
@@ -382,7 +384,8 @@ Renderer.prototype.renderWater = function (water, sky) {
       sphereCenter: this.sphereCenter,
       sphereRadius: this.sphereRadius,
       showProjectionGrid: water.showProjectionGrid,
-      showAreaConservedGrid: water.showAreaConservedGrid
+      showAreaConservedGrid: water.showAreaConservedGrid,
+      wr: water.WR_position
     }).draw(water.plane);
   }
   this.gl.disable(this.gl.CULL_FACE);

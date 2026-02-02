@@ -60,18 +60,18 @@ var flagSize;
 var poolSize = new GL.Vector(2.0, 1.0, 2.0);
 let resolution = new GL.Vector(256, 256);
 const gui = new GUI();
+function updateResolutionWarning() {
+  document.getElementById('warning').hidden = !(resolution.x * resolution.y > 300000 && (water && water.areaConservationEnabled));
+}
 function reset() {
   console.log("reset");
   document.getElementById('resolution').innerText = `Resolution: ${resolution.x} x ${resolution.y}`;
-  document.getElementById('warning').hidden = !(resolution.x * resolution.y > 300000 && (water && water.areaConservationEnabled));
-  //water = new Water(gl, poolSize);
+  updateResolutionWarning();
   flagCenter = new GL.Vector(0., -poolSize.z / 2. + 1.);
-  // water = new Water(gl, poolSize, resolution);
   water.reset(poolSize, resolution);
   renderer.flagCenter = flagCenter;
   renderer.flagSize = flagSize;
   renderer.reset();
-  // renderer = new Renderer(gl, water, flagCenter, flagSize);
 }
 
 
@@ -143,7 +143,7 @@ window.onload = function () {
   folder.add(poolSize, 'z', 1, 50).name('pool height').onChange(function (value) { reset(); }).listen();
   folder.add(poolSize, 'y', 1, 3).name('pool depth').onChange(function (value) { reset(); }).listen();
   folder.add(water, 'waveVelocity', 0, 5).name('wave velocity').onChange(reset).listen();
-  folder.add(water, 'areaConservationEnabled', 'areaConservationEnabled').name('area conservation').listen().onChange(reset);
+  folder.add(water, 'areaConservationEnabled', 'areaConservationEnabled').name('area conservation').listen();
   renderer = new Renderer(gl, water, flagCenter, flagSize);
   cubemap = new Cubemap({
     xneg: document.getElementById('xneg'),
@@ -162,15 +162,23 @@ window.onload = function () {
 
   const center = new GL.Vector(-0.4, -0.75, 0.2);
   const radius = 0.25;
-  swimmerSphere = new Sphere(center, radius);
+  const f = 1;
+  swimmerSphere = new Sphere(center, radius * f);
   swimmerSphere.cinematic = !useGravity;
   water.addSphere(swimmerSphere);
-  const leftArm = new Sphere(AWAY, armRadius);
-  const rightArm = new Sphere(AWAY, armRadius);
+  const leftArm = new Sphere(AWAY, armRadius * f);
+  const rightArm = new Sphere(AWAY, armRadius * f);
+  const leftFoot = new Sphere(AWAY, armRadius * f);
+  const rightFoot = new Sphere(AWAY, armRadius * f);
   leftArm.cinematic = true;
   rightArm.cinematic = true;
+  leftFoot.cinematic = true;
+  rightFoot.cinematic = true;
+
   water.addSphere(leftArm);
   water.addSphere(rightArm);
+  water.addSphere(leftFoot);
+  water.addSphere(rightFoot);
 
   for (var i = 0; i < 20; i++) {
     water.addDrop(Math.random() * 2 - 1, Math.random() * 2 - 1, 0.03, (i & 1) ? 0.01 : -0.01);
@@ -346,6 +354,7 @@ window.onload = function () {
     }
     else if (e.which == 'C'.charCodeAt(0)) {
       water.setAreaConservation(!water.areaConservationEnabled);
+      updateResolutionWarning();
       console.log("Area conservation " + (water.areaConservationEnabled ? "enabled." : "disabled."));
     }
     else if (e.which == 'P'.charCodeAt(0)) {
@@ -366,6 +375,8 @@ window.onload = function () {
       else {
         leftArm.move(AWAY);
         rightArm.move(AWAY);
+        leftFoot.move(AWAY);
+        rightFoot.move(AWAY);
         swimmerSphere.velocity = new GL.Vector(0, 0, 0);
         swimmerSphere.center = new GL.Vector(0, 0, 0);
       }
@@ -378,17 +389,24 @@ window.onload = function () {
       poolSize.x = 25;
       poolSize.y = 2;
       poolSize.z = 50;
-      resolution = new GL.Vector(2048, 4096);
+      // resolution = new GL.Vector(2048, 4096);
+      resolution.x = 2048;
+      resolution.y = 4096;
       water.setAreaConservation(false);
       water.waveVelocity = 2.5;
       reset();
-      reset();
+      // reset();
       translateX = -17.005;
       translateY = -0.79;
       zoomDistance = 29.91;
       angleX = -18;
       angleY = -269.5;
       console.log("Olympic mode enabled.");
+      poolSize.y = 3;
+      reset();
+    }
+    else if (e.which == 'W'.charCodeAt(0)) {
+      water.WR_position = 0;
     }
     else if (e.which == 40) { // down
       if (resolution.x > 129)
@@ -399,7 +417,6 @@ window.onload = function () {
     else if (e.which == 38) { // up
       if (resolution.x < 16384)
         resolution.x = Math.round(resolution.x * 2);
-      reset();
       reset();
       console.log("increasing x resolution");
     }
@@ -430,8 +447,14 @@ window.onload = function () {
 
     if (swimming) {
       swimmerSphere.addForce(new GL.Vector(0., 0., 150.5));
-      rightArm.move(swimmerSphere.center.add(getArmOffset(time, 0)).add(new GL.Vector(.3, 0, 0)));
-      leftArm.move(swimmerSphere.center.add(getArmOffset(time, Math.PI)).add(new GL.Vector(-.3, 0, 0)));
+      const offset1 = getArmOffset(time, 0);
+      const offset2 = getArmOffset(time, Math.PI);
+      const offset3 = getArmOffset(time * 2, 0);
+      const offset4 = getArmOffset(time * 2, Math.PI);
+      rightArm.move(swimmerSphere.center.add(offset1).add(new GL.Vector(.3, 0, 0)));
+      leftArm.move(swimmerSphere.center.add(offset2).add(new GL.Vector(-.3, 0, 0)));
+      rightFoot.move(swimmerSphere.center.add(new GL.Vector(.15, offset3.y * 0.5, -1)));
+      leftFoot.move(swimmerSphere.center.add(new GL.Vector(-.15, offset4.y * 0.5, -1)));
     }
 
     if (mode == MODE_MOVE_SPHERE) {
@@ -440,11 +463,13 @@ window.onload = function () {
     }
 
     // Displace water around the sphere
-    water.updateSpheres(dt);
 
     // Update the water simulation and graphics
-    water.stepSimulation();
-    water.stepSimulation();
+    water.updateSpheres(dt);
+    for (let i = 0; i < 1; i++) {
+      water.stepSimulation();
+      water.stepSimulation();
+    }
     water.updateNormals();
     renderer.updateCaustics(water);
 

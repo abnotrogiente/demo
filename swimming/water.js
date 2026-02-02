@@ -14,6 +14,7 @@ function Water(gl, poolSize, resolution = null) {
   this.gl = gl;
   this.areaConservationEnabled = true;
   this.waveVelocity = 1;
+  this.sqrt_2_PI = Math.sqrt(2 * Math.PI);
   /**@type {Sphere[]} */
   this.spheres = [];
   var vertexShader = '\
@@ -48,36 +49,51 @@ function Water(gl, poolSize, resolution = null) {
       gl_FragColor = info;\
     }\
   ');
-  this.updateShader = new GL.Shader(vertexShader, '\
-    uniform sampler2D texture;\
-    uniform vec2 delta;\
-    varying vec2 coord;\
-    void main() {\
-      /* get vertex info */\
-      vec4 info = texture2D(texture, coord);\
-      \
-      /* calculate average neighbor height */\
-      vec2 dx = vec2(delta.x, 0.0);\
-      vec2 dy = vec2(0.0, delta.y);\
-      float average = (\
-        texture2D(texture, coord - dx).r +\
-        texture2D(texture, coord - dy).r +\
-        texture2D(texture, coord + dx).r +\
-        texture2D(texture, coord + dy).r\
-      ) * 0.25;\
-      \
-      /* change the velocity to move toward the average */\
-      info.g += (average - info.r) * 2.0;\
-      \
-      /* attenuate the velocity a little so waves do not last forever */\
-      info.g *= 0.995;\
-      \
-      /* move the vertex along the velocity */\
-      info.r += info.g;\
-      \
-      gl_FragColor = info;\
-    }\
-  ');
+  this.updateShader = new GL.Shader(vertexShader, `
+    uniform sampler2D texture;
+    uniform vec2 delta;
+    uniform float wr;
+    uniform float prev_wr;
+    uniform float sqrt_2_PI;
+    uniform vec3 poolSize;
+    varying vec2 coord;
+    float gaussian(float x, float mean, float std) {
+      return exp(-(x - mean) * (x - mean) / (2.*std*std)) / (std * sqrt_2_PI);
+    }
+    void main() {
+      /* get vertex info */
+      vec4 info = texture2D(texture, coord);
+      
+      /* calculate average neighbor height */
+      vec2 dx = vec2(delta.x, 0.0);
+      vec2 dy = vec2(0.0, delta.y);
+      float average = (
+        texture2D(texture, coord - dx).r +
+        texture2D(texture, coord - dy).r +
+        texture2D(texture, coord + dx).r +
+        texture2D(texture, coord + dy).r
+      ) * 0.25;
+      
+      /* change the velocity to move toward the average */
+      info.g += (average - info.r) * 2.0;
+      
+      /* attenuate the velocity a little so waves do not last forever */
+      info.g *= 0.995;/*TODO parametriser ça*/
+      
+      /* move the vertex along the velocity */
+      info.r += info.g;
+      
+      float z = poolSize.z * coord.y;
+      if (true || abs(z - wr) < 1.){ 
+        info.r += .05 * gaussian(z, wr, .4);
+        info.r -= .05 * gaussian(z, prev_wr, .4);
+        
+        
+      }
+  
+  gl_FragColor = info; 
+} 
+`);
   this.normalShader = new GL.Shader(vertexShader, '\
     uniform sampler2D texture;\
     uniform vec2 delta;\
@@ -128,9 +144,12 @@ function Water(gl, poolSize, resolution = null) {
 }
 
 Water.prototype.reset = function (poolSize, resolution = null) {
+  this.WR_position = 100000;
+  this.prev_WR_position = 0;
   if (resolution !== null) {
-    this.W = resolution.x;
-    this.H = resolution.y;
+    console.log("resolution.y : " + resolution.y);
+    this.W = Math.round(resolution.x);
+    this.H = Math.round(resolution.y);
     console.log("Using custom resolution:", this.W, this.H);
   } else {
     this.W = 256;
@@ -139,6 +158,12 @@ Water.prototype.reset = function (poolSize, resolution = null) {
   this.plane = GL.Mesh.plane({ detail: 255, width: poolSize.x, height: poolSize.z });
   const waveVelocity = 5.0; // original value: 2.0
   this.delta = new GL.Vector(2 * this.waveVelocity / (256 * poolSize.x), (2 * this.waveVelocity / (256 * poolSize.z)));
+  this.delta = new GL.Vector(1 / this.W, 1 / this.H);
+  // this.delta = this.delta.multiply(1 / 25);
+  /**@type {WebGLRenderingContext} */
+  const g = this.gl;
+  if (this.textureA) g.deleteTexture(this.textureA.id);
+  if (this.textureB) g.deleteTexture(this.textureB.id);
   this.textureA = new GL.Texture(this.W, this.H, { type: this.gl.FLOAT, filter: filter });
   this.textureB = new GL.Texture(this.W, this.H, { type: this.gl.FLOAT, filter: filter });
   this.areaConservationTexture = new GL.Texture(this.W, this.H, { type: this.gl.FLOAT, filter: filter });
@@ -148,9 +173,10 @@ Water.prototype.reset = function (poolSize, resolution = null) {
   this.poolSize = poolSize;
   var filter = GL.Texture.canUseFloatingPointLinearFiltering() ? this.gl.LINEAR : this.gl.NEAREST;
   if ((!this.textureA.canDrawTo() || !this.textureB.canDrawTo()) && GL.Texture.canUseHalfFloatingPointTextures()) {
+    console.log("No draw");
     filter = GL.Texture.canUseHalfFloatingPointLinearFiltering() ? this.gl.LINEAR : this.gl.NEAREST;
-    this.textureA = new GL.Texture(this.W, this.H, { type: this.gl.HALF_FLOAT_OES, filter: filter });
-    this.textureB = new GL.Texture(this.W, this.H, { type: this.gl.HALF_FLOAT_OES, filter: filter });
+    this.textureA = new GL.Texture(this.W, this.H, { type: this.gl.FLOAT, filter: filter });
+    this.textureB = new GL.Texture(this.W, this.H, { type: this.gl.FLOAT, filter: filter });
   }
 };
 
@@ -172,6 +198,9 @@ Water.prototype.addSphere = function (sphere) {
 };
 
 Water.prototype.updateSpheres = function (dt) {
+  const speed = 2.5;
+  this.prev_WR_position = this.WR_position;
+  this.WR_position += dt * speed;
   for (let i = 0; i < this.spheres.length; i++) {
     const sphere = this.spheres[i];
     sphere.update(dt, this.poolSize);
@@ -195,11 +224,15 @@ Water.prototype.moveSphere = function (oldCenter, newCenter, radius) {
 
 Water.prototype.stepSimulation = function () {
   var this_ = this;
+
   this.textureB.drawTo(function () {
     this_.textureA.bind();
     this_.updateShader.uniforms({
-      delta: [this_.delta.x, this_.delta.y]
-      // delta: [Math.max(this_.poolSize.x, this_.poolSize.z) / this_.poolSize.x / Math.max(this_.textureA.width, this_.textureA.height), Math.max(this_.poolSize.x, this_.poolSize.z) / this_.poolSize.z / Math.max(this_.textureA.width, this_.textureA.height)] // WARNING only works if poolSize.z is bigger th
+      delta: [this_.delta.x, this_.delta.y],
+      wr: this_.WR_position,
+      prev_wr: this_.prev_WR_position,
+      poolSize: [this_.poolSize.x, this_.poolSize.y, this_.poolSize.z],
+      sqrt_2_PI: this_.sqrt_2_PI
     }).draw(this_.plane);
   });
   this.textureB.swapWith(this.textureA);
