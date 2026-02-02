@@ -13,7 +13,6 @@ import { Sphere } from './sphere.js';
 function Water(gl, poolSize, resolution = null) {
   this.gl = gl;
   this.areaConservationEnabled = true;
-  this.waveVelocity = 1;
   this.sqrt_2_PI = Math.sqrt(2 * Math.PI);
   /**@type {Sphere[]} */
   this.spheres = [];
@@ -156,10 +155,7 @@ Water.prototype.reset = function (poolSize, resolution = null) {
     this.H = 256;
   }
   this.plane = GL.Mesh.plane({ detail: 255, width: poolSize.x, height: poolSize.z });
-  const waveVelocity = 5.0; // original value: 2.0
-  this.delta = new GL.Vector(2 * this.waveVelocity / (256 * poolSize.x), (2 * this.waveVelocity / (256 * poolSize.z)));
   this.delta = new GL.Vector(1 / this.W, 1 / this.H);
-  // this.delta = this.delta.multiply(1 / 25);
   /**@type {WebGLRenderingContext} */
   const g = this.gl;
   if (this.textureA) g.deleteTexture(this.textureA.id);

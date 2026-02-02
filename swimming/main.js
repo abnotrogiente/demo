@@ -142,7 +142,6 @@ window.onload = function () {
   folder.add(poolSize, 'x', 1, 25).name('pool width').onChange(function (value) { reset(); }).listen();
   folder.add(poolSize, 'z', 1, 50).name('pool height').onChange(function (value) { reset(); }).listen();
   folder.add(poolSize, 'y', 1, 3).name('pool depth').onChange(function (value) { reset(); }).listen();
-  folder.add(water, 'waveVelocity', 0, 5).name('wave velocity').onChange(reset).listen();
   folder.add(water, 'areaConservationEnabled', 'areaConservationEnabled').name('area conservation').listen();
   renderer = new Renderer(gl, water, flagCenter, flagSize);
   cubemap = new Cubemap({
