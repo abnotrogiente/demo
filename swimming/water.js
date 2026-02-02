@@ -33,6 +33,7 @@ function Water(gl, poolSize, resolution = null) {
     const float PI = 3.141592653589793;\
     uniform sampler2D texture;\
     uniform vec2 center;\
+    uniform vec3 poolSize;\
     uniform float radius;\
     uniform float strength;\
     varying vec2 coord;\
@@ -41,7 +42,7 @@ function Water(gl, poolSize, resolution = null) {
       vec4 info = texture2D(texture, coord);\
       \
       /* add the drop to the height */\
-      float drop = max(0.0, 1.0 - length(center * 0.5 + 0.5 - coord) / radius);\
+      float drop = max(0.0, 1.0 - length(center * 0.5 + 0.5 - coord) / (radius / poolSize.z));\
       drop = 0.5 - cos(drop * PI) * 0.5;\
       info.r += drop * strength;\
       \
@@ -183,7 +184,8 @@ Water.prototype.addDrop = function (x, y, radius, strength) {
     this_.dropShader.uniforms({
       center: [x, y],
       radius: radius,
-      strength: strength
+      strength: strength,
+      poolSize: [this_.poolSize.x, this_.poolSize.y, this_.poolSize.z]
     }).draw(this_.plane);
   });
   this.textureB.swapWith(this.textureA);
