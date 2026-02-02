@@ -59,6 +59,7 @@ var flagCenter;
 var flagSize;
 var poolSize = new GL.Vector(2.0, 1.0, 2.0);
 let resolution = new GL.Vector(256, 256);
+let params = { numSteps: 2 };
 const gui = new GUI();
 function updateResolutionWarning() {
   document.getElementById('warning').hidden = !(resolution.x * resolution.y > 300000 && (water && water.areaConservationEnabled));
@@ -143,6 +144,7 @@ window.onload = function () {
   folder.add(poolSize, 'z', 1, 50).name('pool height').onChange(function (value) { reset(); }).listen();
   folder.add(poolSize, 'y', 1, 3).name('pool depth').onChange(function (value) { reset(); }).listen();
   folder.add(water, 'areaConservationEnabled', 'areaConservationEnabled').name('area conservation').listen();
+  // folder.add(params, 'numSteps', 1, 10).step(1).name("number of simulation steps");
   renderer = new Renderer(gl, water, flagCenter, flagSize);
   cubemap = new Cubemap({
     xneg: document.getElementById('xneg'),
@@ -469,8 +471,7 @@ window.onload = function () {
 
     // Update the water simulation and graphics
     water.updateSpheres(dt);
-    for (let i = 0; i < 1; i++) {
-      water.stepSimulation();
+    for (let i = 0; i < params.numSteps; i++) {
       water.stepSimulation();
     }
     water.updateNormals();
