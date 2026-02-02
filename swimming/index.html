@@ -85,7 +85,7 @@ Released under the MIT license
       margin-top: -8px;
     }
 
-    #overlay-text {
+    .overlay-text {
       position: absolute;
       top: 10px;
       left: 10px;
@@ -93,6 +93,10 @@ Released under the MIT license
       font-size: 10px;
       z-index: 2;
       pointer-events: none;
+    }
+
+    #h {
+      font-size: 30px;
     }
 
     #warning {
@@ -128,7 +132,7 @@ Released under the MIT license
   </style>
 
 
-<script type="module" crossorigin src="/demo/assets/swimming-BLaO49FX.js"></script>
+<script type="module" crossorigin src="/demo/assets/swimming-DQpfkzsl.js"></script>
 <link rel="modulepreload" crossorigin href="/demo/assets/modulepreload-polyfill-B5Qt9EMX.js">
 <link rel="modulepreload" crossorigin href="/demo/assets/lil-gui.module.min-Vka56b52.js">
 
@@ -139,7 +143,8 @@ Released under the MIT license
     style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 999; border: 5px dashed white; align-items: center; justify-content: center; font-size: 32px; color: white; pointer-events: none;">
     Drop MP4 file here
   </div>
-  <div id="overlay-text">Press 'C' to enable or disable area conservation. <br /> <br />
+  <div id="h" class="overlay-text">Press H to toggle help menu.</div>
+  <div id="commands" class="overlay-text" hidden="true">Press 'C' to enable or disable area conservation. <br /> <br />
     Press 'J' to simulate a jump.<br /> <br />
     Press 'S' to simulate swimming.<br /> <br />
     Press 'P' to toggle projection grid display.<br /> <br />
