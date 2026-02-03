@@ -14,7 +14,6 @@ class Video {
         this.gl = gl
         this.copyVideo = false;
         this.show = false;
-        this.deltaTime = 0;
         // Only continue if WebGL is available and working
         if (gl === null) {
             alert(
@@ -65,16 +64,10 @@ class Video {
         // Flip image pixels into the bottom-to-top order that WebGL expects.
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
-        this.then = 0;
     }
 
-    render(now) {
+    render() {
         if (!this.show) return;
-        now *= 0.001; // convert to seconds
-        console.log("rendering : " + this.copyVideo);
-        this.deltaTime = now - this.then;
-        this.then = now;
-
         if (this.copyVideo) {
             this.updateTexture();
         }
@@ -96,61 +89,6 @@ class Video {
 
     }
 
-    //
-    // Initialize a shader program, so WebGL knows how to draw our data
-    //
-    initShaderProgram(vsSource, fsSource) {
-        const vertexShader = this.loadShader(this.gl.VERTEX_SHADER, vsSource);
-        const fragmentShader = this.loadShader(this.gl.FRAGMENT_SHADER, fsSource);
-
-        // Create the shader program
-
-        const shaderProgram = this.gl.createProgram();
-        this.gl.attachShader(shaderProgram, vertexShader);
-        this.gl.attachShader(shaderProgram, fragmentShader);
-        this.gl.linkProgram(shaderProgram);
-
-        // If creating the shader program failed, alert
-
-        if (!this.gl.getProgramParameter(shaderProgram, this.gl.LINK_STATUS)) {
-            alert(
-                `Unable to initialize the shader program: ${this.gl.getProgramInfoLog(
-                    shaderProgram
-                )}`
-            );
-            return null;
-        }
-
-        return shaderProgram;
-    }
-
-    //
-    // creates a shader of the given type, uploads the source and
-    // compiles it.
-    //
-    loadShader(type, source) {
-        const shader = this.gl.createShader(type);
-
-        // Send the source to the shader object
-
-        this.gl.shaderSource(shader, source);
-
-        // Compile the shader program
-
-        this.gl.compileShader(shader);
-
-        // See if it compiled successfully
-
-        if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
-            alert(
-                `An error occurred compiling the shaders: ${this.gl.getShaderInfoLog(shader)}`
-            );
-            this.gl.deleteShader(shader);
-            return null;
-        }
-
-        return shader;
-    }
 
     initTexture() {
         const texture = this.gl.createTexture();

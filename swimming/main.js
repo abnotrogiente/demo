@@ -49,8 +49,9 @@ var angleZ = 0;
 let translateX = 0;
 let translateY = 0;
 var zoomDistance = 4.0;
-// Sphere physics info
-let swimming = false;
+
+const videoStartTime = 17;
+let videoTime = 0;
 var paused = false;
 var flagCenter;
 var flagSize;
@@ -352,6 +353,32 @@ window.onload = function () {
     }
   };
 
+  function startSwimming() {
+    Swimmer.swimming = true;
+    for (let swimmer of swimmers) {
+      swimmer.body.cinematic = false;
+      Swimmer.useGravity = true;
+      swimmer.body.center = new GL.Vector(swimmer.startingPoint.x, 0, -poolSize.z / 2.);
+    }
+  }
+
+  function stopSwimming() {
+    Swimmer.swimming = false;
+    for (let swimmer of swimmers) {
+      swimmer.body.velocity = new GL.Vector(0, 0, 0);
+      swimmer.body.center = new GL.Vector(swimmer.startingPoint.x, 0, 0);
+    }
+  }
+
+  function jump() {
+    Swimmer.useGravity = true;
+    for (let swimmer of swimmers) {
+      swimmer.body.cinematic = false;
+      swimmer.body.velocity = new GL.Vector(0, 0, 4.5);
+      swimmer.body.center = new GL.Vector(swimmer.startingPoint.x, 1, -poolSize.z / 2.);
+    }
+  }
+
   document.onkeydown = function (e) {
     if (e.which == ' '.charCodeAt(0)) paused = !paused;
     else if (e.which == 'G'.charCodeAt(0)) {
@@ -360,12 +387,7 @@ window.onload = function () {
     }
     else if (e.which == 'L'.charCodeAt(0) && paused) draw();
     else if (e.which == 'J'.charCodeAt(0)) {
-      Swimmer.useGravity = true;
-      for (let swimmer of swimmers) {
-        swimmer.body.cinematic = false;
-        swimmer.body.velocity = new GL.Vector(0, 0, 1.5);
-        swimmer.body.center = new GL.Vector(swimmer.startingPoint.x, 1, -poolSize.z / 2.);
-      }
+      jump();
     }
     else if (e.which == 'C'.charCodeAt(0)) {
       water.setAreaConservation(!water.areaConservationEnabled);
@@ -381,18 +403,11 @@ window.onload = function () {
       console.log("Area conserved grid " + (water.showAreaConservedGrid ? "enabled." : "disabled."));
     }
     else if (e.which == 'S'.charCodeAt(0)) {
-      Swimmer.swimming = !Swimmer.swimming;
-      for (let swimmer of swimmers) {
-        if (Swimmer.swimming) {
-
-          swimmer.body.cinematic = false;
-          Swimmer.useGravity = true;
-          swimmer.body.center = new GL.Vector(swimmer.startingPoint.x, 0, -poolSize.z / 2.);
-        }
-        else {
-          swimmer.body.velocity = new GL.Vector(0, 0, 0);
-          swimmer.body.center = new GL.Vector(swimmer.startingPoint.x, 0, 0);
-        }
+      if (!Swimmer.swimming) {
+        startSwimming();
+      }
+      else {
+        stopSwimming();
       }
       console.log("Swimming " + (Swimmer.swimming ? "enabled." : "disabled."));
     }
@@ -434,6 +449,9 @@ window.onload = function () {
     }
     else if (e.which == 'W'.charCodeAt(0)) {
       water.WR_position = 0;
+      videoTime = videoStartTime;
+      startSwimming();
+      jump();
     }
     else if (e.which == 'H'.charCodeAt(0)) {
       document.getElementById("commands").hidden = !document.getElementById("commands").hidden;
@@ -489,7 +507,7 @@ window.onload = function () {
     }
     water.updateNormals();
     renderer.updateCaustics(water);
-
+    videoTime += dt;
   }
 
   function draw(time) {
@@ -516,7 +534,8 @@ window.onload = function () {
     renderer.renderCube(water);
     renderer.renderWater(water, cubemap);
     renderer.renderSpheres(water);
-    video.render(time);
+    if (video.copyVideo) video.video.currentTime = videoTime;
+    video.render(videoTime);
     gl.disable(gl.DEPTH_TEST);
   }
 };

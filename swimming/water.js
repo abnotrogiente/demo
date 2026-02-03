@@ -205,7 +205,7 @@ Water.prototype.addSphere = function (sphere) {
 };
 
 Water.prototype.updateSpheres = function (dt) {
-  const speed = 2.1;
+  const speed = 2.4;
   this.prev_WR_position = this.WR_position;
   this.WR_position += dt * speed;
   for (let i = 0; i < this.spheres.length; i++) {

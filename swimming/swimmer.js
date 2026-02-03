@@ -21,7 +21,7 @@ class Swimmer {
     constructor(center) {
         this.startingPoint = new GL.Vector(center.x, center.y, center.z);
         this.center = new GL.Vector(center.x, center.y, center.z);
-        this.force = new GL.Vector(0, 0, 155 + gaussianRandom(0, 20));
+        this.force = new GL.Vector(0, 0, 190 + gaussianRandom(0, 20));
 
         const radius = .25;
         const armRadius = .15;
