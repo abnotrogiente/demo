@@ -149,7 +149,9 @@ window.onload = function () {
   folder.add(poolSize, 'x', 1, 25).name('pool width').onChange(function (value) { reset(); }).listen();
   folder.add(poolSize, 'z', 1, 50).name('pool height').onChange(function (value) { reset(); }).listen();
   folder.add(poolSize, 'y', 1, 3).name('pool depth').onChange(function (value) { reset(); }).listen();
+  folder.add(water, 'damping', 0.005, 0.1).name('water damping').listen();
   folder.add(water, 'areaConservationEnabled', 'areaConservationEnabled').name('area conservation').listen();
+  folder.add(Swimmer, "showFlags").name('show flags').listen();
   folder.add(params, 'focal', 28, 45).name('focal').listen().onChange(function (value) {
     gl.matrixMode(gl.PROJECTION);
     gl.loadIdentity();
@@ -532,10 +534,10 @@ window.onload = function () {
     renderer.sphereCenter = swimmers[0].body.center;
     renderer.sphereRadius = radius;
     renderer.renderCube(water);
-    renderer.renderWater(water, cubemap);
+    renderer.renderWater(water, cubemap, swimmers);
     renderer.renderSpheres(water);
     if (video.copyVideo) video.video.currentTime = videoTime;
-    video.render(videoTime);
+    video.render();
     gl.disable(gl.DEPTH_TEST);
   }
 };

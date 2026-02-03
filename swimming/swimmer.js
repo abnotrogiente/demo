@@ -18,6 +18,7 @@ const armPulsation = 2 * Math.PI * armFrequency;
 class Swimmer {
     static useGravity = false;
     static swimming = false;
+    static showFlags = false;
     constructor(center) {
         this.startingPoint = new GL.Vector(center.x, center.y, center.z);
         this.center = new GL.Vector(center.x, center.y, center.z);

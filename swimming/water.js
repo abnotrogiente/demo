@@ -13,6 +13,7 @@ import { Swimmer } from './swimmer.js';
 // The data in the texture is (position.y, velocity.y, normal.x, normal.z)
 function Water(gl, poolSize, resolution = null) {
   this.gl = gl;
+  this.damping = 0.02;
   this.areaConservationEnabled = true;
   this.sqrt_2_PI = Math.sqrt(2 * Math.PI);
   /**@type {Sphere[]} */
@@ -55,6 +56,7 @@ function Water(gl, poolSize, resolution = null) {
     uniform vec2 delta;
     uniform float wr;
     uniform float prev_wr;
+    uniform float damping;
     uniform float sqrt_2_PI;
     uniform vec3 poolSize;
     varying vec2 coord;
@@ -79,7 +81,7 @@ function Water(gl, poolSize, resolution = null) {
       info.g += (average - info.r) * 2.0;
       
       /* attenuate the velocity a little so waves do not last forever */
-      info.g *= 0.98;/*TODO parametriser ça*/
+      info.g *= 1. - damping;/*TODO parametriser ça*/
       
       /* move the vertex along the velocity */
       info.r += info.g;
@@ -238,7 +240,8 @@ Water.prototype.stepSimulation = function () {
       wr: this_.WR_position,
       prev_wr: this_.prev_WR_position,
       poolSize: [this_.poolSize.x, this_.poolSize.y, this_.poolSize.z],
-      sqrt_2_PI: this_.sqrt_2_PI
+      sqrt_2_PI: this_.sqrt_2_PI,
+      damping: this_.damping
     }).draw(this_.plane);
   });
   this.textureB.swapWith(this.textureA);

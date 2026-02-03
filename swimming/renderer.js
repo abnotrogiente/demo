@@ -7,6 +7,7 @@
  */
 
 import GL from './lightgl.js';
+import { Swimmer } from './swimmer.js';
 
 var helperFunctions = '\
   const float IOR_AIR = 1.0;\
@@ -143,6 +144,9 @@ function Renderer(gl, water, flagCenter, flagSize) {
     ', helperFunctions + '\
       uniform vec3 eye;\
       varying vec3 position;\
+      uniform float swimmersPositions[16];\
+      uniform float swimmersNumber;\
+      uniform bool showFlags;\
       uniform samplerCube sky;\
       uniform float wr;\
       uniform bool showProjectionGrid;\
@@ -173,25 +177,28 @@ function Renderer(gl, water, flagCenter, flagSize) {
         if (ray.y < 0.0) {\
           color *= waterColor;\
           vec2 position = origin.xz;\
-          vec2 flagCorner = flagCenter - flagSize / 2.;\
-          if (showProjectionGrid && isOnConservedAreaGrid(position, 0.1)) color = vec3(1., 1., 0.); /* Debug conserved area grid */\
-          if (abs(origin.z + poolSize.z / 2. - wr) < .05) color = vec3(1., 1., 0.); \
-          if (areaConservation) {\
-            vec2 coord = origin.xz / poolSize.xz + 0.5;\
-            position = texture2D(areaConservationTexture, coord).xy;\
-            flagCorner = texture2D(areaConservationTexture, flagCorner / poolSize.xz + 0.5).xy;\
-          }\
-          if (showAreaConservedGrid && isOnConservedAreaGrid(position, 0.1)) color = vec3(1., 0., 0.); /* Debug conserved area grid */\
-          float xFlag = position.x - flagCenter.x;\
-          float yFlag = position.y - flagCenter.y;\
-          vec2 posFlag = position - flagCenter;\
-          posFlag = position - flagCorner - flagSize / 2.;/*Fixes the corner of the flag on the XZ plane*/\
-          if (abs(posFlag.x) <= flagSize / 2. && abs(posFlag.y) <= flagSize / 2.) {\
-            vec2 flagCoord = posFlag / flagSize + 0.5;\
-            vec3 flagColor = texture2D(flag, flagCoord).xyz;\
-            flagColor = flagCoord.x <= .33 ? vec3(1., 0., 0.) : flagCoord.x >= .66 ? vec3(0., 0., 1.) : vec3(1., 1., 1.);\
-            color += flagColor;\
-            color /= 2.;\
+          if (!showFlags) return color;\
+          for (int i = 0; i < 8; i++) {\
+            float i_float = float(i);\
+            if (i_float > swimmersNumber - 0.1) break;\
+            vec2 flagCenterNew = vec2(swimmersPositions[2*i], swimmersPositions[2*i+1] - 2.5);\
+            vec2 flagCorner = flagCenterNew - flagSize / 2.;\
+            if (showProjectionGrid && isOnConservedAreaGrid(position, 0.1)) color = vec3(1., 1., 0.); /* Debug conserved area grid */\
+            if (abs(origin.z + poolSize.z / 2. - wr) < .05) color = vec3(1., 1., 0.); \
+            if (areaConservation) {\
+              vec2 coord = origin.xz / poolSize.xz + 0.5;\
+              position = texture2D(areaConservationTexture, coord).xy;\
+              flagCorner = texture2D(areaConservationTexture, flagCorner / poolSize.xz + 0.5).xy;\
+            }\
+            if (showAreaConservedGrid && isOnConservedAreaGrid(position, 0.1)) color = vec3(1., 0., 0.); /* Debug conserved area grid */\
+            vec2 posFlag = position - flagCorner - flagSize / 2.;/*Fixes the corner of the flag on the XZ plane*/\
+            if (abs(posFlag.x) <= flagSize / 2. && abs(posFlag.y) <= flagSize / 2.) {\
+              vec2 flagCoord = posFlag / flagSize + 0.5;\
+              vec3 flagColor = texture2D(flag, flagCoord).xyz;\
+              flagColor = flagCoord.x <= .33 ? vec3(1., 0., 0.) : flagCoord.x >= .66 ? vec3(0., 0., 1.) : vec3(1., 1., 1.);\
+              color += flagColor;\
+              color /= 2.;\
+            }\
           }\
         }\
         return color;\
@@ -356,7 +363,13 @@ Renderer.prototype.updateCaustics = function (water) {
   });
 };
 
-Renderer.prototype.renderWater = function (water, sky) {
+/**
+ * 
+ * @param {Water} water 
+ * @param {*} sky 
+ * @param {Swimmer[]} swimmers 
+ */
+Renderer.prototype.renderWater = function (water, sky, swimmers) {
   var tracer = new GL.Raytracer();
   water.textureA.bind(0);
   this.tileTexture.bind(1);
@@ -365,6 +378,20 @@ Renderer.prototype.renderWater = function (water, sky) {
   this.flagTexture.bind(4); // TODO make the texture work
   water.areaConservationTexture.bind(5);
   this.gl.enable(this.gl.CULL_FACE);
+
+  if (Swimmer.showFlags) {
+    const swimmerPositions = new Float32Array(2 * swimmers.length);
+    for (let i = 0; i < swimmers.length; i++) {
+      swimmerPositions[2 * i] = swimmers[i].body.center.x;
+      swimmerPositions[2 * i + 1] = swimmers[i].body.center.z;
+    }
+    /**@type {WebGLRenderingContext} */
+    const g = this.gl;
+    g.useProgram(this.waterShaders[0].program);
+    g.uniform1fv(g.getUniformLocation(this.waterShaders[0].program, "swimmersPositions"), swimmerPositions)
+    g.useProgram(this.waterShaders[1].program);
+    g.uniform1fv(g.getUniformLocation(this.waterShaders[1].program, "swimmersPositions"), swimmerPositions)
+  }
   for (var i = 0; i < 2; i++) {
     this.gl.cullFace(i ? this.gl.BACK : this.gl.FRONT);
     this.waterShaders[i].uniforms({
@@ -385,7 +412,9 @@ Renderer.prototype.renderWater = function (water, sky) {
       sphereRadius: this.sphereRadius,
       showProjectionGrid: water.showProjectionGrid,
       showAreaConservedGrid: water.showAreaConservedGrid,
-      wr: water.WR_position
+      wr: water.WR_position,
+      swimmersNumber: swimmers.length,
+      showFlags: Swimmer.showFlags
     }).draw(water.plane);
   }
   this.gl.disable(this.gl.CULL_FACE);
