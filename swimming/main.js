@@ -33,6 +33,7 @@ function handleError(text) {
 }
 
 window.onerror = handleError
+/**@type {WebGLRenderingContext} */
 var gl = GL.create();
 /**@type {Water} */
 var water;
@@ -44,6 +45,7 @@ const swimmers = [];
 const numSwimmers = 8;
 var angleX = -25;
 var angleY = -200.5;
+var angleZ = 0;
 let translateX = 0;
 let translateY = 0;
 var zoomDistance = 4.0;
@@ -54,7 +56,7 @@ var flagCenter;
 var flagSize;
 var poolSize = new GL.Vector(2.0, 1.0, 2.0);
 let resolution = new GL.Vector(256, 256);
-let params = { numSteps: 2 };
+let params = { numSteps: 2, focal: 45 };
 const gui = new GUI();
 function updateResolutionWarning() {
   document.getElementById('warning').hidden = !(resolution.x * resolution.y > 300000 && (water && water.areaConservationEnabled));
@@ -94,7 +96,7 @@ window.onload = function () {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.matrixMode(gl.PROJECTION);
     gl.loadIdentity();
-    gl.perspective(45, gl.canvas.width / gl.canvas.height, 0.01, 100);
+    gl.perspective(params.focal, gl.canvas.width / gl.canvas.height, 0.01, 100);
     gl.matrixMode(gl.MODELVIEW);
     draw();
   }
@@ -147,6 +149,13 @@ window.onload = function () {
   folder.add(poolSize, 'z', 1, 50).name('pool height').onChange(function (value) { reset(); }).listen();
   folder.add(poolSize, 'y', 1, 3).name('pool depth').onChange(function (value) { reset(); }).listen();
   folder.add(water, 'areaConservationEnabled', 'areaConservationEnabled').name('area conservation').listen();
+  folder.add(params, 'focal', 28, 45).name('focal').listen().onChange(function (value) {
+    gl.matrixMode(gl.PROJECTION);
+    gl.loadIdentity();
+    gl.perspective(params.focal, gl.canvas.width / gl.canvas.height, 0.01, 100);
+    gl.matrixMode(gl.MODELVIEW);
+    console.log("perspective : " + params.focal);
+  });
   // folder.add(params, 'numSteps', 1, 10).step(1).name("number of simulation steps");
   renderer = new Renderer(gl, water, flagCenter, flagSize);
   cubemap = new Cubemap({
@@ -239,7 +248,7 @@ window.onload = function () {
     }
   }
 
-  function duringDrag(x, y) {
+  function duringDrag(x, y, e) {
     switch (mode) {
       case MODE_ADD_DROPS: {
         var tracer = new GL.Raytracer();
@@ -268,6 +277,11 @@ window.onload = function () {
         break;
       }
       case MODE_ORBIT_CAMERA: {
+        if (e && e.shiftKey) {
+          angleZ -= x - oldX;
+          angleZ = Math.max(-89.999, Math.min(89.999, angleZ));
+          break;
+        }
         angleY -= x - oldX;
         angleX -= y - oldY;
         angleX = Math.max(-89.999, Math.min(89.999, angleX));
@@ -294,8 +308,8 @@ window.onload = function () {
   }
 
   function zoom(delta) {
-    zoomDistance *= 1 - delta * 0.001;
-    zoomDistance = Math.max(2, Math.min(50, zoomDistance));
+    zoomDistance *= 1 - delta * 0.0004;
+    zoomDistance = Math.max(2, Math.min(100, zoomDistance));
     if (paused) draw();
   };
 
@@ -312,7 +326,7 @@ window.onload = function () {
   };
 
   document.onmousemove = function (e) {
-    duringDrag(e.pageX, e.pageY);
+    duringDrag(e.pageX, e.pageY, e);
   };
 
   document.onmouseup = function () {
@@ -404,12 +418,18 @@ window.onload = function () {
       }
 
       reset();
-      // reset();
-      translateX = -17.005;
-      translateY = -0.79;
-      zoomDistance = 29.91;
-      angleX = -18;
-      angleY = -269.5;
+
+      params.focal = 31.75;
+      gl.matrixMode(gl.PROJECTION);
+      gl.loadIdentity();
+      gl.perspective(params.focal, gl.canvas.width / gl.canvas.height, 0.01, 100);
+      gl.matrixMode(gl.MODELVIEW);
+      translateX = -0.42;
+      translateY = 1.18;
+      zoomDistance = 52.5;
+      angleX = -24;
+      angleY = -261.5;
+      angleZ = -4;
       console.log("Olympic mode enabled.");
     }
     else if (e.which == 'W'.charCodeAt(0)) {
@@ -485,6 +505,7 @@ window.onload = function () {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.loadIdentity();
     gl.translate(translateX, translateY, -zoomDistance);
+    gl.rotate(-angleZ, 0, 0, 1);
     gl.rotate(-angleX, 1, 0, 0);
     gl.rotate(-angleY, 0, 1, 0);
     gl.translate(0, 0.5, 0);
