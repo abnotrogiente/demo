@@ -1,15 +1,10 @@
 import GL from "./lightgl.js";
 
-let cubeRotation = 0.0;
-// will set to true when video can be copied to texture
-
-
-
 //
 // start here
 //
 class Video {
-    constructor(gl) {
+    constructor(gl, src) {
         /**@type {WebGLRenderingContext} */
         this.gl = gl
         this.copyVideo = false;
@@ -59,7 +54,7 @@ class Video {
         // this.buffers = initBuffers(gl);
 
         this.texture = this.initTexture();
-        this.video = this.setupVideo();
+        this.video = this.setupVideo(src);
 
         // Flip image pixels into the bottom-to-top order that WebGL expects.
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
@@ -143,7 +138,7 @@ class Video {
         );
     }
 
-    setupVideo() {
+    setupVideo(url) {
         const video = document.createElement("video");
 
         let playing = false;
@@ -174,7 +169,7 @@ class Video {
             true
         );
 
-        //video.src = url;
+        video.src = url;
         video.play();
         const this_ = this;
         const checkReady = () => {

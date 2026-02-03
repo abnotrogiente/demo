@@ -109,7 +109,8 @@ window.onload = function () {
   flagCenter = new GL.Vector(0., -poolSize.z / 2. + 1.);
   flagSize = 0.7;
   water = new Water(gl, poolSize);
-  const video = new Video(gl);  // Empty path - use drag-and-drop instead
+  const video = new Video(gl, "./video.mp4");  // Empty path - use drag-and-drop instead
+  // video.video.src = "./video.mp4";
 
   // Drop zone for MP4 files
   const dropZone = document.getElementById('drop-zone');

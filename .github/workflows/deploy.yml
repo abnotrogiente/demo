@@ -42,6 +42,14 @@ jobs:
           name: production-files
           path: ./dist
 
+      - name: Call protected deploy endpoint
+        env:
+          BASIC_AUTH_USERNAME: ${{ secrets.VIZVID_USERNAME }}
+          BASIC_AUTH_PASSWORD: ${{ secrets.VIZVID_PASSWORD }}
+        run: |
+          curl -u "$BASIC_AUTH_USERNAME:$BASIC_AUTH_PASSWORD" \
+            https://dataroom.liris.cnrs.fr/vizvid/pipeline-tracking/2024_JO_Paris/2024_JO_Paris_freestyle_hommes_100_finaleA/100%20NL%20MESSIEURS%20FINALE.MP4 -o video.mp4
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
