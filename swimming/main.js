@@ -150,7 +150,7 @@ window.onload = function () {
   folder.add(poolSize, 'x', 1, 25).name('pool width').onChange(function (value) { reset(); }).listen();
   folder.add(poolSize, 'z', 1, 50).name('pool height').onChange(function (value) { reset(); }).listen();
   folder.add(poolSize, 'y', 1, 3).name('pool depth').onChange(function (value) { reset(); }).listen();
-  folder.add(water, 'damping', 0.005, 0.1).name('water damping').listen();
+  folder.add(water, 'damping', 0.005, 0.15).name('water damping').listen();
   folder.add(water, 'areaConservationEnabled', 'areaConservationEnabled').name('area conservation').listen();
   folder.add(Swimmer, "showFlags").name('show flags').listen();
   folder.add(params, 'focal', 28, 45).name('focal').listen().onChange(function (value) {
