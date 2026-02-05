@@ -453,6 +453,7 @@ window.onload = function () {
     else if (e.which == 'W'.charCodeAt(0)) {
       water.WR_position = 0;
       videoTime = videoStartTime;
+      if (video.copyVideo) video.video.currentTime = videoTime;
       startSwimming();
       jump();
     }
@@ -537,7 +538,6 @@ window.onload = function () {
     renderer.renderCube(water);
     renderer.renderWater(water, cubemap, swimmers);
     renderer.renderSpheres(water);
-    if (video.copyVideo) video.video.currentTime = videoTime;
     video.render();
     gl.disable(gl.DEPTH_TEST);
   }
