@@ -424,7 +424,8 @@ window.onload = function () {
       resolution.x = 1024;
       resolution.y = 2048;
       water.setAreaConservation(false);
-      water.waveVelocity = 2.5;
+
+      water.damping = 0.1;
 
       if (swimmers.length != numSwimmers) {
         for (let i = swimmers.length; i < numSwimmers; i++) {
