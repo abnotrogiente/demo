@@ -22,7 +22,7 @@ export class Sky {
         this.mesh = new Mesh(new SphereGeometry(radius), this.material);
         const skyFolder = this.gui.addFolder("sky");
         scene.add(this.mesh);
-        skyFolder.add(this.mesh.material.uniforms['shininess'], 'value', 1, 500, 1).name('sun shininess');
+        skyFolder.add(this.mesh.material.uniforms['shininess'], 'value', 1, 500, 1).name('Sun shininess');
         console.log("sky added");
     }
 
