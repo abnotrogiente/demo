@@ -18,7 +18,7 @@ const armPulsation = 2 * Math.PI * armFrequency;
 class Swimmer {
     static useGravity = false;
     static swimming = false;
-    static showFlags = false;
+    static showFlags = true;
     constructor(center) {
         this.startingPoint = new GL.Vector(center.x, center.y, center.z);
         this.center = new GL.Vector(center.x, center.y, center.z);
@@ -41,6 +41,15 @@ class Swimmer {
 
         /**@type {Sphere[]} */
         this.spheres = [this.body, this.leftArm, this.rightArm, this.leftFoot, this.rightFoot];
+
+        this.divingDistance = 0;
+        this.divingTime = 1000;
+    }
+
+    jump(poolSize) {
+        this.body.cinematic = false;
+        this.body.velocity = new GL.Vector(0, 0, 4.5 + gaussianRandom(0, 1));
+        this.body.center = new GL.Vector(this.startingPoint.x, 1, -poolSize.z / 2.);
     }
 
     getArmOffset(time, phase) {
@@ -68,6 +77,13 @@ class Swimmer {
         }
 
         for (let sphere of this.spheres) sphere.update(dt, poolSize);
+
+        if (!this.hasDove && this.body.center.y <= 0 && this.body.oldCenter.y >= 0) {
+            this.divingDistance = this.body.center.z + poolSize.z / 2;
+            this.divingTime = time;
+            this.hasDove = true;
+            console.log("dived : " + this.divingDistance);
+        }
     }
 }
 

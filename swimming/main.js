@@ -52,6 +52,7 @@ var zoomDistance = 4.0;
 
 const videoStartTime = 17;
 let videoTime = 0;
+let raceTime = 0;
 var paused = false;
 var flagCenter;
 var flagSize;
@@ -376,9 +377,7 @@ window.onload = function () {
   function jump() {
     Swimmer.useGravity = true;
     for (let swimmer of swimmers) {
-      swimmer.body.cinematic = false;
-      swimmer.body.velocity = new GL.Vector(0, 0, 4.5);
-      swimmer.body.center = new GL.Vector(swimmer.startingPoint.x, 1, -poolSize.z / 2.);
+      swimmer.jump(poolSize);
     }
   }
 
@@ -504,7 +503,7 @@ window.onload = function () {
     }
 
     // Update the water simulation and graphics
-    for (let swimmer of swimmers) swimmer.update(dt, time, poolSize);
+    for (let swimmer of swimmers) swimmer.update(dt, raceTime, poolSize);
     water.updateSpheres(dt);
     for (let i = 0; i < params.numSteps; i++) {
       water.stepSimulation();
@@ -512,6 +511,7 @@ window.onload = function () {
     water.updateNormals();
     renderer.updateCaustics(water);
     videoTime += dt;
+    raceTime = videoTime - videoStartTime;
   }
 
   function draw(time) {
@@ -536,7 +536,7 @@ window.onload = function () {
     renderer.sphereCenter = swimmers[0].body.center;
     renderer.sphereRadius = radius;
     renderer.renderCube(water);
-    renderer.renderWater(water, cubemap, swimmers);
+    renderer.renderWater(water, cubemap, swimmers, raceTime);
     renderer.renderSpheres(water);
     video.render();
     gl.disable(gl.DEPTH_TEST);

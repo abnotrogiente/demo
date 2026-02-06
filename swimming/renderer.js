@@ -144,17 +144,28 @@ function Renderer(gl, water, flagCenter, flagSize) {
     ', helperFunctions + '\
       uniform vec3 eye;\
       varying vec3 position;\
-      uniform float swimmersPositions[16];\
+      const int SWIMMER_X_INDEX = 0;\
+      const int SWIMMER_Z_INDEX = 1;\
+      const int SWIMMER_DIVING_DISTANCE_INDEX = 2;\
+      const int SWIMMER_DIVING_TIME_INDEX = 3;\
+      const int SWIMMER_NUM_ATTRIBUTES = 4;\
+      uniform float swimmersAttributes[32];\
       uniform float swimmersNumber;\
       uniform bool showFlags;\
       uniform samplerCube sky;\
       uniform float wr;\
       uniform bool showProjectionGrid;\
       uniform bool showAreaConservedGrid;\
+      uniform float time;\
       \
       bool isOnConservedAreaGrid(vec2 pos, float size) {\
         vec2 gridCoord = pos / size;\
         return abs(fract(gridCoord.x) - 0.5) < 0.05 || abs(fract(gridCoord.y) - 0.5) < 0.05;\
+      }\
+      bool isInCircle(vec2 position, vec2 center, float R, float r) {\
+        vec2 diff = position - center;\
+        float dist_sq = dot(diff, diff);\
+        return dist_sq < R*R && dist_sq > r*r;\
       }\
       vec3 getSurfaceRayColor(vec3 origin, vec3 ray, vec3 waterColor) {\
         vec3 color;\
@@ -181,7 +192,40 @@ function Renderer(gl, water, flagCenter, flagSize) {
           for (int i = 0; i < 8; i++) {\
             float i_float = float(i);\
             if (i_float > swimmersNumber - 0.1) break;\
-            vec2 flagCenterNew = vec2(swimmersPositions[2*i], swimmersPositions[2*i+1] - 2.5);\
+            float divingDistance = swimmersAttributes[SWIMMER_NUM_ATTRIBUTES * i + SWIMMER_DIVING_DISTANCE_INDEX];\
+            float divingTime = swimmersAttributes[SWIMMER_NUM_ATTRIBUTES * i + SWIMMER_DIVING_TIME_INDEX];\
+            float swimmer_x = swimmersAttributes[SWIMMER_NUM_ATTRIBUTES*i + SWIMMER_X_INDEX];\
+            float swimmer_z = swimmersAttributes[SWIMMER_NUM_ATTRIBUTES*i + SWIMMER_Z_INDEX];\
+            float timeSinceDiving = time - divingTime;\
+            const float rippleSpeed = .5;\
+            const float maxTime = 5.;\
+            const float ripplePeriod = 0.5;\
+            const float rippleRadius = 0.05;\
+            float blendTime = 1. - timeSinceDiving / maxTime;\
+            if (timeSinceDiving > 0. && timeSinceDiving < maxTime) {\
+              float rippleBegin = 0.;\
+              const int maxRipples = 5;\
+              for (int k = 0; k < maxRipples; k++) {\
+                if (rippleBegin > timeSinceDiving) break;\
+                float r_max_max = 1.5;\
+                float divingDistRange = 2.;\
+                float divingDistMin = 2.;\
+                float intensity = (divingDistance - divingDistMin) / divingDistRange;\
+                float r_max = max(0.3, intensity * r_max_max);\
+                float radius = (timeSinceDiving - rippleBegin) * rippleSpeed * r_max;\
+                float R = radius + rippleRadius;\
+                float r = radius - rippleRadius;\
+                vec2 center = vec2(swimmer_x, divingDistance - poolSize.z / 2.);\
+                float blendDist = max(0., 1. - radius/ r_max);\
+                float blend = blendDist * blendTime;\
+                if (isInCircle(position, center, R, r)) color = (1. - blend) * color + blend * vec3(0., 1., 0.);\
+                rippleBegin += ripplePeriod;\
+              }\
+            }\
+            \
+            int x_index = SWIMMER_NUM_ATTRIBUTES*i + SWIMMER_X_INDEX;\
+            int z_index = SWIMMER_NUM_ATTRIBUTES*i + SWIMMER_Z_INDEX;\
+            vec2 flagCenterNew = vec2(swimmer_x, swimmer_z - 2.5);\
             vec2 flagCorner = flagCenterNew - flagSize / 2.;\
             if (showProjectionGrid && isOnConservedAreaGrid(position, 0.1)) color = vec3(1., 1., 0.); /* Debug conserved area grid */\
             if (abs(origin.z + poolSize.z / 2. - wr) < .05) color = vec3(1., 1., 0.); \
@@ -369,7 +413,7 @@ Renderer.prototype.updateCaustics = function (water) {
  * @param {*} sky 
  * @param {Swimmer[]} swimmers 
  */
-Renderer.prototype.renderWater = function (water, sky, swimmers) {
+Renderer.prototype.renderWater = function (water, sky, swimmers, raceTime) {
   var tracer = new GL.Raytracer();
   water.textureA.bind(0);
   this.tileTexture.bind(1);
@@ -380,17 +424,20 @@ Renderer.prototype.renderWater = function (water, sky, swimmers) {
   this.gl.enable(this.gl.CULL_FACE);
 
   if (Swimmer.showFlags) {
-    const swimmerPositions = new Float32Array(2 * swimmers.length);
+    const numAttributes = 4;
+    const swimmersAttributes = new Float32Array(numAttributes * swimmers.length);
     for (let i = 0; i < swimmers.length; i++) {
-      swimmerPositions[2 * i] = swimmers[i].body.center.x;
-      swimmerPositions[2 * i + 1] = swimmers[i].body.center.z;
+      swimmersAttributes[numAttributes * i] = swimmers[i].body.center.x;
+      swimmersAttributes[numAttributes * i + 1] = swimmers[i].body.center.z;
+      swimmersAttributes[numAttributes * i + 2] = swimmers[i].divingDistance;
+      swimmersAttributes[numAttributes * i + 3] = swimmers[i].divingTime;
     }
     /**@type {WebGLRenderingContext} */
     const g = this.gl;
     g.useProgram(this.waterShaders[0].program);
-    g.uniform1fv(g.getUniformLocation(this.waterShaders[0].program, "swimmersPositions"), swimmerPositions)
+    g.uniform1fv(g.getUniformLocation(this.waterShaders[0].program, "swimmersAttributes"), swimmersAttributes)
     g.useProgram(this.waterShaders[1].program);
-    g.uniform1fv(g.getUniformLocation(this.waterShaders[1].program, "swimmersPositions"), swimmerPositions)
+    g.uniform1fv(g.getUniformLocation(this.waterShaders[1].program, "swimmersAttributes"), swimmersAttributes)
   }
   for (var i = 0; i < 2; i++) {
     this.gl.cullFace(i ? this.gl.BACK : this.gl.FRONT);
@@ -414,7 +461,8 @@ Renderer.prototype.renderWater = function (water, sky, swimmers) {
       showAreaConservedGrid: water.showAreaConservedGrid,
       wr: water.WR_position,
       swimmersNumber: swimmers.length,
-      showFlags: Swimmer.showFlags
+      showFlags: Swimmer.showFlags,
+      time: raceTime
     }).draw(water.plane);
   }
   this.gl.disable(this.gl.CULL_FACE);

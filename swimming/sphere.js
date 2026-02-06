@@ -9,7 +9,6 @@ class Sphere {
      * @param {float} radius 
      */
     constructor(center, radius) {
-        console.log("center : " + center.x + " , " + center.y + " , " + center.z);
         this.center = new GL.Vector(center.x, center.y, center.z);
         this.oldCenter = new GL.Vector(center.x, center.y, center.z);
         this.radius = radius;
