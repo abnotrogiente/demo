@@ -42,7 +42,7 @@ var cubemap;
 var renderer;
 /**@type {Swimmer[]} */
 const swimmers = [];
-const numSwimmers = 8;
+const numSwimmers = 10;
 var angleX = -25;
 var angleY = -200.5;
 var angleZ = 0;

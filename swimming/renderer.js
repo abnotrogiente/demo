@@ -149,7 +149,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
       const int SWIMMER_DIVING_DISTANCE_INDEX = 2;
       const int SWIMMER_DIVING_TIME_INDEX = 3;
       const int SWIMMER_NUM_ATTRIBUTES = 4;
-      uniform float swimmersAttributes[32];
+      uniform float swimmersAttributes[40];
       uniform float swimmersNumber;
       uniform bool showFlags;
       uniform samplerCube sky;
@@ -189,7 +189,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
           color *= waterColor;
           vec2 position = origin.xz;
           if (!showFlags) return color;
-          for (int i = 0; i < 8; i++) {
+          for (int i = 0; i < 10; i++) {
             float i_float = float(i);
             if (i_float > swimmersNumber - 0.1) break;
             float divingDistance = swimmersAttributes[SWIMMER_NUM_ATTRIBUTES * i + SWIMMER_DIVING_DISTANCE_INDEX];
