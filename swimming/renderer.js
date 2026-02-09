@@ -198,7 +198,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
             float swimmer_z = swimmersAttributes[SWIMMER_NUM_ATTRIBUTES*i + SWIMMER_Z_INDEX];
             float timeSinceDiving = time - divingTime;
             const float rippleSpeed = .5;
-            const float maxTime = 5.;
+            const float maxTime = 10.;
             const float ripplePeriod = 0.5;
             const float rippleRadius = 0.05;
             float blendTime = 1. - timeSinceDiving / maxTime;
