@@ -15,6 +15,7 @@ function Water(gl, poolSize, resolution = null) {
   this.gl = gl;
   this.damping = 0.02;
   this.areaConservationEnabled = true;
+  this.visualizationWavesEnabled = true;
   this.sqrt_2_PI = Math.sqrt(2 * Math.PI);
   /**@type {Sphere[]} */
   this.spheres = [];
@@ -86,13 +87,6 @@ function Water(gl, poolSize, resolution = null) {
     /* move the vertex along the velocity */
     info.r += info.g;
       
-      float z = poolSize.z * coord.y;
-    if (true || abs(z - wr) < 1.) {
-      info.r += .05 * gaussian(z, wr, .4);
-      info.r -= .05 * gaussian(z, prev_wr, .4);
-
-
-    }
 
     gl_FragColor = info;
   }
@@ -144,6 +138,34 @@ function Water(gl, poolSize, resolution = null) {
     gl_FragColor = info;
   }
   `);
+
+  this.visualizationWavesShader = new GL.Shader(vertexShader, `
+    uniform float wr;
+    uniform float sqrt_2_PI;
+    uniform sampler2D texture;
+    uniform vec3 poolSize;
+    uniform bool add;
+    varying vec2 coord;
+
+    float gaussian(float x, float mean, float std) {
+        return exp(-(x - mean) * (x - mean) / (2. * std * std)) / (std * sqrt_2_PI);
+      }
+
+    float getVisualizationWaves(vec2 coord) {
+      float z = poolSize.z * coord.y;
+      if (true || abs(z - wr) < 1.) {
+        return .2 * gaussian(z, wr, .4);
+      }
+      return 0.;
+    }
+
+    void main() {
+      vec4 info = texture2D(texture, coord);
+      float w = getVisualizationWaves(coord);
+      info.r += add ? w : -w;
+      gl_FragColor = info;
+    }
+    `);
 }
 
 Water.prototype.reset = function (poolSize, resolution = null) {
@@ -193,6 +215,23 @@ Water.prototype.addDrop = function (x, y, radius, strength) {
   });
   this.textureB.swapWith(this.textureA);
 };
+
+Water.prototype.addOrRemoveVisualizationWaves = function (add) {
+  if (!this.visualizationWavesEnabled) return;
+  var this_ = this;
+  console.log("add : " + add);
+  this.textureB.drawTo(function () {
+    this_.textureA.bind();
+    this_.visualizationWavesShader.uniforms({
+      poolSize: [this_.poolSize.x, this_.poolSize.y, this_.poolSize.z],
+      wr: this_.WR_position,
+      sqrt_2_PI: this_.sqrt_2_PI,
+      add: add
+    }).draw(this_.plane);
+  });
+  this.textureB.swapWith(this.textureA);
+
+}
 
 /**
  * 

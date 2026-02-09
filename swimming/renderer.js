@@ -8,6 +8,7 @@
 
 import GL from './lightgl.js';
 import { Swimmer } from './swimmer.js';
+import { Water } from './water.js';
 
 var helperFunctions = `
   const float IOR_AIR = 1.0;
@@ -251,7 +252,6 @@ function Renderer(gl, water, flagCenter, flagSize) {
       void main() {
         vec2 coord = position.xz / poolSize.xz + 0.5;
         vec4 info = texture2D(water, coord);
-        
         /* make water look more "peaked" */
         /*for (int i = 0; i < 5; i++) {
           coord += info.ba * 0.005;

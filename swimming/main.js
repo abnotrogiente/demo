@@ -509,6 +509,7 @@ window.onload = function () {
     for (let i = 0; i < params.numSteps; i++) {
       water.stepSimulation();
     }
+    water.addOrRemoveVisualizationWaves(true);
     water.updateNormals();
     renderer.updateCaustics(water);
     videoTime += dt;
@@ -541,5 +542,6 @@ window.onload = function () {
     renderer.renderSpheres(water);
     video.render();
     gl.disable(gl.DEPTH_TEST);
+    water.addOrRemoveVisualizationWaves(false);
   }
 };
