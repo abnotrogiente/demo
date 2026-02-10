@@ -459,6 +459,8 @@ window.onload = function () {
       if (video.copyVideo) video.video.currentTime = videoTime;
       startSwimming();
       jump();
+
+      for (let swimmer of swimmers) swimmer.hasDove = false;
     }
     else if (e.which == 'H'.charCodeAt(0)) {
       document.getElementById("commands").hidden = !document.getElementById("commands").hidden;
