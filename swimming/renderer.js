@@ -9,6 +9,7 @@
 import GL from './lightgl.js';
 import { Swimmer } from './swimmer.js';
 import { Water } from './water.js';
+import { swimmersHelperFunctions } from './swimmer.js';
 
 var helperFunctions = `
   const float IOR_AIR = 1.0;
@@ -145,19 +146,12 @@ function Renderer(gl, water, flagCenter, flagSize) {
     `, helperFunctions + `
       uniform vec3 eye;
       varying vec3 position;
-      const int SWIMMER_X_INDEX = 0;
-      const int SWIMMER_Z_INDEX = 1;
-      const int SWIMMER_DIVING_DISTANCE_INDEX = 2;
-      const int SWIMMER_DIVING_TIME_INDEX = 3;
-      const int SWIMMER_NUM_ATTRIBUTES = 4;
-      uniform float swimmersAttributes[40];
-      uniform float swimmersNumber;
       uniform bool showFlags;
       uniform samplerCube sky;
-      uniform float wr;
       uniform bool showProjectionGrid;
       uniform bool showAreaConservedGrid;
-      uniform float time;
+
+      ` + swimmersHelperFunctions + `
       
       bool isOnConservedAreaGrid(vec2 pos, float size) {
         vec2 gridCoord = pos / size;
@@ -190,42 +184,16 @@ function Renderer(gl, water, flagCenter, flagSize) {
           color *= waterColor;
           vec2 position = origin.xz;
           if (!showFlags) return color;
+          vec2 coord = position / poolSize.xz + .5;
+          vec3 divingWave = getDivingWaves(coord);
+          if (divingWave.z > 0.) {
+            color = (1. - divingWave.y) * color + divingWave.y * vec3(0., 1., 0.);
+          }
           for (int i = 0; i < 10; i++) {
             float i_float = float(i);
             if (i_float > swimmersNumber - 0.1) break;
-            float divingDistance = swimmersAttributes[SWIMMER_NUM_ATTRIBUTES * i + SWIMMER_DIVING_DISTANCE_INDEX];
-            float divingTime = swimmersAttributes[SWIMMER_NUM_ATTRIBUTES * i + SWIMMER_DIVING_TIME_INDEX];
             float swimmer_x = swimmersAttributes[SWIMMER_NUM_ATTRIBUTES*i + SWIMMER_X_INDEX];
             float swimmer_z = swimmersAttributes[SWIMMER_NUM_ATTRIBUTES*i + SWIMMER_Z_INDEX];
-            float timeSinceDiving = time - divingTime;
-            const float rippleSpeed = .5;
-            const float maxTime = 10.;
-            const float ripplePeriod = 0.5;
-            const float rippleRadius = 0.05;
-            float blendTime = 1. - timeSinceDiving / maxTime;
-            if (timeSinceDiving > 0. && timeSinceDiving < maxTime) {
-              float rippleBegin = 0.;
-              const int maxRipples = 5;
-              for (int k = 0; k < maxRipples; k++) {
-                if (rippleBegin > timeSinceDiving) break;
-                float r_max_max = 1.5;
-                float divingDistRange = 2.;
-                float divingDistMin = 2.;
-                float intensity = (divingDistance - divingDistMin) / divingDistRange;
-                float r_max = max(0.3, intensity * r_max_max);
-                float radius = (timeSinceDiving - rippleBegin) * rippleSpeed * r_max;
-                float R = radius + rippleRadius;
-                float r = radius - rippleRadius;
-                vec2 center = vec2(swimmer_x, divingDistance - poolSize.z / 2.);
-                float blendDist = max(0., 1. - radius/ r_max);
-                float blend = blendDist * blendTime;
-                if (isInCircle(position, center, R, r)) color = (1. - blend) * color + blend * vec3(0., 1., 0.);
-                rippleBegin += ripplePeriod;
-              }
-            }
-            
-            int x_index = SWIMMER_NUM_ATTRIBUTES*i + SWIMMER_X_INDEX;
-            int z_index = SWIMMER_NUM_ATTRIBUTES*i + SWIMMER_Z_INDEX;
             vec2 flagCenterNew = vec2(swimmer_x, swimmer_z - 2.5);
             vec2 flagCorner = flagCenterNew - flagSize / 2.;
             if (showProjectionGrid && isOnConservedAreaGrid(position, 0.1)) color = vec3(1., 1., 0.); /* Debug conserved area grid */

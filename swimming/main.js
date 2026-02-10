@@ -435,6 +435,9 @@ window.onload = function () {
         }
       }
 
+      videoTime = 0;
+      if (video.copyVideo) video.video.currentTime = videoTime;
+
       reset();
 
       params.focal = 31.75;
@@ -509,8 +512,7 @@ window.onload = function () {
     for (let i = 0; i < params.numSteps; i++) {
       water.stepSimulation();
     }
-    water.addOrRemoveVisualizationWaves(true);
-    water.updateNormals();
+
     renderer.updateCaustics(water);
     videoTime += dt;
     raceTime = videoTime - videoStartTime;
@@ -522,6 +524,9 @@ window.onload = function () {
       renderer.lightDir = GL.Vector.fromAngles((90 - angleY) * Math.PI / 180, -angleX * Math.PI / 180);
       if (paused) renderer.updateCaustics(water);
     }
+
+    water.addOrRemoveVisualizationWaves(true, swimmers, raceTime);
+    water.updateNormals();
 
     /**@type {WebGLRenderingContext} */
     const g = gl;
@@ -542,6 +547,6 @@ window.onload = function () {
     renderer.renderSpheres(water);
     video.render();
     gl.disable(gl.DEPTH_TEST);
-    water.addOrRemoveVisualizationWaves(false);
+    water.addOrRemoveVisualizationWaves(false, swimmers, raceTime);
   }
 };

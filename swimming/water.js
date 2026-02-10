@@ -9,6 +9,7 @@
 import GL from './lightgl.js';
 import { Sphere } from './sphere.js';
 import { Swimmer } from './swimmer.js';
+import { swimmersHelperFunctions } from './swimmer.js';
 
 // The data in the texture is (position.y, velocity.y, normal.x, normal.z)
 function Water(gl, poolSize, resolution = null) {
@@ -140,28 +141,16 @@ function Water(gl, poolSize, resolution = null) {
   `);
 
   this.visualizationWavesShader = new GL.Shader(vertexShader, `
-    uniform float wr;
-    uniform float sqrt_2_PI;
     uniform sampler2D texture;
-    uniform vec3 poolSize;
     uniform bool add;
+    uniform vec3 poolSize;
     varying vec2 coord;
 
-    float gaussian(float x, float mean, float std) {
-        return exp(-(x - mean) * (x - mean) / (2. * std * std)) / (std * sqrt_2_PI);
-      }
-
-    float getVisualizationWaves(vec2 coord) {
-      float z = poolSize.z * coord.y;
-      if (true || abs(z - wr) < 1.) {
-        return .2 * gaussian(z, wr, .4);
-      }
-      return 0.;
-    }
+    ` + swimmersHelperFunctions + `
 
     void main() {
       vec4 info = texture2D(texture, coord);
-      float w = getVisualizationWaves(coord);
+      float w = getDivingWaves(coord).x + getRecordWave(coord);
       info.r += add ? w : -w;
       gl_FragColor = info;
     }
@@ -216,17 +205,38 @@ Water.prototype.addDrop = function (x, y, radius, strength) {
   this.textureB.swapWith(this.textureA);
 };
 
-Water.prototype.addOrRemoveVisualizationWaves = function (add) {
+/**
+ * 
+ * @param {boolean} add 
+ * @param {Swimmer[]} swimmers 
+ * @returns 
+ */
+Water.prototype.addOrRemoveVisualizationWaves = function (add, swimmers, raceTime) {
   if (!this.visualizationWavesEnabled) return;
   var this_ = this;
   console.log("add : " + add);
+  const numAttributes = 4;
+  const swimmersAttributes = new Float32Array(numAttributes * swimmers.length);
+  for (let i = 0; i < swimmers.length; i++) {
+    swimmersAttributes[numAttributes * i] = swimmers[i].body.center.x;
+    swimmersAttributes[numAttributes * i + 1] = swimmers[i].body.center.z;
+    swimmersAttributes[numAttributes * i + 2] = swimmers[i].divingDistance;
+    swimmersAttributes[numAttributes * i + 3] = swimmers[i].divingTime;
+  }
+  /**@type {WebGLRenderingContext} */
+  const g = this.gl;
+  g.useProgram(this.visualizationWavesShader.program);
+  g.uniform1fv(g.getUniformLocation(this.visualizationWavesShader.program, "swimmersAttributes"), swimmersAttributes)
+
   this.textureB.drawTo(function () {
     this_.textureA.bind();
     this_.visualizationWavesShader.uniforms({
       poolSize: [this_.poolSize.x, this_.poolSize.y, this_.poolSize.z],
       wr: this_.WR_position,
       sqrt_2_PI: this_.sqrt_2_PI,
-      add: add
+      add: add,
+      swimmersNumber: swimmers.length,
+      time: raceTime
     }).draw(this_.plane);
   });
   this.textureB.swapWith(this.textureA);
