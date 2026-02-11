@@ -314,7 +314,7 @@ window.onload = function () {
 
   function zoom(delta) {
     zoomDistance *= 1 - delta * 0.0004;
-    zoomDistance = Math.max(2, Math.min(100, zoomDistance));
+    zoomDistance = Math.max(2, Math.min(1000, zoomDistance));
     if (paused) draw();
   };
 
@@ -541,13 +541,14 @@ window.onload = function () {
     gl.rotate(-angleY, 0, 1, 0);
     gl.translate(0, 0.5, 0);
 
+
     gl.enable(gl.DEPTH_TEST);
     renderer.sphereCenter = swimmers[0].body.center;
     renderer.sphereRadius = radius;
     renderer.renderCube(water);
     renderer.renderWater(water, cubemap, swimmers, raceTime);
     renderer.renderSpheres(water);
-    video.render();
+    video.render(raceTime);
     gl.disable(gl.DEPTH_TEST);
     water.addOrRemoveVisualizationWaves(false, swimmers, raceTime);
   }
