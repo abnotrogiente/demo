@@ -202,6 +202,7 @@ vec3 trace(vec3 rpos, vec3 rdir, vec2 fragCoord, vec3 center) {
 	}
 	
 	vec3 final =  col.xyz + sparkCol * brightness;
+	return final + vec3(rand(vec2(fragCoord.x * fragCoord.y, iTime))) * 0.00002;
 	return final + vec3(rand(vec2(fragCoord.x * fragCoord.y, iTime))) * 0.002;
 }
 
@@ -257,19 +258,33 @@ class Video {
     varying highp vec2 vTextureCoord;
     varying vec3 waterNormal;
     varying vec3 sparkPlaneNormal;
-        varying vec3 sparkDirection;
+    varying vec3 sparkDirection;
 
 
     uniform sampler2D uSampler;
+    uniform bool sparksEnabled;
+    uniform vec3 poolSize;
 
     ` + sparksHelper + `
 
     void main(void) {
         highp vec4 texelColor = texture2D(uSampler, vTextureCoord);
         gl_FragColor = vec4(texelColor.rgb, 0.5);
-        vec3 spark = pow(sparks(gl_FragCoord.xy, vec3(0., 0., 0.)), vec3(0.4545));
-        gl_FragColor = vec4(mix(gl_FragColor.rgb, spark, .5), max(0.5, 2.*length(spark)));
-        gl_FragColor = vec4(spark, 2.*length(spark));
+        if (!sparksEnabled) return;
+        vec3 spark1 = pow(sparks(gl_FragCoord.xy, vec3(2., 1., -poolSize.z / 2.)), vec3(0.4545));
+        vec3 spark2 = pow(sparks(gl_FragCoord.xy, vec3(-2., 1., -poolSize.z / 2.)), vec3(0.4545));
+        vec3 spark = vec3(0., 0., 0.);
+        spark = spark1 + spark2;
+        // for (int i = 0; i < 10; i++) {
+        //     float i_float = float(i);
+        //     spark += pow(sparks(gl_FragCoord.xy, vec3(25. / 2. - 25. / 10. / 2. - i_float * 25./10., 1., -25.)), vec3(0.4545));
+        // }
+        // gl_FragColor = vec4(mix(gl_FragColor.rgb, spark, .5), max(0.5, 2.*length(spark)));
+        gl_FragColor = vec4(mix(gl_FragColor.rgb, spark, 2.*length(spark)), max(0.5, 2.*length(spark)));
+        gl_FragColor = vec4(gl_FragColor.rgb + spark, max(0.5, 2.*length(spark)));
+        // float m = max(gl_FragColor.r, max(gl_FragColor.g, gl_FragColor.b));
+        // if (m > 1.) gl_FragColor.rgb /= m;
+        // gl_FragColor = vec4(spark, 2.*length(spark));
         // gl_FragColor = vec4(1, 0, 0, 1);
     }
 `);
@@ -293,7 +308,7 @@ class Video {
 
     }
 
-    render(time, sparksParams) {
+    render(time, sparksParams, poolSize) {
         if (!this.show) return;
         if (this.copyVideo) {
             this.updateTexture();
@@ -307,12 +322,15 @@ class Video {
         // this.gl.enable(this.gl.CULL_FACE);
         this.gl.enable(this.gl.BLEND);
         this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
+        // this.gl.blendFunc(this.gl.ONE, this.gl.ONE);
         this.gl.activeTexture(this.gl.TEXTURE0);
         this.gl.bindTexture(this.gl.TEXTURE_2D, this.texture);
         this.shader.uniforms({
             uSampler: 0,
             iTime: time,
+            poolSize: [poolSize.x, poolSize.y, poolSize.z],
             iResolution: [this.gl.canvas.width, this.gl.canvas.height],
+            sparksEnabled: sparksParams.enabled,
             sparksGlow: sparksParams.glow,
             sparksGlowOffset: sparksParams.glowOffset,
             sparksStroke: sparksParams.stroke,

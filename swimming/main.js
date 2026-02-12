@@ -61,7 +61,7 @@ var poolSize = new GL.Vector(2.0, 1.0, 2.0);
 let resolution = new GL.Vector(256, 256);
 let params = {
   numSteps: 2, focal: 45,
-  sparks: { glow: 5., glowOffset: .5, lengthFactor: 1., stroke: .01, num: 40, sizeFactor: 50, fov: Math.PI / 4 }
+  sparks: { enabled: false, glow: 5., glowOffset: .5, lengthFactor: 1., stroke: .01, num: 40, sizeFactor: 50, fov: Math.PI / 4 }
 };
 const gui = new GUI();
 function updateResolutionWarning() {
@@ -169,6 +169,7 @@ window.onload = function () {
   });
   // lengthFactor: 1.5, stroke: .004, num: 40 
   const sparksFolder = folder.addFolder("Sparks");
+  sparksFolder.add(params.sparks, 'enabled').name("sparks enabled");
   sparksFolder.add(params.sparks, 'glow', 1, 30).name("sparks glow factor");
   sparksFolder.add(params.sparks, 'lengthFactor', 0.1, 10).name("sparks length factor");
   sparksFolder.add(params.sparks, 'glowOffset', .1, 3).name("sparks glow offset");
@@ -564,7 +565,7 @@ window.onload = function () {
     renderer.renderCube(water);
     renderer.renderWater(water, cubemap, swimmers, raceTime);
     renderer.renderSpheres(water);
-    video.render(raceTime, params.sparks);
+    video.render(raceTime, params.sparks, poolSize);
     gl.disable(gl.DEPTH_TEST);
     water.addOrRemoveVisualizationWaves(false, swimmers, raceTime);
   }
