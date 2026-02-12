@@ -181,7 +181,8 @@ vec3 trace(vec3 rpos, vec3 rdir, vec2 fragCoord, vec3 center) {
 			} else {
 				float dist = h * 0.05 + 0.8;
 				float atten = 1.0 / (1.0 + 100.0 * dist * dist * dist);
-				//sparkCol += sc.xyz * sc.w * (atten + clamp(1.0 - h * sparkT * 0.05, 0.0, 1.0));
+				sparkCol += sc.xyz * sc.w * (atten);
+				// sparkCol += sc.xyz * sc.w * (atten + clamp(1.0 - h * sparkT * 0.05, 0.0, 1.0));
 			}
 		}
 	}
@@ -235,7 +236,7 @@ class Video {
         gl_Position = vec4(gl_Vertex.xz, 0., 1.);
         waterNormal = (gl_ModelViewMatrix * vec4(0., 1., 0., 0.)).xyz;
         sparkPlaneNormal = (gl_ModelViewMatrix * vec4(-1., 0., 0., 0.)).xyz;
-        sparkDirection = (gl_ModelViewMatrix * vec4(0., 0., -1., 0.)).xyz;
+        sparkDirection = (gl_ModelViewMatrix * vec4(0., 0., 1., 0.)).xyz;
         vTextureCoord = gl_TexCoord.st;
     }
 `, `
