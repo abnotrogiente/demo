@@ -75,7 +75,8 @@ const float brightness = (float(BRIGHTNESS) == 0.0) ? 200.0 / (float(SPARKS) + 4
 
 vec3 sampleAngle(float u1) {
 	float r = sqrt(u1);
-	// return r * sparkDirection - vec3(0., -sqrt(1. - u1), 0.);
+	return r * sparkDirection -sqrt(1.0 - u1) * waterNormal;
+	return r * sparkDirection + vec3(0., -sqrt(1.0 - u1), 0.);
 	return vec3(-r * -0.809017, -sqrt(1.0 - u1), r * 0.587785);
 }
 
@@ -114,16 +115,19 @@ vec4 color(float age) {
 }
 
 vec3 trace(vec3 rpos, vec3 rdir, vec2 fragCoord, vec3 center) {
-	float sparkT = planeIntersection(rpos - center, rdir, vec3(0.587785, 0.0, -0.809017));
-	// float sparkT = planeIntersection(rpos - center, rdir, sparkPlaneNormal);
-	float floorT =  planeIntersection(rpos - center, rdir, waterNormal);
-	// float floorT =  planeIntersection(rpos - center, rdir, vec3(0., 1., 0.));
+    // center *= 0.;
+
+	float sparkT = planeIntersection(rpos - center, rdir, sparkPlaneNormal);
+	float floorT = planeIntersection(rpos - center, rdir, waterNormal);
+
+	// float sparkT = planeIntersection(rpos - center, rdir, vec3(0.587785, 0.0, -0.809017));
+	// float floorT = planeIntersection(rpos - center, rdir, vec3(0., 1., 0.));
 	
 	vec4 col = vec4(0.0, 0.0, 0.0, rdir.y < 0.0 ? 1.0 : 1.0);
 	vec3 sparkCol = vec3(0.0, 0.0, 0.0);
 	
-	vec3 floorPos = rpos + rdir * floorT + center;
-	vec3 sparkPos = rpos + rdir * sparkT + center;
+	vec3 floorPos = rpos + rdir * floorT;
+	vec3 sparkPos = rpos + rdir * sparkT;
 	
 	float time = iTime * SPEED_FACTOR;
 	for (int i = 0; i < SPARKS; i++)
@@ -133,20 +137,28 @@ vec3 trace(vec3 rpos, vec3 rdir, vec2 fragCoord, vec3 center) {
 		float b = spread(vec2(i, 3.0))*RAND_FACTOR;
 		float startTime = spread(vec2(i, 5.0)) * GROUP_FACTOR;
 		vec3 dir = sampleAngle(a) * 10.0;
+        vec3 gravity = -1.2 * 2. * waterNormal;
+
+        // dir = (gl_ModelViewMatrix * vec4(dir, 0.)).xyz;
+        // gravity = (gl_ModelViewMatrix * vec4(gravity, 0.)).xyz;
 		
-		vec3 start = dir * (1.35 + b * 0.3);
-		vec3 force = -start * 0.02 + vec3(0.0, 1.2, 0.0);
+		vec3 start = -dir * (1.35 + b * 0.3);
+		vec3 force = start * 0.02 + gravity;
+
+        // start = (gl_ModelViewMatrix * vec4(start, 1.)).xyz;
+        // force = (gl_ModelViewMatrix * vec4(force, 0.)).xyz;
+
 		float c = fract(time + startTime) * 20.0;
-		vec3 offset = -center + start * c + force * c * c * 0.5;
+		vec3 offset = center + start * c + force * c * c * 0.5;
 		
 		vec3 v = start + force * c;
 		float vel = length(v) * LENGTH_FACTOR;
-		vec3 vdir = normalize(-v);
+		vec3 vdir = normalize(v);
 		vec4 sc = color(c);
 				
 		// Shade floor
 		if (true || rdir.y < 0.0) {
-			vec3 spos = floorPos + offset - center;
+			vec3 spos = floorPos - offset;
 			float h = cylinder(spos, vdir, vel);
 						
 			float invRad = 10.0;
@@ -160,8 +172,8 @@ vec3 trace(vec3 rpos, vec3 rdir, vec2 fragCoord, vec3 center) {
 		}
 	
 		// Shade sparks
-		if (floorT > sparkT && sparkT > 0.0 || floorT < 0.0) {
-			vec3 spos = sparkPos + offset - center;			
+		if (true || floorT > sparkT && sparkT > 0.0 || floorT < 0.0) {
+			vec3 spos = sparkPos - offset;			
 			float h = cylinder(spos, vdir, vel);
 				
 			if (h < 0.0) {
@@ -174,23 +186,18 @@ vec3 trace(vec3 rpos, vec3 rdir, vec2 fragCoord, vec3 center) {
 		}
 	}
 	
-
-	vec3 final = col.xyz + sparkCol * brightness;
+	vec3 final =  col.xyz + sparkCol * brightness;
 	return final + vec3(rand(vec2(fragCoord.x * fragCoord.y, iTime))) * 0.002;
 }
 
 // Ray-generation
-vec3 sparks(vec2 px, vec3 center) {
-    // px = 1. - px;
+vec3 sparks(vec2 px, vec3 offset) {
 	vec2 rd = (px / iResolution.yy - vec2(iResolution.x/iResolution.y*0.5-0.5, 0.0)) * 2.0 - 1.0;
     rd *= -1.;
 	vec3 rdir = normalize(vec3(rd.x*0.5, rd.y*0.5, 1.0));
-    vec3 offset = (gl_ModelViewMatrix * vec4(center, 1.)).xyz;
-    // offset *= 0.;
-	return trace(vec3(0., 0., 0.), rdir, px, offset);
-	return trace(vec3(-40.0, 20.0, -150), rdir, px, offset);
-    // return trace(-offset, rdir, px);
-	//return trace(vec3(-4.0, 2.0, -15) + offset, rdir, px);
+    vec3 center = (gl_ModelViewMatrix * vec4(offset, 1.)).xyz;
+	return trace(vec3(0., 0., 0.), rdir, px, center);
+	return trace(vec3(-40.0, 20.0, -150), rdir, px, center);
 }
 
 `;
