@@ -13,6 +13,7 @@ uniform float sparksLengthFactor;
 uniform float sparksGlowOffset;
 uniform float sparksStroke;
 uniform float sparksNumber;
+uniform float sparksSizeFactor;
 #define MAX_SPARKS ` + MAX_SPARKS + `
 /// The amount of 'sparks' to use (spark count between about 73-206 is known to crash Win7/Chrome)
 #define SPARKS 40    // Low-end
@@ -150,13 +151,17 @@ vec3 trace(vec3 rpos, vec3 rdir, vec2 fragCoord, vec3 center) {
 		float b = spread(vec2(i, 3.0))*RAND_FACTOR;
 		float startTime = spread(vec2(i, 5.0)) * GROUP_FACTOR;
 		vec3 dir = sampleAngle(a) * 10.0;
-        vec3 gravity = -1.2 * 2. * waterNormal / SIZE_FACTOR;
+        vec3 gravity = -1.2 * 2. * waterNormal / sparksSizeFactor;
 	
-		vec3 start = -dir * (1.35 + b * 0.3) / SIZE_FACTOR;
+		vec3 start = -dir * (1.35 + b * 0.3) / sparksSizeFactor;
 		vec3 force = start * 0.02 + gravity;
 
 		float c = fract(time + startTime) * 20.0;
 		vec3 offset = center + start * c + force * c * c * 0.5;
+        bool visible = true;
+        if (dot(offset - center, waterNormal) < 0.) {
+            visible = false;
+        }
 		
 		vec3 v = start + force * c;
 		float vel = length(v) * sparksLengthFactor;
@@ -169,27 +174,25 @@ vec3 trace(vec3 rpos, vec3 rdir, vec2 fragCoord, vec3 center) {
 			float h = cylinder(spos, vdir, vel);
 						
 			float invRad = 10.0;
-			float dist = h * 0.05;
+			float dist = h * 0.5;
 			float atten = 1.0 / (1.0 + 2.0 * invRad * dist + invRad * invRad * dist * dist);
 			if (floorT <= sparkT && sparkT > 0.0) {
 				dist += 0.8;
 				atten += 1.0 / (1.0 + 100.0*dist*dist*dist);
 			}
-            atten /= SIZE_FACTOR;
-			//col += vec4(sc.xyz * sc.w * atten, 0.0) * brightness;
+            atten /= sparksSizeFactor;
+			col += vec4(sc.xyz * sc.w * atten, 0.0) * brightness;
 		}
 	
 		// Shade sparks
-		if (true || floorT > sparkT && sparkT > 0.0 || floorT < 0.0) {
+		if (visible) {
 			vec3 spos = sparkPos - offset;			
 			float h = cylinder(spos, vdir, vel);
 				
 			if (h < 0.0) {
 				sparkCol += vec3(sc.xyz * sc.w);
 			} else {
-				float dist = h * 0.05 * SIZE_FACTOR + sparksGlowOffset;
-                
-                // dist *= 2.;
+				float dist = h * 0.05 * sparksSizeFactor + sparksGlowOffset;
 				float atten = 1.0 / (1.0 + 100.0 * pow(dist, sparksGlow));
 				sparkCol += sc.xyz * sc.w * (atten);
 				// sparkCol += sc.xyz * sc.w * (atten + clamp(1.0 - h * sparkT * 0.05, 0.0, 1.0));
@@ -208,7 +211,6 @@ vec3 sparks(vec2 px, vec3 offset) {
 	vec3 rdir = normalize(vec3(rd.x*0.5, rd.y*0.5, 1.0));
     vec3 center = (gl_ModelViewMatrix * vec4(offset, 1.)).xyz;
 	return trace(vec3(0., 0., 0.), rdir, px, center);
-	return trace(vec3(-40.0, 20.0, -150), rdir, px, center);
 }
 
 `;
@@ -313,7 +315,8 @@ class Video {
             sparksGlowOffset: sparksParams.glowOffset,
             sparksStroke: sparksParams.stroke,
             sparksNumber: sparksParams.num,
-            sparksLengthFactor: sparksParams.lengthFactor
+            sparksLengthFactor: sparksParams.lengthFactor,
+            sparksSizeFactor: sparksParams.sizeFactor
         }).draw(this.mesh);
         this.gl.disable(this.gl.BLEND);
         // uniform float sparksGlowOffset;

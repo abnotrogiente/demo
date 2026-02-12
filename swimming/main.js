@@ -61,7 +61,7 @@ var poolSize = new GL.Vector(2.0, 1.0, 2.0);
 let resolution = new GL.Vector(256, 256);
 let params = {
   numSteps: 2, focal: 45,
-  sparks: { glow: 5., glowOffset: .8, lengthFactor: .6, stroke: .004, num: 40 }
+  sparks: { glow: 5., glowOffset: .5, lengthFactor: 1., stroke: .01, num: 40, sizeFactor: 50 }
 };
 const gui = new GUI();
 function updateResolutionWarning() {
@@ -173,6 +173,7 @@ window.onload = function () {
   sparksFolder.add(params.sparks, 'glowOffset', .1, 3).name("sparks glow offset");
   sparksFolder.add(params.sparks, 'stroke', .001, .05).name("sparks stroke");
   sparksFolder.add(params.sparks, 'num', 10, MAX_SPARKS).step(1).name("sparks number");
+  sparksFolder.add(params.sparks, 'sizeFactor', 10, 100).name("size factor");
 
   // folder.add(params, 'numSteps', 1, 10).step(1).name("number of simulation steps");
   renderer = new Renderer(gl, water, flagCenter, flagSize);
