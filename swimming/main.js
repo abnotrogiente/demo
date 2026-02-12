@@ -14,6 +14,7 @@ import GL from './lightgl.js';
 import GUI from 'three/examples/jsm/libs/lil-gui.module.min.js';
 import { Video } from './video.js';
 import { Swimmer } from './swimmer.js';
+import { MAX_SPARKS } from './video.js';
 
 
 function text2html(text) {
@@ -58,7 +59,10 @@ var flagCenter;
 var flagSize;
 var poolSize = new GL.Vector(2.0, 1.0, 2.0);
 let resolution = new GL.Vector(256, 256);
-let params = { numSteps: 2, focal: 45 };
+let params = {
+  numSteps: 2, focal: 45,
+  sparks: { glow: 5., glowOffset: .8, lengthFactor: .6, stroke: .004, num: 40 }
+};
 const gui = new GUI();
 function updateResolutionWarning() {
   document.getElementById('warning').hidden = !(resolution.x * resolution.y > 300000 && (water && water.areaConservationEnabled));
@@ -148,6 +152,7 @@ window.onload = function () {
   });
 
   const folder = gui.addFolder('variables');
+
   folder.add(poolSize, 'x', 1, 25).name('pool width').onChange(function (value) { reset(); }).listen();
   folder.add(poolSize, 'z', 1, 50).name('pool height').onChange(function (value) { reset(); }).listen();
   folder.add(poolSize, 'y', 1, 3).name('pool depth').onChange(function (value) { reset(); }).listen();
@@ -161,6 +166,14 @@ window.onload = function () {
     gl.matrixMode(gl.MODELVIEW);
     console.log("perspective : " + params.focal);
   });
+  // lengthFactor: 1.5, stroke: .004, num: 40 
+  const sparksFolder = folder.addFolder("Sparks");
+  sparksFolder.add(params.sparks, 'glow', 1, 30).name("sparks glow factor");
+  sparksFolder.add(params.sparks, 'lengthFactor', 0.1, 10).name("sparks length factor");
+  sparksFolder.add(params.sparks, 'glowOffset', .1, 3).name("sparks glow offset");
+  sparksFolder.add(params.sparks, 'stroke', .001, .05).name("sparks stroke");
+  sparksFolder.add(params.sparks, 'num', 10, MAX_SPARKS).step(1).name("sparks number");
+
   // folder.add(params, 'numSteps', 1, 10).step(1).name("number of simulation steps");
   renderer = new Renderer(gl, water, flagCenter, flagSize);
   cubemap = new Cubemap({
@@ -548,7 +561,7 @@ window.onload = function () {
     renderer.renderCube(water);
     renderer.renderWater(water, cubemap, swimmers, raceTime);
     renderer.renderSpheres(water);
-    video.render(raceTime);
+    video.render(raceTime, params.sparks);
     gl.disable(gl.DEPTH_TEST);
     water.addOrRemoveVisualizationWaves(false, swimmers, raceTime);
   }

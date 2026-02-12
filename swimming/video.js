@@ -1,10 +1,19 @@
 import GL from "./lightgl.js";
 
+const MAX_SPARKS = 200;
+
+export { MAX_SPARKS };
 
 const sparksHelper = `
 /// The amount of 'sparks' to use (spark count between about 73-206 is known to crash Win7/Chrome)
 uniform float iTime;
 uniform vec2 iResolution;
+uniform float sparksGlow;
+uniform float sparksLengthFactor;
+uniform float sparksGlowOffset;
+uniform float sparksStroke;
+uniform float sparksNumber;
+#define MAX_SPARKS ` + MAX_SPARKS + `
 /// The amount of 'sparks' to use (spark count between about 73-206 is known to crash Win7/Chrome)
 #define SPARKS 40    // Low-end
 //#define SPARKS 100   // Low-mid
@@ -19,6 +28,8 @@ uniform vec2 iResolution;
 //#define FIRE_STREAM
 //#define STAR_BOMB
 //#define WATER_LINE
+
+#define SIZE_FACTOR 50.
 
 #define BRIGHTNESS 1.0   /// 0.0 == auto-brightness
 
@@ -102,7 +113,7 @@ float planeIntersection(vec3 rpos, vec3 rdir, vec3 n) {
 
 float cylinder(vec3 pos, vec3 dir, float len) {
 	float x = dot(pos, dir);
-	return max(max(length(pos - dir * x) - 0.2, x), -x-len);
+	return max(max(length(pos - dir * x) - sparksStroke, x), -x-len);
 }
 
 vec4 color(float age) {
@@ -130,29 +141,25 @@ vec3 trace(vec3 rpos, vec3 rdir, vec2 fragCoord, vec3 center) {
 	vec3 sparkPos = rpos + rdir * sparkT;
 	
 	float time = iTime * SPEED_FACTOR;
-	for (int i = 0; i < SPARKS; i++)
+	for (int i = 0; i < MAX_SPARKS; i++)
 	{
+        float float_i = float(i);
+        if (float_i >= sparksNumber) break;
 		// Calculate spark position and velocity
 		float a = spread(vec2(i, 1.0))*SPREAD_FACTOR+MIN_ANGLE;
 		float b = spread(vec2(i, 3.0))*RAND_FACTOR;
 		float startTime = spread(vec2(i, 5.0)) * GROUP_FACTOR;
 		vec3 dir = sampleAngle(a) * 10.0;
-        vec3 gravity = -1.2 * 2. * waterNormal;
-
-        // dir = (gl_ModelViewMatrix * vec4(dir, 0.)).xyz;
-        // gravity = (gl_ModelViewMatrix * vec4(gravity, 0.)).xyz;
-		
-		vec3 start = -dir * (1.35 + b * 0.3);
+        vec3 gravity = -1.2 * 2. * waterNormal / SIZE_FACTOR;
+	
+		vec3 start = -dir * (1.35 + b * 0.3) / SIZE_FACTOR;
 		vec3 force = start * 0.02 + gravity;
-
-        // start = (gl_ModelViewMatrix * vec4(start, 1.)).xyz;
-        // force = (gl_ModelViewMatrix * vec4(force, 0.)).xyz;
 
 		float c = fract(time + startTime) * 20.0;
 		vec3 offset = center + start * c + force * c * c * 0.5;
 		
 		vec3 v = start + force * c;
-		float vel = length(v) * LENGTH_FACTOR;
+		float vel = length(v) * sparksLengthFactor;
 		vec3 vdir = normalize(v);
 		vec4 sc = color(c);
 				
@@ -168,7 +175,8 @@ vec3 trace(vec3 rpos, vec3 rdir, vec2 fragCoord, vec3 center) {
 				dist += 0.8;
 				atten += 1.0 / (1.0 + 100.0*dist*dist*dist);
 			}
-			col += vec4(sc.xyz * sc.w * atten, 0.0) * brightness;
+            atten /= SIZE_FACTOR;
+			//col += vec4(sc.xyz * sc.w * atten, 0.0) * brightness;
 		}
 	
 		// Shade sparks
@@ -179,8 +187,10 @@ vec3 trace(vec3 rpos, vec3 rdir, vec2 fragCoord, vec3 center) {
 			if (h < 0.0) {
 				sparkCol += vec3(sc.xyz * sc.w);
 			} else {
-				float dist = h * 0.05 + 0.8;
-				float atten = 1.0 / (1.0 + 100.0 * dist * dist * dist);
+				float dist = h * 0.05 * SIZE_FACTOR + sparksGlowOffset;
+                
+                // dist *= 2.;
+				float atten = 1.0 / (1.0 + 100.0 * pow(dist, sparksGlow));
 				sparkCol += sc.xyz * sc.w * (atten);
 				// sparkCol += sc.xyz * sc.w * (atten + clamp(1.0 - h * sparkT * 0.05, 0.0, 1.0));
 			}
@@ -279,7 +289,7 @@ class Video {
 
     }
 
-    render(time) {
+    render(time, sparksParams) {
         if (!this.show) return;
         if (this.copyVideo) {
             this.updateTexture();
@@ -298,10 +308,17 @@ class Video {
         this.shader.uniforms({
             uSampler: 0,
             iTime: time,
-            iResolution: [this.gl.canvas.width, this.gl.canvas.height]
+            iResolution: [this.gl.canvas.width, this.gl.canvas.height],
+            sparksGlow: sparksParams.glow,
+            sparksGlowOffset: sparksParams.glowOffset,
+            sparksStroke: sparksParams.stroke,
+            sparksNumber: sparksParams.num,
+            sparksLengthFactor: sparksParams.lengthFactor
         }).draw(this.mesh);
         this.gl.disable(this.gl.BLEND);
-
+        // uniform float sparksGlowOffset;
+        // uniform float sparksGlowStroke;
+        // uniform float sparksNumber;
     }
 
 
