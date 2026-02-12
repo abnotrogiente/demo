@@ -61,7 +61,7 @@ var poolSize = new GL.Vector(2.0, 1.0, 2.0);
 let resolution = new GL.Vector(256, 256);
 let params = {
   numSteps: 2, focal: 45,
-  sparks: { glow: 5., glowOffset: .5, lengthFactor: 1., stroke: .01, num: 40, sizeFactor: 50 }
+  sparks: { glow: 5., glowOffset: .5, lengthFactor: 1., stroke: .01, num: 40, sizeFactor: 50, fov: Math.PI / 4 }
 };
 const gui = new GUI();
 function updateResolutionWarning() {
@@ -160,6 +160,7 @@ window.onload = function () {
   folder.add(water, 'areaConservationEnabled', 'areaConservationEnabled').name('area conservation').listen();
   folder.add(Swimmer, "showFlags").name('show flags').listen();
   folder.add(params, 'focal', 28, 45).name('focal').listen().onChange(function (value) {
+    params.sparks.fov = value * 2 * Math.PI / 360;
     gl.matrixMode(gl.PROJECTION);
     gl.loadIdentity();
     gl.perspective(params.focal, gl.canvas.width / gl.canvas.height, 0.01, 100);
@@ -455,6 +456,7 @@ window.onload = function () {
       reset();
 
       params.focal = 31.75;
+      params.sparks.fov = params.focal * 2 * Math.PI / 360;
       gl.matrixMode(gl.PROJECTION);
       gl.loadIdentity();
       gl.perspective(params.focal, gl.canvas.width / gl.canvas.height, 0.01, 100);

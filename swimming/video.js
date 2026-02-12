@@ -14,6 +14,7 @@ uniform float sparksGlowOffset;
 uniform float sparksStroke;
 uniform float sparksNumber;
 uniform float sparksSizeFactor;
+uniform float fov;
 #define MAX_SPARKS ` + MAX_SPARKS + `
 /// The amount of 'sparks' to use (spark count between about 73-206 is known to crash Win7/Chrome)
 #define SPARKS 40    // Low-end
@@ -208,7 +209,8 @@ vec3 trace(vec3 rpos, vec3 rdir, vec2 fragCoord, vec3 center) {
 vec3 sparks(vec2 px, vec3 offset) {
 	vec2 rd = (px / iResolution.yy - vec2(iResolution.x/iResolution.y*0.5-0.5, 0.0)) * 2.0 - 1.0;
     rd *= -1.;
-	vec3 rdir = normalize(vec3(rd.x*0.5, rd.y*0.5, 1.0));
+    float d = 1. / tan(fov / 2.); // TODO pre compute this before shader
+	vec3 rdir = normalize(vec3(rd.x , rd.y, d));
     vec3 center = (gl_ModelViewMatrix * vec4(offset, 1.)).xyz;
 	return trace(vec3(0., 0., 0.), rdir, px, center);
 }
@@ -266,8 +268,8 @@ class Video {
         highp vec4 texelColor = texture2D(uSampler, vTextureCoord);
         gl_FragColor = vec4(texelColor.rgb, 0.5);
         vec3 spark = pow(sparks(gl_FragCoord.xy, vec3(0., 0., 0.)), vec3(0.4545));
-        gl_FragColor = vec4(mix(gl_FragColor.rgb, spark, .5), max(0.5, length(spark)));
-        gl_FragColor = vec4(spark, 1.);
+        gl_FragColor = vec4(mix(gl_FragColor.rgb, spark, .5), max(0.5, 2.*length(spark)));
+        gl_FragColor = vec4(spark, 2.*length(spark));
         // gl_FragColor = vec4(1, 0, 0, 1);
     }
 `);
@@ -316,7 +318,8 @@ class Video {
             sparksStroke: sparksParams.stroke,
             sparksNumber: sparksParams.num,
             sparksLengthFactor: sparksParams.lengthFactor,
-            sparksSizeFactor: sparksParams.sizeFactor
+            sparksSizeFactor: sparksParams.sizeFactor,
+            fov: sparksParams.fov
         }).draw(this.mesh);
         this.gl.disable(this.gl.BLEND);
         // uniform float sparksGlowOffset;

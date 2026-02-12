@@ -214,7 +214,6 @@ Water.prototype.addDrop = function (x, y, radius, strength) {
 Water.prototype.addOrRemoveVisualizationWaves = function (add, swimmers, raceTime) {
   if (!this.visualizationWavesEnabled) return;
   var this_ = this;
-  console.log("add : " + add);
   const numAttributes = 4;
   const swimmersAttributes = new Float32Array(numAttributes * swimmers.length);
   for (let i = 0; i < swimmers.length; i++) {
