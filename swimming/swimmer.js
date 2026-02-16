@@ -19,9 +19,9 @@ class Swimmer {
     static useGravity = false;
     static swimming = false;
     static showFlags = true;
-    static numAttributes = 4;
+    static numAttributes = 5;
     static numVecAttributes = Math.ceil(Swimmer.numAttributes / 4);
-    static maxNumSwimmer = 16;
+    static maxNumSwimmer = 10;
     static swimmersAttributesTexture = null;
     /**@type {GL.Mesh.plane} */
     static plane = null;
@@ -43,17 +43,20 @@ class Swimmer {
      * @param {Swimmer[]} swimmers
      */
     static updateAttributesTexture = (gl, swimmers) => {
-        const swimmersAttributes = new Float32Array(Swimmer.numAttributes * Swimmer.maxNumSwimmer);
+        const swimmersAttributes = new Float32Array(Swimmer.numVecAttributes * 4 * Swimmer.maxNumSwimmer);
         for (let i = 0; i < swimmers.length; i++) {
-            swimmersAttributes[Swimmer.numVecAttributes * 4 * i] = swimmers[i].body.center.x;
-            swimmersAttributes[Swimmer.numVecAttributes * 4 * i + 1] = swimmers[i].body.center.z;
-            swimmersAttributes[Swimmer.numVecAttributes * 4 * i + 2] = swimmers[i].divingDistance;
-            swimmersAttributes[Swimmer.numVecAttributes * 4 * i + 3] = swimmers[i].divingTime;
+            swimmersAttributes[4 * i] = swimmers[i].body.center.x;
+            swimmersAttributes[4 * i + 1] = swimmers[i].body.center.z;
+            swimmersAttributes[4 * i + 2] = swimmers[i].divingDistance;
+            swimmersAttributes[4 * i + 3] = swimmers[i].divingTime;
+
+            //Second row of attributes
+            swimmersAttributes[Swimmer.maxNumSwimmer * 4 + 4 * i] = swimmers[i].reactionTime;
         }
         // Write back to textureA
         gl.bindTexture(gl.TEXTURE_2D, Swimmer.swimmersAttributesTexture.id);
-        gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, Swimmer.maxNumSwimmer, 1, gl.RGBA, gl.FLOAT, swimmersAttributes);
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, Swimmer.maxNumSwimmer, Swimmer.numVecAttributes, gl.RGBA, gl.FLOAT, swimmersAttributes);
     };
 
     constructor(center) {
@@ -130,15 +133,32 @@ const swimmersHelperFunctions = `
     uniform float wr;
     #define sqrt_2_PI 2.50662827
     #define PI 3.1415926536
-    const int SWIMMER_X_INDEX = 0;
-    const int SWIMMER_Z_INDEX = 1;
-    const int SWIMMER_DIVING_DISTANCE_INDEX = 2;
-    const int SWIMMER_DIVING_TIME_INDEX = 3;
     uniform sampler2D swimmersAttributesTexture;
     const int SWIMMERS_NUM_ATTRIBUTES = 4;
-    const vec2 TEXTURE_SIZE = vec2(16., 1.);
+    const vec2 TEXTURE_SIZE = vec2(`+ Swimmer.maxNumSwimmer + `, ` + Swimmer.numVecAttributes + `);
     uniform float swimmersNumber;
     uniform float time;
+
+    vec2 getAttributePosition(int i) {
+        float i_float = float(i);
+        vec2 pixel = vec2(i_float, 0.);
+        vec4 attributes = texture2D(swimmersAttributesTexture, (pixel + .5) / TEXTURE_SIZE);
+        return attributes.rg;
+    }
+
+    vec2 getAttributeDiving(int i) {
+        float i_float = float(i);
+        vec2 pixel = vec2(i_float, 0.);
+        vec4 attributes = texture2D(swimmersAttributesTexture, (pixel + .5) / TEXTURE_SIZE);
+        return attributes.ba;
+    }
+
+    float getAttributeReactionTime(int i ) {
+        float i_float = float(i);
+        vec2 pixel = vec2(i_float, 1.);
+        vec4 attributes = texture2D(swimmersAttributesTexture, (pixel + .5) / TEXTURE_SIZE);
+        return attributes.r;
+    }
 
     float gaussian(float x, float mean, float std) {
         return exp(-(x - mean) * (x - mean) / (2. * std * std)) / (std * sqrt_2_PI);
@@ -158,12 +178,12 @@ const swimmersHelperFunctions = `
         for (int i = 0; i < 10; i++) {
             float i_float = float(i);
             if (i_float > swimmersNumber - 0.1) break;
-            vec2 pixel = vec2(i_float, 0.);
-            vec4 attributes = texture2D(swimmersAttributesTexture, (pixel + .5) / TEXTURE_SIZE);
-            float swimmer_x = attributes.r;
-            float swimmer_z = attributes.g;
-            float divingDistance = attributes.b;
-            float divingTime = attributes.a;
+            vec2 swimmerPos = getAttributePosition(i);
+            float swimmer_x = swimmerPos.x;
+            float swimmer_z = swimmerPos.y;
+            vec2 swimmerDiving = getAttributeDiving(i);
+            float divingDistance = swimmerDiving.x;
+            float divingTime = swimmerDiving.y;
 
             float timeSinceDiving = time - divingTime;
             const float rippleSpeed = .5;

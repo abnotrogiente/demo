@@ -192,10 +192,9 @@ function Renderer(gl, water, flagCenter, flagSize) {
           for (int i = 0; i < 10; i++) {
             float i_float = float(i);
             if (i_float > swimmersNumber - 0.1) break;
-            vec2 pixel = vec2(i_float + .5, .5);
-            vec4 attributes = texture2D(swimmersAttributesTexture, (pixel) / TEXTURE_SIZE);
-            float swimmer_x = attributes.r;
-            float swimmer_z = attributes.g;
+            vec2 swimmerPos = getAttributePosition(i);
+            float swimmer_x = swimmerPos.x;
+            float swimmer_z = swimmerPos.y;
             vec2 flagCenterNew = vec2(swimmer_x, swimmer_z - 2.5);
             vec2 flagCorner = flagCenterNew - flagSize / 2.;
             if (showProjectionGrid && isOnConservedAreaGrid(position, 0.1)) color = vec3(1., 1., 0.); /* Debug conserved area grid */
