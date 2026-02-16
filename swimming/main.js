@@ -50,6 +50,7 @@ var angleZ = 0;
 let translateX = 0;
 let translateY = 0;
 var zoomDistance = 4.0;
+Swimmer.initSwimmersAttributesTexture(gl);
 
 const videoStartTime = 17;
 let videoTime = 0;
@@ -544,6 +545,7 @@ window.onload = function () {
       if (paused) renderer.updateCaustics(water);
     }
 
+    if (Swimmer.showFlags) Swimmer.updateAttributesTexture(gl, swimmers);
     water.addOrRemoveVisualizationWaves(true, swimmers, raceTime);
     water.updateNormals();
 

@@ -216,22 +216,12 @@ Water.prototype.addDrop = function (x, y, radius, strength) {
 Water.prototype.addOrRemoveVisualizationWaves = function (add, swimmers, raceTime) {
   if (!this.visualizationWavesEnabled) return;
   var this_ = this;
-  const numAttributes = 4;
-  const swimmersAttributes = new Float32Array(numAttributes * swimmers.length);
-  for (let i = 0; i < swimmers.length; i++) {
-    swimmersAttributes[numAttributes * i] = swimmers[i].body.center.x;
-    swimmersAttributes[numAttributes * i + 1] = swimmers[i].body.center.z;
-    swimmersAttributes[numAttributes * i + 2] = swimmers[i].divingDistance;
-    swimmersAttributes[numAttributes * i + 3] = swimmers[i].divingTime;
-  }
-  /**@type {WebGLRenderingContext} */
-  const g = this.gl;
-  g.useProgram(this.visualizationWavesShader.program);
-  g.uniform1fv(g.getUniformLocation(this.visualizationWavesShader.program, "swimmersAttributes"), swimmersAttributes)
 
   this.textureB.drawTo(function () {
     this_.textureA.bind();
+    if (Swimmer.swimmersAttributesTexture) Swimmer.swimmersAttributesTexture.bind(1);
     this_.visualizationWavesShader.uniforms({
+      swimmersAttributesTexture: 1,
       invPoolSizeVertex: [this_.invPoolSize.x, this_.invPoolSize.z],
       poolSize: [this_.poolSize.x, this_.poolSize.y, this_.poolSize.z],
       wr: this_.WR_position,

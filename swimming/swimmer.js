@@ -19,10 +19,49 @@ class Swimmer {
     static useGravity = false;
     static swimming = false;
     static showFlags = true;
+    static numAttributes = 4;
+    static numVecAttributes = Math.ceil(Swimmer.numAttributes / 4);
+    static maxNumSwimmer = 16;
+    static swimmersAttributesTexture = null;
+    /**@type {GL.Mesh.plane} */
+    static plane = null;
+    /**@type {GL.Shader} */
+    static attributeShader = null;
+    /**
+     * 
+     * @param {WebGLRenderingContext} gl 
+     */
+    static initSwimmersAttributesTexture = (gl) => {
+        const filter = gl.NEAREST;
+        Swimmer.plane = GL.Mesh.plane();
+        Swimmer.swimmersAttributesTexture = new GL.Texture(Swimmer.maxNumSwimmer, Swimmer.numVecAttributes, { type: gl.FLOAT, filter: filter });
+    }
+
+    /**
+     * 
+     * @param {WebGLRenderingContext} gl 
+     * @param {Swimmer[]} swimmers
+     */
+    static updateAttributesTexture = (gl, swimmers) => {
+        const swimmersAttributes = new Float32Array(Swimmer.numAttributes * Swimmer.maxNumSwimmer);
+        for (let i = 0; i < swimmers.length; i++) {
+            swimmersAttributes[Swimmer.numVecAttributes * 4 * i] = swimmers[i].body.center.x;
+            swimmersAttributes[Swimmer.numVecAttributes * 4 * i + 1] = swimmers[i].body.center.z;
+            swimmersAttributes[Swimmer.numVecAttributes * 4 * i + 2] = swimmers[i].divingDistance;
+            swimmersAttributes[Swimmer.numVecAttributes * 4 * i + 3] = swimmers[i].divingTime;
+        }
+        // Write back to textureA
+        gl.bindTexture(gl.TEXTURE_2D, Swimmer.swimmersAttributesTexture.id);
+        gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, Swimmer.maxNumSwimmer, 1, gl.RGBA, gl.FLOAT, swimmersAttributes);
+    };
+
     constructor(center) {
         this.startingPoint = new GL.Vector(center.x, center.y, center.z);
         this.center = new GL.Vector(center.x, center.y, center.z);
         this.force = new GL.Vector(0, 0, 190 + gaussianRandom(0, 20));
+
+        this.reactionTime = Math.max(0.1, gaussianRandom(0.15, 0.02));
 
         const radius = .25;
         const armRadius = .15;
@@ -95,8 +134,9 @@ const swimmersHelperFunctions = `
     const int SWIMMER_Z_INDEX = 1;
     const int SWIMMER_DIVING_DISTANCE_INDEX = 2;
     const int SWIMMER_DIVING_TIME_INDEX = 3;
-    const int SWIMMER_NUM_ATTRIBUTES = 4;
-    uniform float swimmersAttributes[40];
+    uniform sampler2D swimmersAttributesTexture;
+    const int SWIMMERS_NUM_ATTRIBUTES = 4;
+    const vec2 TEXTURE_SIZE = vec2(16., 1.);
     uniform float swimmersNumber;
     uniform float time;
 
@@ -114,13 +154,17 @@ const swimmersHelperFunctions = `
 
     vec3 getDivingWaves(vec2 coord) {
         vec3 res = vec3(0., 0., -1.);
+        
         for (int i = 0; i < 10; i++) {
             float i_float = float(i);
             if (i_float > swimmersNumber - 0.1) break;
-            float swimmer_x = swimmersAttributes[SWIMMER_NUM_ATTRIBUTES*i + SWIMMER_X_INDEX];
-            float swimmer_z = swimmersAttributes[SWIMMER_NUM_ATTRIBUTES*i + SWIMMER_Z_INDEX];
-            float divingDistance = swimmersAttributes[SWIMMER_NUM_ATTRIBUTES * i + SWIMMER_DIVING_DISTANCE_INDEX];
-            float divingTime = swimmersAttributes[SWIMMER_NUM_ATTRIBUTES * i + SWIMMER_DIVING_TIME_INDEX];
+            vec2 pixel = vec2(i_float, 0.);
+            vec4 attributes = texture2D(swimmersAttributesTexture, (pixel + .5) / TEXTURE_SIZE);
+            float swimmer_x = attributes.r;
+            float swimmer_z = attributes.g;
+            float divingDistance = attributes.b;
+            float divingTime = attributes.a;
+
             float timeSinceDiving = time - divingTime;
             const float rippleSpeed = .5;
             const float maxTime = 10.;

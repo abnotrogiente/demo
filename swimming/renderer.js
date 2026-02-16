@@ -192,8 +192,10 @@ function Renderer(gl, water, flagCenter, flagSize) {
           for (int i = 0; i < 10; i++) {
             float i_float = float(i);
             if (i_float > swimmersNumber - 0.1) break;
-            float swimmer_x = swimmersAttributes[SWIMMER_NUM_ATTRIBUTES*i + SWIMMER_X_INDEX];
-            float swimmer_z = swimmersAttributes[SWIMMER_NUM_ATTRIBUTES*i + SWIMMER_Z_INDEX];
+            vec2 pixel = vec2(i_float + .5, .5);
+            vec4 attributes = texture2D(swimmersAttributesTexture, (pixel) / TEXTURE_SIZE);
+            float swimmer_x = attributes.r;
+            float swimmer_z = attributes.g;
             vec2 flagCenterNew = vec2(swimmer_x, swimmer_z - 2.5);
             vec2 flagCorner = flagCenterNew - flagSize / 2.;
             if (showProjectionGrid && isOnConservedAreaGrid(position, 0.1)) color = vec3(1., 1., 0.); /* Debug conserved area grid */
@@ -389,24 +391,9 @@ Renderer.prototype.renderWater = function (water, sky, swimmers, raceTime) {
   this.causticTex.bind(3);
   this.flagTexture.bind(4); // TODO make the texture work
   water.areaConservationTexture.bind(5);
+  if (Swimmer.swimmersAttributesTexture) Swimmer.swimmersAttributesTexture.bind(6);
   this.gl.enable(this.gl.CULL_FACE);
 
-  if (Swimmer.showFlags) {
-    const numAttributes = 4;
-    const swimmersAttributes = new Float32Array(numAttributes * swimmers.length);
-    for (let i = 0; i < swimmers.length; i++) {
-      swimmersAttributes[numAttributes * i] = swimmers[i].body.center.x;
-      swimmersAttributes[numAttributes * i + 1] = swimmers[i].body.center.z;
-      swimmersAttributes[numAttributes * i + 2] = swimmers[i].divingDistance;
-      swimmersAttributes[numAttributes * i + 3] = swimmers[i].divingTime;
-    }
-    /**@type {WebGLRenderingContext} */
-    const g = this.gl;
-    g.useProgram(this.waterShaders[0].program);
-    g.uniform1fv(g.getUniformLocation(this.waterShaders[0].program, "swimmersAttributes"), swimmersAttributes)
-    g.useProgram(this.waterShaders[1].program);
-    g.uniform1fv(g.getUniformLocation(this.waterShaders[1].program, "swimmersAttributes"), swimmersAttributes)
-  }
   for (var i = 0; i < 2; i++) {
     this.gl.cullFace(i ? this.gl.BACK : this.gl.FRONT);
     this.waterShaders[i].uniforms({
@@ -417,6 +404,7 @@ Renderer.prototype.renderWater = function (water, sky, swimmers, raceTime) {
       causticTex: 3,
       flag: 4,
       areaConservationTexture: 5,
+      swimmersAttributesTexture: 6,
       areaConservation: water.areaConservationEnabled,
       flagSize: this.flagSize,
       flagCenter: [this.flagCenter.x, this.flagCenter.y],
