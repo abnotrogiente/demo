@@ -22,9 +22,10 @@ function Water(gl, poolSize, resolution = null) {
   this.spheres = [];
   var vertexShader = `
     varying vec2 coord;
+    uniform vec2 invPoolSizeVertex;
     void main() {
-      coord = gl_Vertex.xy * 0.5 + 0.5;
-      gl_Position = vec4(gl_Vertex.xyz, 1.0);
+      coord = gl_Vertex.xy * invPoolSizeVertex + 0.5;
+      gl_Position = vec4(gl_Vertex.xy * 2. * invPoolSizeVertex, 0., 1.0);
     }
   `;
 
@@ -117,8 +118,7 @@ function Water(gl, poolSize, resolution = null) {
     varying vec2 coord;
     
     float volumeInSphere(vec3 center) {
-      vec3 toCenter = vec3(coord.x * 2.0 - 1.0, 0.0, coord.y * 2.0 - 1.0) - center;
-    toCenter = vec3((coord.x - 0.5) * poolSize.x, 0.0, (coord.y - 0.5) * poolSize.z) - center;
+      vec3 toCenter = vec3((coord.x - 0.5) * poolSize.x, 0.0, (coord.y - 0.5) * poolSize.z) - center;
       float t = length(toCenter) / radius;
       float dy = exp(-pow(t * 1.5, 6.0));
       float ymin = min(0.0, center.y - dy);
@@ -182,6 +182,7 @@ Water.prototype.reset = function (poolSize, resolution = null) {
   this.showProjectionGrid = false;
 
   this.poolSize = poolSize;
+  this.invPoolSize = new GL.Vector(1 / poolSize.x, 1 / poolSize.y, 1 / poolSize.z);
   var filter = GL.Texture.canUseFloatingPointLinearFiltering() ? this.gl.LINEAR : this.gl.NEAREST;
   if ((!this.textureA.canDrawTo() || !this.textureB.canDrawTo()) && GL.Texture.canUseHalfFloatingPointTextures()) {
     console.log("No draw");
@@ -196,6 +197,7 @@ Water.prototype.addDrop = function (x, y, radius, strength) {
   this.textureB.drawTo(function () {
     this_.textureA.bind();
     this_.dropShader.uniforms({
+      invPoolSizeVertex: [this_.invPoolSize.x, this_.invPoolSize.z],
       center: [x, y],
       radius: radius,
       strength: strength,
@@ -230,6 +232,7 @@ Water.prototype.addOrRemoveVisualizationWaves = function (add, swimmers, raceTim
   this.textureB.drawTo(function () {
     this_.textureA.bind();
     this_.visualizationWavesShader.uniforms({
+      invPoolSizeVertex: [this_.invPoolSize.x, this_.invPoolSize.z],
       poolSize: [this_.poolSize.x, this_.poolSize.y, this_.poolSize.z],
       wr: this_.WR_position,
       sqrt_2_PI: this_.sqrt_2_PI,
@@ -269,6 +272,7 @@ Water.prototype.moveSphere = function (oldCenter, newCenter, radius) {
   this.textureB.drawTo(function () {
     this_.textureA.bind();
     this_.sphereShader.uniforms({
+      invPoolSizeVertex: [this_.invPoolSize.x, this_.invPoolSize.z],
       oldCenter: oldCenter,
       newCenter: newCenter,
       radius: radius,
@@ -280,10 +284,10 @@ Water.prototype.moveSphere = function (oldCenter, newCenter, radius) {
 
 Water.prototype.stepSimulation = function () {
   var this_ = this;
-
   this.textureB.drawTo(function () {
     this_.textureA.bind();
     this_.updateShader.uniforms({
+      invPoolSizeVertex: [this_.invPoolSize.x, this_.invPoolSize.z],
       delta: [this_.delta.x, this_.delta.y],
       wr: this_.WR_position,
       prev_wr: this_.prev_WR_position,
@@ -302,6 +306,7 @@ Water.prototype.updateNormals = function () {
   this.textureB.drawTo(function () {
     this_.textureA.bind();
     this_.normalShader.uniforms({
+      invPoolSizeVertex: [this_.invPoolSize.x, this_.invPoolSize.z],
       delta: [this_.delta.x, this_.delta.y]
       // delta: [Math.max(this_.poolSize.x, this_.poolSize.z) / this_.poolSize.x / Math.max(this_.textureA.width, this_.textureA.height), Math.max(this_.poolSize.x, this_.poolSize.z) / this_.poolSize.z / Math.max(this_.textureA.width, this_.textureA.height)]
     }).draw(this_.plane);
