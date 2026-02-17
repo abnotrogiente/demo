@@ -53,6 +53,7 @@ class Swimmer {
 
             //Second row of attributes
             swimmersAttributes[Swimmer.maxNumSwimmer * 4 + 4 * i] = swimmers[i].reactionTime;
+            swimmersAttributes[Swimmer.maxNumSwimmer * 4 + 4 * i + 1] = swimmers[i].body.velocity.z * 3.6;
         }
         // Write back to textureA
         gl.bindTexture(gl.TEXTURE_2D, Swimmer.swimmersAttributesTexture.id);
@@ -167,6 +168,13 @@ const swimmersHelperFunctions = `
         vec2 pixel = vec2(i_float, 0.);
         vec4 attributes = texture(swimmersAttributesTexture, (pixel + .5) / TEXTURE_SIZE);
         return attributes.rg;
+    }
+
+    float getAttributeSpeed(int i) {
+        float i_float = float(i);
+        vec2 pixel = vec2(i_float, 1.);
+        vec4 attributes = texture(swimmersAttributesTexture, (pixel + .5) / TEXTURE_SIZE);
+        return attributes.g;
     }
 
     vec2 getAttributeDiving(int i) {

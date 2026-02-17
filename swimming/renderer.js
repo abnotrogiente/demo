@@ -167,7 +167,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
       
       
       ` + swimmersHelperFunctions + textHelperFunctions + `
-      makeStrI(printFrame)  _D _e _b _u _g __ _I _n _t _e _g _e _r _s _COL __ _i _F _r _a _m _e __ _EQ __ _num_ __ _f _r _a _m _e _s _endNum
+      makeStrF(printFrame) _num_ __ _k _m _DIV _h _endNum
       
       bool isOnConservedAreaGrid(vec2 pos, float size) {
         vec2 gridCoord = pos / size;
@@ -222,12 +222,13 @@ function Renderer(gl, water, flagCenter, flagSize) {
             }
             if (showAreaConservedGrid && isOnConservedAreaGrid(position, 0.1)) color = vec3(1., 0., 0.); /* Debug conserved area grid */
             vec2 posFlag = position - flagCorner - flagSize / 2.;/*Fixes the corner of the flag on the XZ plane*/
+            vec2 flagCoord = posFlag / flagSize + 0.5;
             if (abs(posFlag.x) <= flagSize / 2. && abs(posFlag.y) <= flagSize / 2.) {
-              vec2 flagCoord = posFlag / flagSize + 0.5;
               vec3 flagColor = texture(flag, flagCoord).xyz;
-              color = flagColor;
-              // color = GREEN/.4 * printFrame(posFlag, time); 
+              color = flagColor;              
             }
+            vec3 letterColor = GREEN/.4 * printFrame(vec2(1. - flagCoord.y - 1.5, 1. - flagCoord.x) / 15., getAttributeSpeed(i), 2);
+            if (letterColor != vec3(0., 0., 0.)) color = letterColor; 
           }
         }
         return color;
