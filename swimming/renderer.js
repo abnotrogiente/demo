@@ -22,7 +22,6 @@ var helperFunctions = `
   uniform sampler2D tiles;
   uniform sampler2D causticTex;
   uniform sampler2D water;
-  uniform sampler2D flag;
   uniform sampler2D areaConservationTexture;
   uniform bool areaConservation;
   uniform vec2 flagCenter;
@@ -125,7 +124,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
   this.flagTexture = GL.Texture.fromImage(document.getElementById('flag'), {
     minFilter: this.gl.LINEAR_MIPMAP_LINEAR,
     wrap: this.gl.REPEAT,
-    format: this.gl.RGB
+    format: this.gl.RGBA
   });
   this.flagSize = flagSize;
   this.flagCenter = flagCenter;
@@ -150,6 +149,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
       uniform samplerCube sky;
       uniform bool showProjectionGrid;
       uniform bool showAreaConservedGrid;
+      uniform sampler2D flag;
 
       ` + swimmersHelperFunctions + `
       
@@ -209,9 +209,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
             if (abs(posFlag.x) <= flagSize / 2. && abs(posFlag.y) <= flagSize / 2.) {
               vec2 flagCoord = posFlag / flagSize + 0.5;
               vec3 flagColor = texture2D(flag, flagCoord).xyz;
-              flagColor = flagCoord.x <= .33 ? vec3(1., 0., 0.) : flagCoord.x >= .66 ? vec3(0., 0., 1.) : vec3(1., 1., 1.);
-              color += flagColor;
-              color /= 2.;
+              color = flagColor;
             }
           }
         }
