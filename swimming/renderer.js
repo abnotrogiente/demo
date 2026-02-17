@@ -10,6 +10,7 @@ import GL from './lightgl.js';
 import { Swimmer } from './swimmer.js';
 import { Water } from './water.js';
 import { swimmersHelperFunctions } from './swimmer.js';
+import { textHelperFunctions } from './renderText.js';
 
 var helperFunctions = `
   const float IOR_AIR = 1.0;
@@ -64,9 +65,9 @@ var helperFunctions = `
     vec3 refractedLight = refract(-light, vec3(0.0, 1.0, 0.0), IOR_AIR / IOR_WATER);
     float diffuse = max(0.0, dot(-refractedLight, sphereNormal)) * 0.5;
     vec2 coord = point.xz / poolSize.xz + 0.5;
-    vec4 info = texture2D(water, coord);
+    vec4 info = texture(water, coord);
     if (point.y < info.r) {
-      vec4 caustic = texture2D(causticTex, 0.75 * (point.xz - point.y * refractedLight.xz / refractedLight.y) / poolSize.xz + 0.5);
+      vec4 caustic = texture(causticTex, 0.75 * (point.xz - point.y * refractedLight.xz / refractedLight.y) / poolSize.xz + 0.5);
       diffuse *= caustic.r * 4.0;
     }
     color += diffuse;
@@ -80,13 +81,13 @@ var helperFunctions = `
     vec3 wallColor;
     vec3 normal;
     if (abs(point.x) > poolSize.x * 0.5 - 0.01) {
-      wallColor = texture2D(tiles, point.yz * 0.5 + vec2(1.0, 0.5)).rgb;
+      wallColor = texture(tiles, point.yz * 0.5 + vec2(1.0, 0.5)).rgb;
       normal = vec3(-point.x, 0.0, 0.0);
     } else if (abs(point.z) > poolSize.z * 0.5 - 0.01) {
-      wallColor = texture2D(tiles, point.yx * 0.5 + vec2(1.0, 0.5)).rgb;
+      wallColor = texture(tiles, point.yx * 0.5 + vec2(1.0, 0.5)).rgb;
       normal = vec3(0.0, 0.0, -point.z);
     } else {
-      wallColor = texture2D(tiles, point.xz * 0.5 + 0.5).rgb;
+      wallColor = texture(tiles, point.xz * 0.5 + 0.5).rgb;
       normal = vec3(0.0, 1.0, 0.0);
     }
     
@@ -96,9 +97,9 @@ var helperFunctions = `
     /* caustics */
     vec3 refractedLight = -refract(-light, vec3(0.0, 1.0, 0.0), IOR_AIR / IOR_WATER);
     float diffuse = max(0.0, dot(refractedLight, normal));
-    vec4 info = texture2D(water, point.xz / poolSize.xz + 0.5);
+    vec4 info = texture(water, point.xz / poolSize.xz + 0.5);
     if (point.y < info.r) {
-      vec4 caustic = texture2D(causticTex, 0.75 * (point.xz - point.y * refractedLight.xz / refractedLight.y) / poolSize.xz + 0.5);
+      vec4 caustic = texture(causticTex, 0.75 * (point.xz - point.y * refractedLight.xz / refractedLight.y) / poolSize.xz + 0.5);
       scale += diffuse * caustic.r * 2.0 * caustic.g;
     } else {
       /* shadow for the rim of the pool */
@@ -126,6 +127,12 @@ function Renderer(gl, water, flagCenter, flagSize) {
     wrap: this.gl.REPEAT,
     format: this.gl.RGBA
   });
+  this.lettersTexture = GL.Texture.fromImage(document.getElementById('letters'), {
+    minFilter: this.gl.LINEAR,
+    magFilter: this.gl.LINEAR,
+    wrap: this.gl.REPEAT,
+    format: this.gl.RGBA
+  });
   this.flagSize = flagSize;
   this.flagCenter = flagCenter;
   this.lightDir = new GL.Vector(2.0, 2.0, -1.0).unit();
@@ -135,23 +142,32 @@ function Renderer(gl, water, flagCenter, flagSize) {
     this.waterShaders[i] = new GL.Shader(`
       uniform sampler2D water;
       uniform vec3 poolSizeVertexShader;
-      varying vec3 position;
+      out vec3 position;
       void main() {
-        vec4 info = texture2D(water, gl_Vertex.xy / poolSizeVertexShader.xz + 0.5);
+        vec4 info = texture(water, gl_Vertex.xy / poolSizeVertexShader.xz + 0.5);
         position = gl_Vertex.xzy;
         position.y += info.r;
         gl_Position = gl_ModelViewProjectionMatrix * vec4(position, 1.0);
       }
     `, helperFunctions + `
       uniform vec3 eye;
-      varying vec3 position;
+      in vec3 position;
+      out vec4 fragColor;
       uniform bool showFlags;
       uniform samplerCube sky;
       uniform bool showProjectionGrid;
       uniform bool showAreaConservedGrid;
       uniform sampler2D flag;
-
-      ` + swimmersHelperFunctions + `
+      
+      // Color declarations
+      #define RED     vec3( 1,.3,.4)
+      #define GREEN   vec3(.2, 1,.4)
+      #define BLUE    vec3(.2,.8, 1)
+      #define RAINBOW abs(cos(uv.x + vec3(5,6,1)))
+      
+      
+      ` + swimmersHelperFunctions + textHelperFunctions + `
+      makeStrI(printFrame)  _D _e _b _u _g __ _I _n _t _e _g _e _r _s _COL __ _i _F _r _a _m _e __ _EQ __ _num_ __ _f _r _a _m _e _s _endNum
       
       bool isOnConservedAreaGrid(vec2 pos, float size) {
         vec2 gridCoord = pos / size;
@@ -176,7 +192,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
           if (hit.y < 2.0 / 12.0) {
             color = getWallColor(hit);
           } else {
-            color = textureCube(sky, ray).rgb;
+            color = texture(sky, ray).rgb;
             color += vec3(pow(max(0.0, dot(light, ray)), 5000.0)) * vec3(10.0, 8.0, 6.0);
           }
         }
@@ -201,15 +217,16 @@ function Renderer(gl, water, flagCenter, flagSize) {
             if (abs(origin.z + poolSize.z / 2. - wr) < .05) color = vec3(1., 1., 0.); 
             if (areaConservation) {
               vec2 coord = origin.xz / poolSize.xz + 0.5;
-              position = texture2D(areaConservationTexture, coord).xy;
-              flagCorner = texture2D(areaConservationTexture, flagCorner / poolSize.xz + 0.5).xy;
+              position = texture(areaConservationTexture, coord).xy;
+              flagCorner = texture(areaConservationTexture, flagCorner / poolSize.xz + 0.5).xy;
             }
             if (showAreaConservedGrid && isOnConservedAreaGrid(position, 0.1)) color = vec3(1., 0., 0.); /* Debug conserved area grid */
             vec2 posFlag = position - flagCorner - flagSize / 2.;/*Fixes the corner of the flag on the XZ plane*/
             if (abs(posFlag.x) <= flagSize / 2. && abs(posFlag.y) <= flagSize / 2.) {
               vec2 flagCoord = posFlag / flagSize + 0.5;
-              vec3 flagColor = texture2D(flag, flagCoord).xyz;
+              vec3 flagColor = texture(flag, flagCoord).xyz;
               color = flagColor;
+              // color = GREEN/.4 * printFrame(posFlag, time); 
             }
           }
         }
@@ -218,11 +235,11 @@ function Renderer(gl, water, flagCenter, flagSize) {
       
       void main() {
         vec2 coord = position.xz / poolSize.xz + 0.5;
-        vec4 info = texture2D(water, coord);
+        vec4 info = texture(water, coord);
         /* make water look more "peaked" */
         /*for (int i = 0; i < 5; i++) {
           coord += info.ba * 0.005;
-          info = texture2D(water, coord);
+          info = texture(water, coord);
         }*/
         
         vec3 normal = vec3(info.b, sqrt(1.0 - dot(info.ba, info.ba)), info.a);
@@ -237,7 +254,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
           vec3 reflectedColor = getSurfaceRayColor(position, reflectedRay, underwaterColor);
           vec3 refractedColor = getSurfaceRayColor(position, refractedRay, vec3(1.0)) * vec3(0.8, 1.0, 1.1);
           
-          gl_FragColor = vec4(mix(reflectedColor, refractedColor, (1.0 - fresnel) * length(refractedRay)), 1.0);
+          fragColor = vec4(mix(reflectedColor, refractedColor, (1.0 - fresnel) * length(refractedRay)), 1.0);
         ` : /* above water */ `
           vec3 reflectedRay = reflect(incomingRay, normal);
           vec3 refractedRay = refract(incomingRay, normal, IOR_AIR / IOR_WATER);
@@ -246,43 +263,45 @@ function Renderer(gl, water, flagCenter, flagSize) {
           vec3 reflectedColor = getSurfaceRayColor(position, reflectedRay, abovewaterColor);
           vec3 refractedColor = getSurfaceRayColor(position, refractedRay, abovewaterColor);
           
-          gl_FragColor = vec4(mix(refractedColor, reflectedColor, fresnel), 1.0);
+          fragColor = vec4(mix(refractedColor, reflectedColor, fresnel), 1.0);
         `) + `
       }
     `);
   }
   this.sphereMesh = GL.Mesh.sphere({ detail: 10 });
   this.sphereShader = new GL.Shader(helperFunctions + `
-    varying vec3 position;
+    out vec3 position;
   void main() {
     position = sphereCenter + gl_Vertex.xyz * sphereRadius;
     gl_Position = gl_ModelViewProjectionMatrix * vec4(position, 1.0);
   }
   `, helperFunctions + `
-    varying vec3 position;
+    in vec3 position;
+    out vec4 fragColor;
   void main() {
-    gl_FragColor = vec4(getSphereColor(position), 1.0);
-      vec4 info = texture2D(water, position.xz / poolSize.xz + 0.5);
+    fragColor = vec4(getSphereColor(position), 1.0);
+      vec4 info = texture(water, position.xz / poolSize.xz + 0.5);
     if (position.y < info.r) {
-      gl_FragColor.rgb *= underwaterColor * 1.2;
+      fragColor.rgb *= underwaterColor * 1.2;
     }
   }
   `);
   this.reset();
   this.cubeShader = new GL.Shader(helperFunctions + `
-    varying vec3 position;
+    out vec3 position;
   void main() {
     position = gl_Vertex.xyz;
     position.y = ((1.0 - position.y) * (7.0 / 12.0) - 1.0) * poolSize.y;
     gl_Position = gl_ModelViewProjectionMatrix * vec4(position, 1.0);
   }
   `, helperFunctions + `
-    varying vec3 position;
+    in vec3 position;
+    out vec4 fragColor;
   void main() {
-    gl_FragColor = vec4(getWallColor(position), 1.0);
-      vec4 info = texture2D(water, position.xz / poolSize.xz + 0.5);
+    fragColor = vec4(getWallColor(position), 1.0);
+      vec4 info = texture(water, position.xz / poolSize.xz + 0.5);
     if (position.y < info.r) {
-      gl_FragColor.rgb *= underwaterColor * 1.2;
+      fragColor.rgb *= underwaterColor * 1.2;
     }
   }
   `);
@@ -290,9 +309,9 @@ function Renderer(gl, water, flagCenter, flagSize) {
   this.sphereRadius = 0;
   var hasDerivatives = !!this.gl.getExtension('OES_standard_derivatives');
   this.causticsShader = new GL.Shader(helperFunctions + `
-    varying vec3 oldPos;
-    varying vec3 newPos;
-    varying vec3 ray;
+    out vec3 oldPos;
+    out vec3 newPos;
+    out vec3 ray;
 
     /* project the ray onto the plane */
     vec3 project(vec3 origin, vec3 ray, vec3 refractedLight) {
@@ -304,7 +323,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
 
   void main() {
       vec2 coord = gl_Vertex.xy / poolSize.xz + 0.5;
-      vec4 info = texture2D(water, coord);
+      vec4 info = texture(water, coord);
     info.ba *= 0.5;
       vec3 normal = vec3(info.b, sqrt(1.0 - dot(info.ba, info.ba)), info.a);
 
@@ -318,18 +337,19 @@ function Renderer(gl, water, flagCenter, flagSize) {
   }
   `, (hasDerivatives ? '#extension GL_OES_standard_derivatives: enable\n' : '') + `
   ` + helperFunctions + `
-    varying vec3 oldPos;
-    varying vec3 newPos;
-    varying vec3 ray;
+    in vec3 oldPos;
+    in vec3 newPos;
+    in vec3 ray;
+    out vec4 fragColor;
 
   void main() {
     ` + (hasDerivatives ? `
         /* if the triangle gets smaller, it gets brighter, and vice versa */
         float oldArea = length(dFdx(oldPos)) * length(dFdy(oldPos));
         float newArea = length(dFdx(newPos)) * length(dFdy(newPos));
-    gl_FragColor = vec4(oldArea / newArea * 0.2, 1.0, 0.0, 0.0);
+    fragColor = vec4(oldArea / newArea * 0.2, 1.0, 0.0, 0.0);
     ` : `
-    gl_FragColor = vec4(0.2, 0.2, 0.0, 0.0);
+    fragColor = vec4(0.2, 0.2, 0.0, 0.0);
     ` ) + `
       
       vec3 refractedLight = refract(-light, vec3(0.0, 1.0, 0.0), IOR_AIR / IOR_WATER);
@@ -342,11 +362,11 @@ function Renderer(gl, water, flagCenter, flagSize) {
     shadow = 1.0 + (shadow - 1.0) / (0.05 + dist * 0.025);
     shadow = clamp(1.0 / (1.0 + exp(-shadow)), 0.0, 1.0);
     shadow = mix(1.0, shadow, clamp(dist * 2.0, 0.0, 1.0));
-    gl_FragColor.g = shadow;
+    fragColor.g = shadow;
 
       /* shadow for the rim of the pool */
       vec2 t = intersectCube(newPos, -refractedLight, vec3(-poolSize.x / 2., -poolSize.y, -poolSize.z / 2.), vec3(poolSize.x / 2., poolSize.y, poolSize.z / 2.));
-    gl_FragColor.r *= 1.0 / (1.0 + exp(-200.0 / (1.0 + 10.0 * (t.y - t.x)) * (newPos.y - refractedLight.y * t.y - 2.0 / 12.0)));
+    fragColor.r *= 1.0 / (1.0 + exp(-200.0 / (1.0 + 10.0 * (t.y - t.x)) * (newPos.y - refractedLight.y * t.y - 2.0 / 12.0)));
   }
   `);
 }
@@ -387,6 +407,7 @@ Renderer.prototype.renderWater = function (water, sky, swimmers, raceTime) {
   sky.bind(2); // TODO make a skybox from the ceiling of a swimming pool
   this.causticTex.bind(3);
   this.flagTexture.bind(4); // TODO make the texture work
+  this.lettersTexture.bind(7);
   water.areaConservationTexture.bind(5);
   if (Swimmer.swimmersAttributesTexture) Swimmer.swimmersAttributesTexture.bind(6);
   this.gl.enable(this.gl.CULL_FACE);
@@ -402,6 +423,7 @@ Renderer.prototype.renderWater = function (water, sky, swimmers, raceTime) {
       flag: 4,
       areaConservationTexture: 5,
       swimmersAttributesTexture: 6,
+      iChannel0: 7,
       areaConservation: water.areaConservationEnabled,
       flagSize: this.flagSize,
       flagCenter: [this.flagCenter.x, this.flagCenter.y],

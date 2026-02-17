@@ -255,10 +255,10 @@ class Video {
         // Vertex shader program
 
         this.shader = new GL.Shader(`
-    varying highp vec2 vTextureCoord;
-    varying vec3 waterNormal;
-    varying vec3 sparkPlaneNormal;
-    varying vec3 sparkDirection;
+    out highp vec2 vTextureCoord;
+    out vec3 waterNormal;
+    out vec3 sparkPlaneNormal;
+    out vec3 sparkDirection;
 
     void main(void) {
         gl_Position = vec4(gl_Vertex.xz, 0., 1.);
@@ -268,11 +268,11 @@ class Video {
         vTextureCoord = gl_TexCoord.st;
     }
 `, `
-    varying highp vec2 vTextureCoord;
-    varying vec3 waterNormal;
-    varying vec3 sparkPlaneNormal;
-    varying vec3 sparkDirection;
-
+    in highp vec2 vTextureCoord;
+    in vec3 waterNormal;
+    in vec3 sparkPlaneNormal;
+    in vec3 sparkDirection;
+    out vec4 fragColor;
 
     uniform sampler2D uSampler;
     uniform bool sparksEnabled;
@@ -281,8 +281,8 @@ class Video {
     ` + sparksHelper + `` + swimmersHelperFunctions + `
 
     void main(void) {
-        highp vec4 texelColor = texture2D(uSampler, vTextureCoord);
-        gl_FragColor = vec4(texelColor.rgb, 0.5);
+        highp vec4 texelColor = texture(uSampler, vTextureCoord);
+        fragColor = vec4(texelColor.rgb, 0.5);
         if (!sparksEnabled) return;
         vec3 spark1 = sparks(gl_FragCoord.xy, vec3(2., 1., -poolSize.z / 2.), .1);
         vec3 spark2 = sparks(gl_FragCoord.xy, vec3(-2., 1., -poolSize.z / 2.), .1);
@@ -294,13 +294,13 @@ class Video {
             float reactionTime = getAttributeReactionTime(i);
             spark += sparks(gl_FragCoord.xy, sparkPos, reactionTime);
         }
-        // gl_FragColor = vec4(mix(gl_FragColor.rgb, spark, .5), max(0.5, 2.*length(spark)));
-        gl_FragColor = vec4(mix(gl_FragColor.rgb, spark, 2.*length(spark)), max(0.5, 2.*length(spark)));
-        // gl_FragColor = vec4(gl_FragColor.rgb + spark, max(0.5, 2.*length(spark)));
-        // float m = max(gl_FragColor.r, max(gl_FragColor.g, gl_FragColor.b));
-        // if (m > 1.) gl_FragColor.rgb /= m;
-        // gl_FragColor = vec4(spark, 2.*length(spark));
-        // gl_FragColor = vec4(1, 0, 0, 1);
+        // fragColor = vec4(mix(fragColor.rgb, spark, .5), max(0.5, 2.*length(spark)));
+        fragColor = vec4(mix(fragColor.rgb, spark, 2.*length(spark)), max(0.5, 2.*length(spark)));
+        // fragColor = vec4(fragColor.rgb + spark, max(0.5, 2.*length(spark)));
+        // float m = max(fragColor.r, max(fragColor.g, fragColor.b));
+        // if (m > 1.) fragColor.rgb /= m;
+        // fragColor = vec4(spark, 2.*length(spark));
+        // fragColor = vec4(1, 0, 0, 1);
     }
 `);
 

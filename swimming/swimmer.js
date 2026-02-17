@@ -165,21 +165,21 @@ const swimmersHelperFunctions = `
     vec2 getAttributePosition(int i) {
         float i_float = float(i);
         vec2 pixel = vec2(i_float, 0.);
-        vec4 attributes = texture2D(swimmersAttributesTexture, (pixel + .5) / TEXTURE_SIZE);
+        vec4 attributes = texture(swimmersAttributesTexture, (pixel + .5) / TEXTURE_SIZE);
         return attributes.rg;
     }
 
     vec2 getAttributeDiving(int i) {
         float i_float = float(i);
         vec2 pixel = vec2(i_float, 0.);
-        vec4 attributes = texture2D(swimmersAttributesTexture, (pixel + .5) / TEXTURE_SIZE);
+        vec4 attributes = texture(swimmersAttributesTexture, (pixel + .5) / TEXTURE_SIZE);
         return attributes.ba;
     }
 
     float getAttributeReactionTime(int i ) {
         float i_float = float(i);
         vec2 pixel = vec2(i_float, 1.);
-        vec4 attributes = texture2D(swimmersAttributesTexture, (pixel + .5) / TEXTURE_SIZE);
+        vec4 attributes = texture(swimmersAttributesTexture, (pixel + .5) / TEXTURE_SIZE);
         return attributes.r;
     }
 

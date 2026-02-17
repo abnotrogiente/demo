@@ -21,7 +21,7 @@ function Water(gl, poolSize, resolution = null) {
   /**@type {Sphere[]} */
   this.spheres = [];
   var vertexShader = `
-    varying vec2 coord;
+    out vec2 coord;
     uniform vec2 invPoolSizeVertex;
     void main() {
       coord = gl_Vertex.xy * invPoolSizeVertex + 0.5;
@@ -31,53 +31,55 @@ function Water(gl, poolSize, resolution = null) {
 
   this.reset(poolSize, resolution);
   if (!GL.Texture.canUseFloatingPointTextures()) {
-    throw new Error('This demo requires the OES_texture_float extension');
+    //throw new Error('This demo requires the OES_texture_float extension');
   }
 
   this.dropShader = new GL.Shader(vertexShader, `
     const float PI = 3.141592653589793;
-    uniform sampler2D texture;
+    uniform sampler2D tex;
     uniform vec2 center;
     uniform vec3 poolSize;
     uniform float radius;
     uniform float strength;
-    varying vec2 coord;
+    in vec2 coord;
+    out vec4 fragColor;
     void main() {
       /* get vertex info */
-      vec4 info = texture2D(texture, coord);
+      vec4 info = texture(tex, coord);
       
       /* add the drop to the height */
       float drop = max(0.0, 1.0 - length(center * 0.5 + 0.5 - coord) / (radius / poolSize.z));
       drop = 0.5 - cos(drop * PI) * 0.5;
       info.r += drop * strength;
       
-      gl_FragColor = info;
+      fragColor = info;
     }
   `);
   this.updateShader = new GL.Shader(vertexShader, `
-    uniform sampler2D texture;
+    uniform sampler2D tex;
     uniform vec2 delta;
     uniform float wr;
     uniform float prev_wr;
     uniform float damping;
     uniform float sqrt_2_PI;
     uniform vec3 poolSize;
-    varying vec2 coord;
+    in vec2 coord;
+    out vec4 fragColor;
     float gaussian(float x, float mean, float std) {
     return exp(-(x - mean) * (x - mean) / (2. * std * std)) / (std * sqrt_2_PI);
   }
   void main() {
       /* get vertex info */
-      vec4 info = texture2D(texture, coord);
+      vec4 info = texture(tex, coord);
 
       /* calculate average neighbor height */
       vec2 dx = vec2(delta.x, 0.0);
       vec2 dy = vec2(0.0, delta.y);
       float average = (
-      texture2D(texture, coord - dx).r +
-      texture2D(texture, coord - dy).r +
-      texture2D(texture, coord + dx).r +
-      texture2D(texture, coord + dy).r
+      texture(tex, coord - dx).r +
+      texture(tex, coord - dy).r +
+      texture(tex, coord + dx).r +
+      texture(tex, coord + dy).r
     ) * 0.25;
 
     /* change the velocity to move toward the average */
@@ -90,32 +92,34 @@ function Water(gl, poolSize, resolution = null) {
     info.r += info.g;
       
 
-    gl_FragColor = info;
+    fragColor = info;
   }
   `);
   this.normalShader = new GL.Shader(vertexShader, `
-    uniform sampler2D texture;
+    uniform sampler2D tex;
     uniform vec2 delta;
-    varying vec2 coord;
+    in vec2 coord;
+    out vec4 fragColor;
   void main() {
       /* get vertex info */
-      vec4 info = texture2D(texture, coord);
+      vec4 info = texture(tex, coord);
 
       /* update the normal */
-      vec3 dx = vec3(delta.x, texture2D(texture, vec2(coord.x + delta.x, coord.y)).r - info.r, 0.0);
-      vec3 dy = vec3(0.0, texture2D(texture, vec2(coord.x, coord.y + delta.y)).r - info.r, delta.y);
+      vec3 dx = vec3(delta.x, texture(tex, vec2(coord.x + delta.x, coord.y)).r - info.r, 0.0);
+      vec3 dy = vec3(0.0, texture(tex, vec2(coord.x, coord.y + delta.y)).r - info.r, delta.y);
     info.ba = normalize(cross(dy, dx)).xz;
 
-    gl_FragColor = info;
+    fragColor = info;
   }
   `);
   this.sphereShader = new GL.Shader(vertexShader, `
-    uniform sampler2D texture;
+    uniform sampler2D tex;
     uniform vec3 oldCenter;
     uniform vec3 newCenter;
     uniform float radius;
     uniform vec3 poolSize;
-    varying vec2 coord;
+    in vec2 coord;
+    out vec4 fragColor;
     
     float volumeInSphere(vec3 center) {
       vec3 toCenter = vec3((coord.x - 0.5) * poolSize.x, 0.0, (coord.y - 0.5) * poolSize.z) - center;
@@ -128,7 +132,7 @@ function Water(gl, poolSize, resolution = null) {
 
   void main() {
       /* get vertex info */
-      vec4 info = texture2D(texture, coord);
+      vec4 info = texture(tex, coord);
 
     /* add the old volume */
     info.r += volumeInSphere(oldCenter);
@@ -136,23 +140,24 @@ function Water(gl, poolSize, resolution = null) {
     /* subtract the new volume */
     info.r -= volumeInSphere(newCenter);
 
-    gl_FragColor = info;
+    fragColor = info;
   }
   `);
 
   this.visualizationWavesShader = new GL.Shader(vertexShader, `
-    uniform sampler2D texture;
+    uniform sampler2D tex;
     uniform bool add;
     uniform vec3 poolSize;
-    varying vec2 coord;
+    in vec2 coord;
+    out vec4 fragColor;
 
     ` + swimmersHelperFunctions + `
 
     void main() {
-      vec4 info = texture2D(texture, coord);
+      vec4 info = texture(tex, coord);
       float w = getDivingWaves(coord).x + getRecordWave(coord);
       info.r += add ? w : -w;
-      gl_FragColor = info;
+      fragColor = info;
     }
     `);
 }
@@ -319,7 +324,7 @@ Water.prototype.updateAreaConservation = function () {
   if (this.textureA.type === this.gl.FLOAT) {
     readType = this.gl.FLOAT;
     readArrayType = Float32Array;
-    readExt = 'WEBGL_color_buffer_float';
+    readExt = 'EXT_color_buffer_float';
   } else if (this.textureA.type === this.gl.HALF_FLOAT_OES) {
     readType = this.gl.HALF_FLOAT_OES;
     readArrayType = Uint16Array; // Assuming 4 components * 2 bytes each

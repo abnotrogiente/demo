@@ -23,7 +23,7 @@ var GL = (function () {
       canvas.width = 800;
       canvas.height = 600;
       if (!('alpha' in options)) options.alpha = false;
-      try { gl = canvas.getContext('webgl', options); } catch (e) { }
+      try { gl = canvas.getContext('webgl2', options); } catch (e) { }
       try { gl = gl || canvas.getContext('experimental-webgl', options); } catch (e) { }
       if (!gl) throw new Error('WebGL not supported');
       gl.HALF_FLOAT_OES = 0x8D61;
@@ -163,8 +163,8 @@ var GL = (function () {
       pointSize: 1,
       shader: new Shader('\
       uniform float pointSize;\
-      varying vec4 color;\
-      varying vec4 coord;\
+      out vec4 color;\
+      out vec4 coord;\
       void main() {\
         color = gl_Color;\
         coord = gl_TexCoord;\
@@ -172,14 +172,15 @@ var GL = (function () {
         gl_PointSize = pointSize;\
       }\
     ', '\
-      uniform sampler2D texture;\
+      uniform sampler2D tex;\
       uniform float pointSize;\
       uniform bool useTexture;\
-      varying vec4 color;\
-      varying vec4 coord;\
+      in vec4 color;\
+      in vec4 coord;\
+      out vec4 fragColor;\
       void main() {\
-        gl_FragColor = color;\
-        if (useTexture) gl_FragColor *= texture2D(texture, coord.xy);\
+        fragColor = color;\
+        if (useTexture) fragColor *= texture(tex, coord.xy);\
       }\
     ')
     };
@@ -1492,18 +1493,19 @@ var GL = (function () {
     uniform mat4 gl_ProjectionMatrixInverse;\
     uniform mat4 gl_ModelViewProjectionMatrixInverse;\
   ';
-    var vertexHeader = header + '\
-    attribute vec4 gl_Vertex;\
-    attribute vec4 gl_TexCoord;\
-    attribute vec3 gl_Normal;\
-    attribute vec4 gl_Color;\
+    var vertexHeader = `#version 300 es
+    ` + header + '\
+    in vec4 gl_Vertex;\
+    in vec4 gl_TexCoord;\
+    in vec3 gl_Normal;\
+    in vec4 gl_Color;\
     vec4 ftransform() {\
       return gl_ModelViewProjectionMatrix * gl_Vertex;\
     }\
   ';
-    var fragmentHeader = '\
-    precision highp float;\
-  ' + header;
+    var fragmentHeader = `#version 300 es
+    precision highp float;
+  ` + header;
 
     // Check for the use of built-in matrices that require expensive matrix
     // multiplications to compute, and record these in `usedMatrices`.
@@ -1730,40 +1732,110 @@ var GL = (function () {
   //       format: gl.RGB, // Defaults to gl.RGBA
   //       type: gl.FLOAT // Defaults to gl.UNSIGNED_BYTE
   //     });
+  // function Texture(width, height, options = {}) {
+  //   this.width = width;
+  //   this.height = height;
+  //   this.id = gl.createTexture();
+
+  //   const type = options.type || gl.UNSIGNED_BYTE;
+  //   let internalFormat = gl.RGBA8; // default
+  //   if (type === gl.FLOAT) internalFormat = gl.RGBA32F;
+  //   if (type === gl.HALF_FLOAT) internalFormat = gl.RGBA16F;
+
+  //   gl.bindTexture(gl.TEXTURE_2D, this.id);
+  //   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
+  //   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, options.minFilter || gl.LINEAR);
+  //   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, options.magFilter || gl.LINEAR);
+  //   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, options.wrapS || gl.CLAMP_TO_EDGE);
+  //   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, options.wrapT || gl.CLAMP_TO_EDGE);
+
+  //   gl.texImage2D(
+  //     gl.TEXTURE_2D,
+  //     0,
+  //     internalFormat, // sized internal format
+  //     width,
+  //     height,
+  //     0,
+  //     gl.RGBA,        // format
+  //     type,           // type
+  //     null
+  //   );
+
+  //   gl.bindTexture(gl.TEXTURE_2D, null);
+
+  //   this.type = type;
+  //   this.internalFormat = internalFormat;
+  // }
+
   function Texture(width, height, options) {
     options = options || {};
-    this.id = gl.createTexture();
+
     this.width = width;
     this.height = height;
-    this.format = options.format || gl.RGBA;
-    this.type = options.type || gl.UNSIGNED_BYTE;
-    var magFilter = options.filter || options.magFilter || gl.LINEAR;
-    var minFilter = options.filter || options.minFilter || gl.LINEAR;
-    if (this.type === gl.FLOAT) {
-      if (!Texture.canUseFloatingPointTextures()) {
-        throw new Error('OES_texture_float is required but not supported');
+    this.id = gl.createTexture();
+
+    // Default format/type
+    let type = options.type || gl.UNSIGNED_BYTE;
+    let internalFormat = options.format || gl.RGBA;
+    let format = gl.RGBA;
+
+    // Detect extensions for float/half-float
+    const extFloat = gl.getExtension('EXT_color_buffer_float');
+    const extHalf = gl.getExtension('EXT_color_buffer_half_float');
+
+    if (type === gl.FLOAT) {
+      if (!extFloat) {
+        console.warn("FLOAT textures not renderable, falling back to UNSIGNED_BYTE");
+        type = gl.UNSIGNED_BYTE;
+        internalFormat = gl.RGBA8; // fallback
+      } else if (gl instanceof WebGL2RenderingContext) {
+        internalFormat = gl.RGBA32F;
       }
-      if ((minFilter !== gl.NEAREST || magFilter !== gl.NEAREST) &&
-        !Texture.canUseFloatingPointLinearFiltering()) {
-        throw new Error('OES_texture_float_linear is required but not supported');
+      format = gl.RGBA;
+    } else if (type === gl.HALF_FLOAT_OES) {
+      if (!extHalf) {
+        console.warn("HALF_FLOAT textures not renderable, falling back to UNSIGNED_BYTE");
+        type = gl.UNSIGNED_BYTE;
+        internalFormat = gl.RGBA8;
+      } else if (gl instanceof WebGL2RenderingContext) {
+        internalFormat = gl.RGBA16F;
       }
-    } else if (this.type === gl.HALF_FLOAT_OES) {
-      if (!Texture.canUseHalfFloatingPointTextures()) {
-        throw new Error('OES_texture_half_float is required but not supported');
-      }
-      if ((minFilter !== gl.NEAREST || magFilter !== gl.NEAREST) &&
-        !Texture.canUseHalfFloatingPointLinearFiltering()) {
-        throw new Error('OES_texture_half_float_linear is required but not supported');
-      }
+      format = gl.RGBA;
+    } else {
+      // UNSIGNED_BYTE
+      type = gl.UNSIGNED_BYTE;
+      internalFormat = gl.RGBA8; // WebGL2 sized format
+      format = gl.RGBA;
     }
+
+    // Filters
+    const magFilter = options.filter || options.magFilter || gl.LINEAR;
+    const minFilter = options.filter || options.minFilter || gl.LINEAR;
+
     gl.bindTexture(gl.TEXTURE_2D, this.id);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, magFilter);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, minFilter);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, options.wrap || options.wrapS || gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, options.wrap || options.wrapT || gl.CLAMP_TO_EDGE);
-    gl.texImage2D(gl.TEXTURE_2D, 0, this.format, width, height, 0, this.format, this.type, null);
+
+    // Allocate storage
+    if (gl instanceof WebGL2RenderingContext) {
+      // WebGL2: internalFormat can be sized (RGBA32F, RGBA16F)
+      gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, width, height, 0, format, type, null);
+    } else {
+      // WebGL1: internalFormat must match format (gl.RGBA)
+      gl.texImage2D(gl.TEXTURE_2D, 0, format, width, height, 0, format, type, null);
+    }
+
+    gl.bindTexture(gl.TEXTURE_2D, null);
+
+    // Save final values for later use
+    this.format = format;
+    this.type = type;
+    this.internalFormat = internalFormat;
   }
+
 
   var framebuffer;
   var renderbuffer;
@@ -1813,6 +1885,8 @@ var GL = (function () {
     //       gl.clear(gl.COLOR_BUFFER_BIT);
     //     });
     drawTo: function (callback) {
+      const ext = gl.getExtension('EXT_color_buffer_float');
+      if (!ext) console.warn("EXT_color_buffer_float not available!");
       var v = gl.getParameter(gl.VIEWPORT);
       framebuffer = framebuffer || gl.createFramebuffer();
       renderbuffer = renderbuffer || gl.createRenderbuffer();
@@ -1855,6 +1929,7 @@ var GL = (function () {
   Texture.fromImage = function (image, options) {
     options = options || {};
     var texture = new Texture(image.width, image.height, options);
+    gl.bindTexture(gl.TEXTURE_2D, texture.id); // <-- bind it first
     try {
       gl.texImage2D(gl.TEXTURE_2D, 0, texture.format, texture.format, texture.type, image);
     } catch (e) {
@@ -1868,6 +1943,7 @@ var GL = (function () {
     if (options.minFilter && options.minFilter != gl.NEAREST && options.minFilter != gl.LINEAR) {
       gl.generateMipmap(gl.TEXTURE_2D);
     }
+    gl.bindTexture(gl.TEXTURE_2D, null);
     return texture;
   };
 
