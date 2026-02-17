@@ -1,4 +1,6 @@
 import GL from "./lightgl.js";
+import { Swimmer } from "./swimmer.js";
+import { swimmersHelperFunctions } from "./swimmer.js";
 
 const MAX_SPARKS = 200;
 
@@ -25,9 +27,9 @@ uniform float fov;
 //#define SPARKS 2000  // Insane
 
 /// Switch between defines to choose different sets of settings
-#define ORIGINAL_SPARKS
+//#define ORIGINAL_SPARKS
 //#define WATER_SPOUT
-//#define FIRE_STREAM
+#define FIRE_STREAM
 //#define STAR_BOMB
 //#define WATER_LINE
 
@@ -127,7 +129,7 @@ vec4 color(float age) {
 	#endif
 }
 
-vec3 trace(vec3 rpos, vec3 rdir, vec2 fragCoord, vec3 center) {
+vec3 trace(vec3 rpos, vec3 rdir, vec2 fragCoord, vec3 center, float reactionTime) {
     // center *= 0.;
 
 	float sparkT = planeIntersection(rpos - center, rdir, sparkPlaneNormal);
@@ -141,23 +143,33 @@ vec3 trace(vec3 rpos, vec3 rdir, vec2 fragCoord, vec3 center) {
 	
 	vec3 floorPos = rpos + rdir * floorT;
 	vec3 sparkPos = rpos + rdir * sparkT;
+
+    float maxSparksSubstraction = 3.*sparksNumber / 4.;
+
+    float attenuation = min(.9, (reactionTime - .1) / .2);
+
+    float sizeFactor =  sparksSizeFactor / (1. - attenuation);
+
+    float sparksSubstraction = maxSparksSubstraction * attenuation;
 	
 	float time = iTime * SPEED_FACTOR;
+    if (time < 0. || time > 2. ) return vec3(0., 0., 0.);
 	for (int i = 0; i < MAX_SPARKS; i++)
 	{
         float float_i = float(i);
-        if (float_i >= sparksNumber) break;
+        if (float_i >= sparksNumber - sparksSubstraction) break;
 		// Calculate spark position and velocity
 		float a = spread(vec2(i, 1.0))*SPREAD_FACTOR+MIN_ANGLE;
 		float b = spread(vec2(i, 3.0))*RAND_FACTOR;
 		float startTime = spread(vec2(i, 5.0)) * GROUP_FACTOR;
-		vec3 dir = sampleAngle(a) * 10.0;
-        vec3 gravity = -1.2 * 2. * waterNormal / sparksSizeFactor;
+		vec3 dir = sampleAngle(a) * 10.0 * (1. - attenuation);
+        vec3 gravity = -1.2 * 2. * waterNormal / sizeFactor;
 	
-		vec3 start = -dir * (1.35 + b * 0.3) / sparksSizeFactor;
+		vec3 start = -dir * (1.35 + b * 0.3) / sizeFactor;
 		vec3 force = start * 0.02 + gravity;
 
-		float c = fract(time + startTime) * 20.0;
+		float c = (time + startTime) * 20.0;
+        if (c > 20.) break;
 		vec3 offset = center + start * c + force * c * c * 0.5;
         bool visible = true;
         if (dot(offset - center, waterNormal) < 0.) {
@@ -181,7 +193,7 @@ vec3 trace(vec3 rpos, vec3 rdir, vec2 fragCoord, vec3 center) {
 				dist += 0.8;
 				atten += 1.0 / (1.0 + 100.0*dist*dist*dist);
 			}
-            atten /= sparksSizeFactor;
+            atten /= sizeFactor;
 			col += vec4(sc.xyz * sc.w * atten, 0.0) * brightness;
 		}
 	
@@ -193,7 +205,7 @@ vec3 trace(vec3 rpos, vec3 rdir, vec2 fragCoord, vec3 center) {
 			if (h < 0.0) {
 				sparkCol += vec3(sc.xyz * sc.w);
 			} else {
-				float dist = h * 0.05 * sparksSizeFactor + sparksGlowOffset;
+				float dist = h * 0.05 * sizeFactor + sparksGlowOffset;
 				float atten = 1.0 / (1.0 + 100.0 * pow(dist, sparksGlow));
 				sparkCol += sc.xyz * sc.w * (atten);
 				// sparkCol += sc.xyz * sc.w * (atten + clamp(1.0 - h * sparkT * 0.05, 0.0, 1.0));
@@ -202,18 +214,19 @@ vec3 trace(vec3 rpos, vec3 rdir, vec2 fragCoord, vec3 center) {
 	}
 	
 	vec3 final =  col.xyz + sparkCol * brightness;
+	return final + vec3(rand(vec2(fragCoord.x * fragCoord.y, iTime))) * 0.000002;
 	return final + vec3(rand(vec2(fragCoord.x * fragCoord.y, iTime))) * 0.00002;
 	return final + vec3(rand(vec2(fragCoord.x * fragCoord.y, iTime))) * 0.002;
 }
 
 // Ray-generation
-vec3 sparks(vec2 px, vec3 offset) {
+vec3 sparks(vec2 px, vec3 offset, float reactionTime) {
 	vec2 rd = (px / iResolution.yy - vec2(iResolution.x/iResolution.y*0.5-0.5, 0.0)) * 2.0 - 1.0;
     rd *= -1.;
     float d = 1. / tan(fov / 2.); // TODO pre compute this before shader
 	vec3 rdir = normalize(vec3(rd.x , rd.y, d));
     vec3 center = (gl_ModelViewMatrix * vec4(offset, 1.)).xyz;
-	return trace(vec3(0., 0., 0.), rdir, px, center);
+	return pow(trace(vec3(0., 0., 0.), rdir, px, center, reactionTime), vec3(0.4545));
 }
 
 `;
@@ -265,23 +278,25 @@ class Video {
     uniform bool sparksEnabled;
     uniform vec3 poolSize;
 
-    ` + sparksHelper + `
+    ` + sparksHelper + `` + swimmersHelperFunctions + `
 
     void main(void) {
         highp vec4 texelColor = texture2D(uSampler, vTextureCoord);
         gl_FragColor = vec4(texelColor.rgb, 0.5);
         if (!sparksEnabled) return;
-        vec3 spark1 = pow(sparks(gl_FragCoord.xy, vec3(2., 1., -poolSize.z / 2.)), vec3(0.4545));
-        vec3 spark2 = pow(sparks(gl_FragCoord.xy, vec3(-2., 1., -poolSize.z / 2.)), vec3(0.4545));
+        vec3 spark1 = sparks(gl_FragCoord.xy, vec3(2., 1., -poolSize.z / 2.), .1);
+        vec3 spark2 = sparks(gl_FragCoord.xy, vec3(-2., 1., -poolSize.z / 2.), .1);
         vec3 spark = vec3(0., 0., 0.);
-        spark = spark1 + spark2;
-        // for (int i = 0; i < 10; i++) {
-        //     float i_float = float(i);
-        //     spark += pow(sparks(gl_FragCoord.xy, vec3(25. / 2. - 25. / 10. / 2. - i_float * 25./10., 1., -25.)), vec3(0.4545));
-        // }
+        // spark = spark1 + spark2;
+        for (int i = 0; i < 10; i++) {
+            float i_float = float(i);
+            vec3 sparkPos = vec3(25. / 2. - 25. / 10. / 2. - i_float * 25./10., 1., -25.);
+            float reactionTime = getAttributeReactionTime(i);
+            spark += sparks(gl_FragCoord.xy, sparkPos, reactionTime);
+        }
         // gl_FragColor = vec4(mix(gl_FragColor.rgb, spark, .5), max(0.5, 2.*length(spark)));
         gl_FragColor = vec4(mix(gl_FragColor.rgb, spark, 2.*length(spark)), max(0.5, 2.*length(spark)));
-        gl_FragColor = vec4(gl_FragColor.rgb + spark, max(0.5, 2.*length(spark)));
+        // gl_FragColor = vec4(gl_FragColor.rgb + spark, max(0.5, 2.*length(spark)));
         // float m = max(gl_FragColor.r, max(gl_FragColor.g, gl_FragColor.b));
         // if (m > 1.) gl_FragColor.rgb /= m;
         // gl_FragColor = vec4(spark, 2.*length(spark));
@@ -325,8 +340,10 @@ class Video {
         // this.gl.blendFunc(this.gl.ONE, this.gl.ONE);
         this.gl.activeTexture(this.gl.TEXTURE0);
         this.gl.bindTexture(this.gl.TEXTURE_2D, this.texture);
+        if (Swimmer.swimmersAttributesTexture) Swimmer.swimmersAttributesTexture.bind(1);
         this.shader.uniforms({
             uSampler: 0,
+            swimmersHelperFunctions: 1,
             iTime: time,
             poolSize: [poolSize.x, poolSize.y, poolSize.z],
             iResolution: [this.gl.canvas.width, this.gl.canvas.height],

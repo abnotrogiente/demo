@@ -374,29 +374,16 @@ window.onload = function () {
     }
   };
 
-  function startSwimming() {
-    Swimmer.swimming = true;
-    for (let swimmer of swimmers) {
-      swimmer.body.cinematic = false;
-      Swimmer.useGravity = true;
-      swimmer.body.center = new GL.Vector(swimmer.startingPoint.x, 0, -poolSize.z / 2.);
-    }
+  function startRace() {
+    Swimmer.raceHasStarted = true;
+    for (let swimmer of swimmers) swimmer.started = false;
   }
 
-  function stopSwimming() {
-    Swimmer.swimming = false;
-    for (let swimmer of swimmers) {
-      swimmer.body.velocity = new GL.Vector(0, 0, 0);
-      swimmer.body.center = new GL.Vector(swimmer.startingPoint.x, 0, 0);
-    }
+  function stopRace() {
+    Swimmer.raceHasStarted = false;
+    for (let swimmer of swimmers) swimmer.swim(false, poolSize);
   }
 
-  function jump() {
-    Swimmer.useGravity = true;
-    for (let swimmer of swimmers) {
-      swimmer.jump(poolSize);
-    }
-  }
 
   document.onkeydown = function (e) {
     if (e.which == ' '.charCodeAt(0)) paused = !paused;
@@ -422,11 +409,12 @@ window.onload = function () {
       console.log("Area conserved grid " + (water.showAreaConservedGrid ? "enabled." : "disabled."));
     }
     else if (e.which == 'S'.charCodeAt(0)) {
-      if (!Swimmer.swimming) {
-        startSwimming();
+      Swimmer.swimming = !Swimmer.swimming;
+      if (Swimmer.swimming) {
+        for (let swimmer of swimmers) swimmer.swim(true, poolSize);
       }
       else {
-        stopSwimming();
+        stopRace();
       }
       console.log("Swimming " + (Swimmer.swimming ? "enabled." : "disabled."));
     }
@@ -472,11 +460,16 @@ window.onload = function () {
       console.log("Olympic mode enabled.");
     }
     else if (e.which == 'W'.charCodeAt(0)) {
+      if (Swimmer.raceHasStarted) {
+        Swimmer.raceHasStarted = false;
+        stopRace();
+        return;
+      }
       water.WR_position = 0;
       videoTime = videoStartTime;
       if (video.copyVideo) video.video.currentTime = videoTime;
-      startSwimming();
-      jump();
+      startRace();
+      Swimmer.useGravity = true;
 
       for (let swimmer of swimmers) swimmer.hasDove = false;
     }
@@ -525,6 +518,7 @@ window.onload = function () {
       // Start from rest when the player releases the mouse after moving the sphere
       for (let swimmer of swimmers) swimmer.body.velocity = new GL.Vector(0, 0, 0);
     }
+    raceTime = videoTime - videoStartTime;
 
     // Update the water simulation and graphics
     for (let swimmer of swimmers) swimmer.update(dt, raceTime, poolSize);
@@ -535,7 +529,6 @@ window.onload = function () {
 
     renderer.updateCaustics(water);
     videoTime += dt;
-    raceTime = videoTime - videoStartTime;
   }
 
   function draw(time) {

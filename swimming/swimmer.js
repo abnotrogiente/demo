@@ -17,6 +17,7 @@ const armPulsation = 2 * Math.PI * armFrequency;
 
 class Swimmer {
     static useGravity = false;
+    static raceHasStarted = false;
     static swimming = false;
     static showFlags = true;
     static numAttributes = 5;
@@ -57,6 +58,7 @@ class Swimmer {
         gl.bindTexture(gl.TEXTURE_2D, Swimmer.swimmersAttributesTexture.id);
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
         gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, Swimmer.maxNumSwimmer, Swimmer.numVecAttributes, gl.RGBA, gl.FLOAT, swimmersAttributes);
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     };
 
     constructor(center) {
@@ -94,13 +96,34 @@ class Swimmer {
         this.body.center = new GL.Vector(this.startingPoint.x, 1, -poolSize.z / 2.);
     }
 
+    swim(start, poolSize) {
+        this.started = start;
+        if (start) {
+            this.body.cinematic = false;
+            this.useGravity = true;
+            this.body.center = new GL.Vector(this.startingPoint.x, 0, -poolSize.z / 2.);
+        }
+        else {
+            this.body.velocity = new GL.Vector(0, 0, 0);
+            this.body.center = new GL.Vector(this.startingPoint.x, 0, 0);
+        }
+    }
+
     getArmOffset(time, phase) {
         return new GL.Vector(0., Math.cos(armPulsation * time + phase), Math.sin(armPulsation * time + phase)).multiply(armAmplitude);
     }
 
     update(dt, time, poolSize) {
 
-        if (Swimmer.swimming) {
+        if (Swimmer.raceHasStarted || Swimmer.swimming) {
+            if (!this.started && Swimmer.raceHasStarted) {
+                console.log("go : " + time);
+                if (time > this.reactionTime) {
+                    this.swim(true, poolSize);
+                    this.jump(poolSize);
+                }
+                else return;
+            }
             this.body.addForce(this.force);
             const offset1 = this.getArmOffset(time, 0);
             const offset2 = this.getArmOffset(time, Math.PI);
