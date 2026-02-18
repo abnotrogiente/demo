@@ -39,7 +39,8 @@ export class Ground {
         this.amplitude0 = 1.5;
         this.initializeWaveParameters(this.order);
         const shaderUniforms = {
-            'deepColor': { value: new Color(0x3580BB) },
+            'deepColor': { value: new Color(0x0030BB) },
+            // 'deepColor': { value: new Color(0x3580BB) },
             'shallowColor': { value: new Color(0x2255ff) },
             'lightDirection': { type: 'v3', value: lightDir },
             'lightColor': { value: new Color(0xffff55) },

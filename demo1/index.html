@@ -88,6 +88,7 @@
     uniform vec3 lightDirection;
     uniform vec3 viewPos;
     uniform float shininess;
+    uniform vec3 skyColor;
 
     varying vec3 vWorldPosition;
     varying vec3 fragPos;
@@ -144,6 +145,7 @@
       vec3 h = normalize(-lightDirection + viewDir);
       float specularStrength = pow(max(dot(h, normal), 0.0), shininess);
       vec3 specular = specularStrength * lightColor;
+      specular += vec3(0., .8, 1.);
       return specular;
     }
 
@@ -169,17 +171,17 @@
       //float h = normalize( vWorldPosition + offset ).y;
 
       //gl_FragColor = vec4((getAmbient() + getDiffuse(normal)) * deepColor, 1.0);
-      gl_FragColor = vec4((getAmbient() + getDiffuse(normal)) + getSpecular(normal), 1.0);
+      //gl_FragColor = vec4((getAmbient() + getDiffuse(normal)) + getSpecular(normal), 1.0);
+      vec3 viewDir = normalize(viewPos - fragPos);
+      float fresnel = mix(0.25, 1.0, pow(1.0 - dot(normal, viewDir), 4.0));
+      gl_FragColor = vec4(mix((getAmbient() + getDiffuse(normal)), getSpecular(normal), fresnel), 1.0);
       //gl_FragColor = vec4(0.0, 0.0, 1.0, 1.0);
 
     }
 
   </script>
 
-  <!--
-  <script src="./jsm/libs/ammo.wasm.js"></script>
-  -->
-  <script type="module" src="./main.js"></script>
+
 
 
 
