@@ -228,7 +228,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
               color = flagColor;              
             }
             vec3 letterColor = GREEN/.4 * printFrame(vec2(1. - flagCoord.y - 1.5, 1. - flagCoord.x) / 15., getAttributeSpeed(i), 2);
-            if (letterColor != vec3(0., 0., 0.)) color = letterColor; 
+            if (max(letterColor.r, max(letterColor.g, letterColor.b)) > .3) color = letterColor; 
           }
         }
         return color;
