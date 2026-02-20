@@ -204,7 +204,7 @@ window.onload = function () {
   reset();
 
   for (var i = 0; i < 20; i++) {
-    water.addDrop(Math.random() * 2 - 1, Math.random() * 2 - 1, 0.06, (i & 1) ? 0.01 : -0.01);
+    //water.addDrop(Math.random() * 2 - 1, Math.random() * 2 - 1, 0.06, (i & 1) ? 0.01 : -0.01);
   }
 
   document.getElementById('loading').innerHTML = '';
@@ -276,7 +276,7 @@ window.onload = function () {
         var tracer = new GL.Raytracer();
         var ray = tracer.getRayForPixel(x * ratio, y * ratio);
         var pointOnPlane = tracer.eye.add(ray.multiply(-tracer.eye.y / ray.y));
-        water.addDrop(pointOnPlane.x / poolSize.x * 2, pointOnPlane.z / poolSize.z * 2, 0.06, 0.03);
+        water.addDrop(pointOnPlane.x, pointOnPlane.z, 0.06, 0.03);
         if (paused) {
           water.updateNormals();
           renderer.updateCaustics(water);
@@ -522,10 +522,11 @@ window.onload = function () {
 
     // Update the water simulation and graphics
     for (let swimmer of swimmers) swimmer.update(dt, raceTime, poolSize);
-    water.updateSpheres(dt);
-    for (let i = 0; i < params.numSteps; i++) {
-      water.stepSimulation();
-    }
+    water.update(dt);
+    // water.updateSpheres(dt);
+    // for (let i = 0; i < params.numSteps; i++) {
+    //   water.stepSimulation();
+    // }
 
     renderer.updateCaustics(water);
     videoTime += dt;
@@ -560,6 +561,7 @@ window.onload = function () {
     renderer.renderCube(water);
     renderer.renderWater(water, cubemap, swimmers, raceTime);
     renderer.renderSpheres(water);
+    water.waveParticles.draw(water.time);
     video.render(raceTime, params.sparks, poolSize);
     gl.disable(gl.DEPTH_TEST);
     water.addOrRemoveVisualizationWaves(false, swimmers, raceTime);

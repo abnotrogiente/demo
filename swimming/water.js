@@ -10,10 +10,13 @@ import GL from './lightgl.js';
 import { Sphere } from './sphere.js';
 import { Swimmer } from './swimmer.js';
 import { swimmersHelperFunctions } from './swimmer.js';
+import { WaveParticles } from './WaveParticles.js';
+import { waveParticlesHelperFunctions } from './WaveParticles.js';
 
 // The data in the texture is (position.y, velocity.y, normal.x, normal.z)
 function Water(gl, poolSize, resolution = null) {
   this.gl = gl;
+  this.waveParticles = new WaveParticles(gl);
   this.damping = 0.02;
   this.areaConservationEnabled = true;
   this.visualizationWavesEnabled = true;
@@ -65,12 +68,19 @@ function Water(gl, poolSize, resolution = null) {
     uniform vec3 poolSize;
     in vec2 coord;
     out vec4 fragColor;
+
+    ` + waveParticlesHelperFunctions + `
+
     float gaussian(float x, float mean, float std) {
-    return exp(-(x - mean) * (x - mean) / (2. * std * std)) / (std * sqrt_2_PI);
-  }
-  void main() {
+      return exp(-(x - mean) * (x - mean) / (2. * std * std)) / (std * sqrt_2_PI);
+    }
+
+    void main() {
       /* get vertex info */
       vec4 info = texture(tex, coord);
+      vec2 position = (coord - .5) * poolSize.xz;
+      float deviation = getWaveDeviation(position);
+      info.r = deviation;
 
       /* calculate average neighbor height */
       vec2 dx = vec2(delta.x, 0.0);
@@ -83,13 +93,13 @@ function Water(gl, poolSize, resolution = null) {
     ) * 0.25;
 
     /* change the velocity to move toward the average */
-    info.g += (average - info.r) * 2.0;
+    //info.g += (average - info.r) * 2.0;
 
     /* attenuate the velocity a little so waves do not last forever */
-    info.g *= 1. - damping;/*TODO parametriser ça*/
+    //info.g *= 1. - damping;/*TODO parametriser ça*/
 
     /* move the vertex along the velocity */
-    info.r += info.g;
+    //info.r += info.g;
       
 
     fragColor = info;
@@ -163,6 +173,8 @@ function Water(gl, poolSize, resolution = null) {
 }
 
 Water.prototype.reset = function (poolSize, resolution = null) {
+  this.time = 0;
+  this.waveParticles.reset();
   this.WR_position = 100000;
   this.prev_WR_position = 0;
   if (resolution !== null) {
@@ -174,6 +186,7 @@ Water.prototype.reset = function (poolSize, resolution = null) {
     this.W = 256;
     this.H = 256;
   }
+  this.waveParticles.createRenderingTexture(this.W, this.H);
   this.plane = GL.Mesh.plane({ detail: 255, width: poolSize.x, height: poolSize.z });
   this.delta = new GL.Vector(1 / this.W, 1 / this.H);
   /**@type {WebGLRenderingContext} */
@@ -197,19 +210,31 @@ Water.prototype.reset = function (poolSize, resolution = null) {
   }
 };
 
+Water.prototype.update = function (dt) {
+  this.time += dt;
+  this.updateSpheres(dt);
+  this.stepSimulation();
+}
+
 Water.prototype.addDrop = function (x, y, radius, strength) {
-  var this_ = this;
-  this.textureB.drawTo(function () {
-    this_.textureA.bind();
-    this_.dropShader.uniforms({
-      invPoolSizeVertex: [this_.invPoolSize.x, this_.invPoolSize.z],
-      center: [x, y],
-      radius: radius,
-      strength: strength,
-      poolSize: [this_.poolSize.x, this_.poolSize.y, this_.poolSize.z]
-    }).draw(this_.plane);
-  });
-  this.textureB.swapWith(this.textureA);
+  const birthPosition = new GL.Vector(x, y);
+  const direction = new GL.Vector(0, 1);
+  const amplitude = .05;
+  const r = .1;
+  this.waveParticles.addWaveParticle(birthPosition, direction, this.time, amplitude, r);
+
+  // var this_ = this;
+  // this.textureB.drawTo(function () {
+  //   this_.textureA.bind();
+  //   this_.dropShader.uniforms({
+  //     invPoolSizeVertex: [this_.invPoolSize.x, this_.invPoolSize.z],
+  //     center: [x, y],
+  //     radius: radius,
+  //     strength: strength,
+  //     poolSize: [this_.poolSize.x, this_.poolSize.y, this_.poolSize.z]
+  //   }).draw(this_.plane);
+  // });
+  // this.textureB.swapWith(this.textureA);
 };
 
 /**
@@ -281,7 +306,11 @@ Water.prototype.stepSimulation = function () {
   var this_ = this;
   this.textureB.drawTo(function () {
     this_.textureA.bind();
+    this_.waveParticles.texture.bind(1);
     this_.updateShader.uniforms({
+      waveParticlesTexture: 1,
+      numWaveParticles: this_.waveParticles.numParticles,
+      time: this_.time,
       invPoolSizeVertex: [this_.invPoolSize.x, this_.invPoolSize.z],
       delta: [this_.delta.x, this_.delta.y],
       wr: this_.WR_position,
