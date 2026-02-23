@@ -22,7 +22,7 @@ class TimeTable {
     }
 
     #findInsertionIndex(time) {
-        for (let index = this.events.length - 1; index >= 0; index--) {
+        for (let index = this.events.length - 1; index >= this.head; index--) {
             if (time > this.events[index].time) return index + 1;
         }
 
@@ -36,6 +36,11 @@ class TimeTable {
 
     add(time, index) {
         const insertionIndex = this.#findInsertionIndex(time);
+        // console.log("");
+        // console.log("add time event : " + time);
+        // console.log("headd : " + this.head);
+        // console.log("insertion index : " + insertionIndex);
+        // console.log("");
         this.events.splice(insertionIndex, 0, new Event(time, index));
 
         if (this.events.length > MAX_SIZE) {
@@ -44,15 +49,22 @@ class TimeTable {
     }
 
     getEvents(time) {
-        if (this.events.length == 0) return null;
+        if (this.events.length == 0 || this.head >= this.events.length) return null;
+        console.log("head : " + this.head);
         let event = this.events[this.head];
         if (time < event.time) return null;
+        //this.head++;
         const res = [];
+        // console.log("event time : " + event.time);
+        // console.log("time : " + time);
         while (event && event.time <= time) {
+
             res.push(event);
             this.head++;
             event = this.events[this.head];
         }
+        // console.log("res size : " + res.length);
+        //this.head++;
         return res;
     }
 

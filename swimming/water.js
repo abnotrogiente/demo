@@ -307,11 +307,11 @@ Water.prototype.stepSimulation = function () {
   var this_ = this;
   this.textureB.drawTo(function () {
     this_.textureA.bind();
-    this_.gl.activeTexture(this_.gl.TEXTURE2);
+    this_.gl.activeTexture(this_.gl.TEXTURE11);
     this_.gl.bindTexture(this_.gl.TEXTURE_2D, this_.waveParticles.wavesTexture.id);
     this_.waveParticles.texture.bind(1);
     this_.updateShader.uniforms({
-      wavesTexture: 2,
+      wavesTexture: 11,
       numWaveParticles: this_.waveParticles.numParticles,
       time: this_.time,
       invPoolSizeVertex: [this_.invPoolSize.x, this_.invPoolSize.z],

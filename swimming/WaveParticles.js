@@ -12,8 +12,8 @@ const AMPLITUDE_INDEX = 6;
 const RADIUS_INDEX = 7;
 const NUM_VECTORS = 2;
 
-const RADIUS = .1;
-const VELOCITY = 1.;
+const RADIUS = .4;
+const VELOCITY = .1;
 
 const vertexShaderPointsSource = `#version 300 es
     uniform float time;
@@ -21,7 +21,7 @@ const vertexShaderPointsSource = `#version 300 es
     in vec4 iData2;
     out float amplitude;
 
-    const float velocity = 1.;
+    const float velocity = float(`+ VELOCITY + `);
     void main() {
         vec2 birthPosition = iData1.rg;
         float birthTime = iData1.b;
@@ -55,7 +55,7 @@ const fragmentShaderFilterSource = `#version 300 es
     uniform sampler2D tex;
     in vec2 fragCoord;
     out vec4 fragColor;
-    const float radius = .1;
+    const float radius = float(`+ RADIUS + `);
     const float PI = 3.14159265359;
 
     float deviation(vec2 diff, float amplitude) {
@@ -135,14 +135,14 @@ class WaveParticles {
 
 
 
-    addWaveParticle(birthPosition, direction, time, amplitude) {
+    addWaveParticle(birthPosition, direction, birthTime, amplitude, noDivide = false, time = null) {
         if (this.numParticles == MAX_WAVES_PARTICLES) {
             console.warn("Maximum number of wave particles reached");
             return;
         }
         this.particlesArray[NUM_VECTORS * 4 * this.numParticles + BIRTH_X_INDEX] = birthPosition.x;
         this.particlesArray[NUM_VECTORS * 4 * this.numParticles + BIRTH_Z_INDEX] = birthPosition.y;
-        this.particlesArray[NUM_VECTORS * 4 * this.numParticles + BRITH_TIME_INDEX] = time;
+        this.particlesArray[NUM_VECTORS * 4 * this.numParticles + BRITH_TIME_INDEX] = birthTime;
         this.particlesArray[NUM_VECTORS * 4 * this.numParticles + DIRECTION_X_INDEX] = direction.x;
         this.particlesArray[NUM_VECTORS * 4 * this.numParticles + DIRECTION_Z_INDEX] = direction.y;
         this.particlesArray[NUM_VECTORS * 4 * this.numParticles + AMPLITUDE_INDEX] = amplitude;
@@ -151,7 +151,9 @@ class WaveParticles {
 
         this.updateWavesParticlesTexture();
 
-        const subdivisionTime = time + (RADIUS / 2) / Math.PI / VELOCITY;
+        if (noDivide) return;
+        if (!time) time = birthTime;
+        const subdivisionTime = time + (RADIUS) / Math.PI / VELOCITY;
         this.timeTable.add(subdivisionTime, this.numParticles);
 
     }
@@ -303,7 +305,7 @@ class WaveParticles {
     }
 
     draw(time) {
-        //this.iterateWaveParticles(time);
+        this.iterateWaveParticles(time);
 
         this.gl.enable(this.gl.BLEND);
         this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
@@ -342,19 +344,23 @@ class WaveParticles {
 
     iterateWaveParticles(time) {
         const events = this.timeTable.getEvents(time);
+        // console.log("tiime : " + time);
         if (!events) return;
         for (let event of events) {
+            // console.log("SUBDIVIDE");
             const birthPosition = this.getBirthPosition(event.index);
             const birthTime = this.getBirthTime(event.index);
             const direction = this.getDirection(event.index);
             const dist = (time - birthTime) * VELOCITY;
-            const angle = (RADIUS / 2) / dist;
+            // const angle = 100 * (RADIUS / 2) / dist;
+            const angle = Math.PI / 4;
             const direction1 = this.#rotate(direction, angle);
             const direction2 = this.#rotate(direction, -angle);
             const amplitude = this.getAmplitude(event.index);
-            this.addWaveParticle(birthPosition, direction1, birthTime, amplitude);
-            this.addWaveParticle(birthPosition, direction2, birthTime, amplitude);
+            this.addWaveParticle(birthPosition, direction1, birthTime, amplitude, false, time);
+            this.addWaveParticle(birthPosition, direction2, birthTime, amplitude, false, time);
         }
+        console.log("num particles : " + this.numParticles);
     }
 
 }
