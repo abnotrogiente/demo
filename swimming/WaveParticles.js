@@ -1,4 +1,5 @@
 import GL from "./lightgl";
+import { TimeTable } from "./timeTable";
 
 
 const MAX_WAVES_PARTICLES = 16000;
@@ -10,6 +11,9 @@ const DIRECTION_Z_INDEX = 5;
 const AMPLITUDE_INDEX = 6;
 const RADIUS_INDEX = 7;
 const NUM_VECTORS = 2;
+
+const RADIUS = .1;
+const VELOCITY = 1.;
 
 const vertexShaderPointsSource = `#version 300 es
     uniform float time;
@@ -76,7 +80,7 @@ const fragmentShaderFilterSource = `#version 300 es
                 vec2 diff = vec2(i_float, j_float) * delta;
                 vec2 p = fragCoord + diff;
                 vec4 info = texture(tex, p);
-                if(info.r != 0.) res += deviation(diff*poolSize, info.r);
+                if(info.r != 0.) res += deviation(diff*poolSize, info.r) * 5.;
 
                 
             }
@@ -125,11 +129,13 @@ class WaveParticles {
 
 
         this.vboPoints = this.gl.createBuffer();
+
+        this.timeTable = new TimeTable();
     }
 
 
 
-    addWaveParticle(birthPosition, direction, time, amplitude, radius) {
+    addWaveParticle(birthPosition, direction, time, amplitude) {
         if (this.numParticles == MAX_WAVES_PARTICLES) {
             console.warn("Maximum number of wave particles reached");
             return;
@@ -140,10 +146,14 @@ class WaveParticles {
         this.particlesArray[NUM_VECTORS * 4 * this.numParticles + DIRECTION_X_INDEX] = direction.x;
         this.particlesArray[NUM_VECTORS * 4 * this.numParticles + DIRECTION_Z_INDEX] = direction.y;
         this.particlesArray[NUM_VECTORS * 4 * this.numParticles + AMPLITUDE_INDEX] = amplitude;
-        this.particlesArray[NUM_VECTORS * 4 * this.numParticles + RADIUS_INDEX] = radius;
+        this.particlesArray[NUM_VECTORS * 4 * this.numParticles + RADIUS_INDEX] = RADIUS;
         this.numParticles++;
 
         this.updateWavesParticlesTexture();
+
+        const subdivisionTime = time + (RADIUS / 2) / Math.PI / VELOCITY;
+        this.timeTable.add(subdivisionTime, this.numParticles);
+
     }
 
     updateWavesParticlesTexture() {
@@ -192,12 +202,18 @@ class WaveParticles {
     }
 
     createRenderingTexture(width, height) {
-        this.renderingTexture = new GL.Texture(width, height, { type: this.gl.FLOAT, filter: this.gl.NEAREST }); // TODO try unsigned bytes here.
-
-        this.fb = this.gl.createFramebuffer();
-        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.fb);
+        this.pointsTexture = new GL.Texture(width, height, { type: this.gl.FLOAT, filter: this.gl.NEAREST }); // TODO try unsigned bytes here.
+        this.pointsFrameBuffer = this.gl.createFramebuffer();
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.pointsFrameBuffer);
         const attachmentPoint = this.gl.COLOR_ATTACHMENT0;
-        this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, attachmentPoint, this.gl.TEXTURE_2D, this.renderingTexture.id, 0);
+        this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, attachmentPoint, this.gl.TEXTURE_2D, this.pointsTexture.id, 0);
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+
+        this.wavesTexture = new GL.Texture(width, height, { type: this.gl.FLOAT, filter: this.gl.NEAREST }); // TODO try unsigned bytes here.
+        this.wavesFrameBuffer = this.gl.createFramebuffer();
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.wavesFrameBuffer);
+        //const attachmentPoint = this.gl.COLOR_ATTACHMENT0;
+        this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, attachmentPoint, this.gl.TEXTURE_2D, this.wavesTexture.id, 0);
         this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
     }
 
@@ -218,15 +234,10 @@ class WaveParticles {
     }
 
     filterPass() {
-        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.wavesFrameBuffer);
 
         this.gl.useProgram(this.programFilter);
         const data1Location = this.gl.getAttribLocation(this.programFilter, 'iVertex');
-        console.log('filterPass: iVertex location =', data1Location);
-
-
-        // const timeLocation = this.gl.getUniformLocation(this.programPoints, "time");
-        // this.gl.uniform1f(timeLocation, time);
 
 
         const sizeVertex = 2;
@@ -241,39 +252,20 @@ class WaveParticles {
         //if (data1Location >= 0) {
         this.gl.vertexAttribPointer(data1Location, sizeVertex, type, normalize, stride, offset);
         this.gl.enableVertexAttribArray(data1Location);
-        //}
-
-        // debug: print binding info for this attribute
-        // try {
-        //     const enabled = this.gl.getVertexAttrib(data1Location, this.gl.VERTEX_ATTRIB_ARRAY_ENABLED);
-        //     const boundBuf = this.gl.getVertexAttrib(data1Location, this.gl.VERTEX_ATTRIB_ARRAY_BUFFER_BINDING);
-        //     console.log('filterPass: attrib enabled=', enabled, 'bound buffer=', boundBuf);
-        // } catch (e) {
-        //     console.warn('filterPass: getVertexAttrib unavailable or failed', e);
-        // }
-
-        // console.log('filterPass: glError before draw =', this.gl.getError());
-
-        // ensure no other attribute arrays are left enabled and pointing to other VBOs
-        // const maxAttribs = this.gl.getParameter(this.gl.MAX_VERTEX_ATTRIBS);
-        // for (let i = 0; i < maxAttribs; i++) {
-        //     if (i === data1Location) continue;
-        //     this.gl.disableVertexAttribArray(i);
-        // }
 
 
 
         // bind index buffer and draw two triangles (quad) using the indices
         this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
         this.gl.activeTexture(this.gl.TEXTURE0);
-        this.gl.bindTexture(this.gl.TEXTURE_2D, this.renderingTexture.id);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.pointsTexture.id);
+        this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
         this.gl.drawElements(this.gl.TRIANGLES, 6, this.gl.UNSIGNED_SHORT, 0);
+        this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
     }
 
     pointsPass(time) {
-        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.fb);
-        // gl.activeTexture(gl.TEXTURE0);
-        // gl.bindTexture(gl.TEXTURE_2D, this.renderingTexture.id);        
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.pointsFrameBuffer);
         this.gl.useProgram(this.programPoints);
         const data1Location = this.gl.getAttribLocation(this.programPoints, 'iData1');
 
@@ -305,18 +297,64 @@ class WaveParticles {
             this.gl.enableVertexAttribArray(data2Location);
         }
 
-        this.gl.viewport(0, 0, this.renderingTexture.width, this.renderingTexture.height);
+        this.gl.viewport(0, 0, this.pointsTexture.width, this.pointsTexture.height);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
         this.gl.drawArrays(this.gl.POINTS, 0, this.numParticles);
-        this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
     }
 
     draw(time) {
+        //this.iterateWaveParticles(time);
+
         this.gl.enable(this.gl.BLEND);
         this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
         this.pointsPass(time);
         this.filterPass();
         this.gl.disable(this.gl.BLEND);
+    }
+
+    getBirthPosition(i) {
+        const x = this.particlesArray[NUM_VECTORS * 4 * i + BIRTH_X_INDEX];
+        const y = this.particlesArray[NUM_VECTORS * 4 * i + BIRTH_Z_INDEX];
+        return new GL.Vector(x, y);
+    }
+
+    getDirection(i) {
+        const x = this.particlesArray[NUM_VECTORS * 4 * i + DIRECTION_X_INDEX];
+        const y = this.particlesArray[NUM_VECTORS * 4 * i + DIRECTION_Z_INDEX];
+        return new GL.Vector(x, y);
+    }
+
+    getBirthTime(i) {
+        return this.particlesArray[NUM_VECTORS * 4 * i + BRITH_TIME_INDEX];
+    }
+
+    getAmplitude(i) {
+        return this.particlesArray[NUM_VECTORS * 4 * i + AMPLITUDE_INDEX];
+    }
+
+    #rotate(v, angle) {
+        const c = Math.cos(angle);
+        const s = Math.sin(angle);
+        const x = c * v.x + s * v.y;
+        const y = -s * v.x + c * v.y;
+        return new GL.Vector(x, y);
+    }
+
+    iterateWaveParticles(time) {
+        const events = this.timeTable.getEvents(time);
+        if (!events) return;
+        for (let event of events) {
+            const birthPosition = this.getBirthPosition(event.index);
+            const birthTime = this.getBirthTime(event.index);
+            const direction = this.getDirection(event.index);
+            const dist = (time - birthTime) * VELOCITY;
+            const angle = (RADIUS / 2) / dist;
+            const direction1 = this.#rotate(direction, angle);
+            const direction2 = this.#rotate(direction, -angle);
+            const amplitude = this.getAmplitude(event.index);
+            this.addWaveParticle(birthPosition, direction1, birthTime, amplitude);
+            this.addWaveParticle(birthPosition, direction2, birthTime, amplitude);
+        }
     }
 
 }

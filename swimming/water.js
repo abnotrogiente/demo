@@ -60,6 +60,7 @@ function Water(gl, poolSize, resolution = null) {
   `);
   this.updateShader = new GL.Shader(vertexShader, `
     uniform sampler2D tex;
+    uniform sampler2D wavesTexture;
     uniform vec2 delta;
     uniform float wr;
     uniform float prev_wr;
@@ -69,7 +70,6 @@ function Water(gl, poolSize, resolution = null) {
     in vec2 coord;
     out vec4 fragColor;
 
-    ` + waveParticlesHelperFunctions + `
 
     float gaussian(float x, float mean, float std) {
       return exp(-(x - mean) * (x - mean) / (2. * std * std)) / (std * sqrt_2_PI);
@@ -78,9 +78,11 @@ function Water(gl, poolSize, resolution = null) {
     void main() {
       /* get vertex info */
       vec4 info = texture(tex, coord);
-      vec2 position = (coord - .5) * poolSize.xz;
-      float deviation = getWaveDeviation(position);
-      info.r = deviation;
+      vec4 waveInfo = texture(wavesTexture, coord);
+      info.r = waveInfo.r;
+      //vec2 position = (coord - .5) * poolSize.xz;
+      //float deviation = getWaveDeviation(position);
+      //info.r = deviation;
 
       /* calculate average neighbor height */
       vec2 dx = vec2(delta.x, 0.0);
@@ -220,8 +222,7 @@ Water.prototype.addDrop = function (x, y, radius, strength) {
   const birthPosition = new GL.Vector(x, y);
   const direction = new GL.Vector(0, 1);
   const amplitude = .05;
-  const r = .1;
-  this.waveParticles.addWaveParticle(birthPosition, direction, this.time, amplitude, r);
+  this.waveParticles.addWaveParticle(birthPosition, direction, this.time, amplitude);
 
   // var this_ = this;
   // this.textureB.drawTo(function () {
@@ -306,9 +307,11 @@ Water.prototype.stepSimulation = function () {
   var this_ = this;
   this.textureB.drawTo(function () {
     this_.textureA.bind();
+    this_.gl.activeTexture(this_.gl.TEXTURE2);
+    this_.gl.bindTexture(this_.gl.TEXTURE_2D, this_.waveParticles.wavesTexture.id);
     this_.waveParticles.texture.bind(1);
     this_.updateShader.uniforms({
-      waveParticlesTexture: 1,
+      wavesTexture: 2,
       numWaveParticles: this_.waveParticles.numParticles,
       time: this_.time,
       invPoolSizeVertex: [this_.invPoolSize.x, this_.invPoolSize.z],
