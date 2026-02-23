@@ -26,7 +26,6 @@ var helperFunctions = `
   uniform sampler2D areaConservationTexture;
   uniform bool areaConservation;
   uniform vec2 flagCenter;
-  uniform float flagSize;
   uniform vec3 poolSize;
   
   vec2 intersectCube(vec3 origin, vec3 ray, vec3 cubeMin, vec3 cubeMax) {
@@ -122,7 +121,12 @@ function Renderer(gl, water, flagCenter, flagSize) {
     wrap: this.gl.REPEAT,
     format: this.gl.RGB
   });
-  this.flagTexture = GL.Texture.fromImage(document.getElementById('flag'), {
+  this.franceTexture = GL.Texture.fromImage(document.getElementById('france'), {
+    minFilter: this.gl.LINEAR_MIPMAP_LINEAR,
+    wrap: this.gl.REPEAT,
+    format: this.gl.RGBA
+  });
+  this.chinaTexture = GL.Texture.fromImage(document.getElementById('china'), {
     minFilter: this.gl.LINEAR_MIPMAP_LINEAR,
     wrap: this.gl.REPEAT,
     format: this.gl.RGBA
@@ -134,6 +138,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
     format: this.gl.RGBA
   });
   this.flagSize = flagSize;
+  this.flagSize = [1.5, 1.];
   this.flagCenter = flagCenter;
   this.lightDir = new GL.Vector(2.0, 2.0, -1.0).unit();
   this.causticTex = new GL.Texture(1024, 1024);
@@ -157,7 +162,9 @@ function Renderer(gl, water, flagCenter, flagSize) {
       uniform samplerCube sky;
       uniform bool showProjectionGrid;
       uniform bool showAreaConservedGrid;
-      uniform sampler2D flag;
+      uniform sampler2D france;
+      uniform sampler2D china;
+      uniform vec2 flagSize;
       
       // Color declarations
       #define RED     vec3( 1,.3,.4)
@@ -223,8 +230,10 @@ function Renderer(gl, water, flagCenter, flagSize) {
             if (showAreaConservedGrid && isOnConservedAreaGrid(position, 0.1)) color = vec3(1., 0., 0.); /* Debug conserved area grid */
             vec2 posFlag = position - flagCorner - flagSize / 2.;/*Fixes the corner of the flag on the XZ plane*/
             vec2 flagCoord = posFlag / flagSize + 0.5;
-            if (abs(posFlag.x) <= flagSize / 2. && abs(posFlag.y) <= flagSize / 2.) {
-              vec3 flagColor = texture(flag, flagCoord).xyz;
+            if (abs(posFlag.x) <= flagSize.x / 2. && abs(posFlag.y) <= flagSize.y / 2.) {
+              vec3 flagColor;
+              if(getNationality(i) < .5) flagColor = texture(france, vec2(1.-flagCoord.y,1.- flagCoord.x)).xyz;
+              else flagColor = texture(china, vec2(1.-flagCoord.y,1.- flagCoord.x)).xyz;
               color = flagColor;              
             }
             vec3 letterColor = GREEN/.4 * printFrame(vec2(1. - flagCoord.y - 1.5, 1. - flagCoord.x) / 15., getAttributeSpeed(i), 2);
@@ -407,7 +416,8 @@ Renderer.prototype.renderWater = function (water, sky, swimmers, raceTime) {
   this.tileTexture.bind(1);
   sky.bind(2); // TODO make a skybox from the ceiling of a swimming pool
   this.causticTex.bind(3);
-  this.flagTexture.bind(4); // TODO make the texture work
+  this.franceTexture.bind(4); // TODO make the texture work
+  this.chinaTexture.bind(8);
   this.lettersTexture.bind(7);
   water.areaConservationTexture.bind(5);
   if (Swimmer.swimmersAttributesTexture) Swimmer.swimmersAttributesTexture.bind(6);
@@ -421,12 +431,13 @@ Renderer.prototype.renderWater = function (water, sky, swimmers, raceTime) {
       tiles: 1,
       sky: 2,
       causticTex: 3,
-      flag: 4,
+      france: 4,
+      china: 8,
       areaConservationTexture: 5,
       swimmersAttributesTexture: 6,
       iChannel0: 7,
       areaConservation: water.areaConservationEnabled,
-      flagSize: this.flagSize,
+      flagSize: [.66, 1.],
       flagCenter: [this.flagCenter.x, this.flagCenter.y],
       poolSize: [water.poolSize.x, water.poolSize.y, water.poolSize.z],
       poolSizeVertexShader: [water.poolSize.x, water.poolSize.y, water.poolSize.z],

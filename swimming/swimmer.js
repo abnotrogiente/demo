@@ -54,6 +54,7 @@ class Swimmer {
             //Second row of attributes
             swimmersAttributes[Swimmer.maxNumSwimmer * 4 + 4 * i] = swimmers[i].reactionTime;
             swimmersAttributes[Swimmer.maxNumSwimmer * 4 + 4 * i + 1] = swimmers[i].body.velocity.z * 3.6;
+            swimmersAttributes[Swimmer.maxNumSwimmer * 4 + 4 * i + 2] = swimmers[i].nationality;
         }
         // Write back to textureA
         gl.bindTexture(gl.TEXTURE_2D, Swimmer.swimmersAttributesTexture.id);
@@ -89,6 +90,8 @@ class Swimmer {
 
         this.divingDistance = 0;
         this.divingTime = 1000;
+
+        this.nationality = Math.random() > .5 ? 0 : 1;
     }
 
     jump(poolSize) {
@@ -190,6 +193,14 @@ const swimmersHelperFunctions = `
         vec4 attributes = texture(swimmersAttributesTexture, (pixel + .5) / TEXTURE_SIZE);
         return attributes.r;
     }
+
+    float getNationality(int i ) {
+        float i_float = float(i);
+        vec2 pixel = vec2(i_float, 1.);
+        vec4 attributes = texture(swimmersAttributesTexture, (pixel + .5) / TEXTURE_SIZE);
+        return attributes.b;
+    }
+
 
     float gaussian(float x, float mean, float std) {
         return exp(-(x - mean) * (x - mean) / (2. * std * std)) / (std * sqrt_2_PI);
