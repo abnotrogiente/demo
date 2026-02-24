@@ -38,6 +38,11 @@ class Swimmer {
         return Swimmer.attributes.texture;
     }
 
+    static reset = (poolSize, resolution) => {
+        Swimmer.attributes.createRenderingTexture(resolution.x, resolution.y);
+        Swimmer.attributes.poolSize = poolSize;
+    }
+
     constructor(center) {
         this.startingPoint = new GL.Vector(center.x, center.y, center.z);
         this.center = new GL.Vector(center.x, center.y, center.z);
@@ -104,7 +109,7 @@ class Swimmer {
                 else return;
             }
             this.body.addForce(this.force);
-            this.cyclePhase = armPulsation * time;
+            this.cyclePhase = armPulsation * time % 2 * Math.PI;
             const offset1 = this.getArmOffset(time, 0);
             const offset2 = this.getArmOffset(time, Math.PI);
             const offset3 = this.getArmOffset(time * 2, 0);

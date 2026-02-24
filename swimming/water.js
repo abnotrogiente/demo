@@ -174,6 +174,8 @@ Water.prototype.reset = function (poolSize, resolution = null) {
     this.W = 256;
     this.H = 256;
   }
+  Swimmer.reset(new GL.Vector(poolSize.x, poolSize.z), new GL.Vector(this.W, this.H));
+  //Swimmer.attributes.createRenderingTexture(this.W, this.H);
   this.plane = GL.Mesh.plane({ detail: 255, width: poolSize.x, height: poolSize.z });
   this.delta = new GL.Vector(1 / this.W, 1 / this.H);
   /**@type {WebGLRenderingContext} */

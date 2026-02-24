@@ -50,7 +50,6 @@ var angleZ = 0;
 let translateX = 0;
 let translateY = 0;
 var zoomDistance = 4.0;
-Swimmer.initAttributes(gl);
 
 const videoStartTime = 17;
 let videoTime = 0;
@@ -59,6 +58,7 @@ var paused = false;
 var flagCenter;
 var flagSize;
 var poolSize = new GL.Vector(2.0, 1.0, 2.0);
+Swimmer.initAttributes(gl, poolSize);
 let resolution = new GL.Vector(256, 256);
 let params = {
   numSteps: 2, focal: 45,
@@ -584,6 +584,7 @@ window.onload = function () {
     renderer.renderCube(water);
     renderer.renderWater(water, cubemap, swimmers, raceTime, params.shadow);
     renderer.renderSpheres(water);
+    Swimmer.attributes.draw();
     video.render(raceTime, params.sparks, poolSize);
     gl.disable(gl.DEPTH_TEST);
     water.addOrRemoveVisualizationWaves(false, swimmers, raceTime);
