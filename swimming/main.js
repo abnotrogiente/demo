@@ -63,7 +63,7 @@ let resolution = new GL.Vector(256, 256);
 let params = {
   numSteps: 2, focal: 45,
   sparks: { enabled: false, glow: 5., glowOffset: .5, lengthFactor: 1., stroke: .01, num: 40, sizeFactor: 50, fov: Math.PI / 4 },
-  shadow: { shadowRadius: .5, shadowPower: .5, showCircle: true, circleRadius: 1., circleStroke: .15 }
+  shadow: { enabled: true, shadowRadius: .5, shadowPower: .5, showCircle: true, circleRadius: 1., circleStroke: .15 }
 };
 const gui = new GUI();
 function updateResolutionWarning() {
@@ -180,6 +180,7 @@ window.onload = function () {
   sparksFolder.add(params.sparks, 'sizeFactor', 10, 100).name("size factor");
 
   const shadowFolder = folder.addFolder("Swimmers shadows");
+  shadowFolder.add(params.shadow, "enabled").name("enable");
   shadowFolder.add(params.shadow, "shadowRadius", 0, 2).name("shadow radius");
   shadowFolder.add(params.shadow, "shadowPower", 0.1, 2).name("shadow power");
   shadowFolder.add(params.shadow, "showCircle").name("circle");

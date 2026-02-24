@@ -166,6 +166,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
       uniform sampler2D china;
       uniform vec2 flagSize;
 
+      uniform bool shadowEnabled;
       uniform float shadowRadius;
       uniform float shadowPower;
       uniform bool showCircle;
@@ -246,7 +247,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
             vec3 letterColor = GREEN/.4 * printFrame(vec2(1. - flagCoord.y - 1.5, 1. - flagCoord.x) / 15., getAttributeSpeed(i), 2);
             float altitude = getAltitude(i);
             if (max(letterColor.r, max(letterColor.g, letterColor.b)) > .3) color = letterColor;
-            if (abs(altitude) < .15) continue;
+            if (!shadowEnabled || abs(altitude) < .15) continue;
             vec2 diff = (projectedPosition - swimmerPos);
             vec2 diffNormalized = diff/shadowRadius;
             float distSq = dot(diffNormalized, diffNormalized);
@@ -469,6 +470,7 @@ Renderer.prototype.renderWater = function (water, sky, swimmers, raceTime, shado
       swimmersNumber: swimmers.length,
       showFlags: Swimmer.showFlags,
       time: raceTime,
+      shadowEnabled: shadowParams.enabled,
       shadowRadius: shadowParams.shadowRadius,
       shadowPower: shadowParams.shadowPower,
       showCircle: shadowParams.showCircle,
