@@ -224,7 +224,8 @@ Water.prototype.addOrRemoveVisualizationWaves = function (add, swimmers, raceTim
 
   this.textureB.drawTo(function () {
     this_.textureA.bind();
-    if (Swimmer.swimmersAttributesTexture) Swimmer.swimmersAttributesTexture.bind(1);
+    const swimmersAttributesTexture = Swimmer.getAttributesTexture();
+    if (swimmersAttributesTexture) swimmersAttributesTexture.bind(1);
     this_.visualizationWavesShader.uniforms({
       swimmersAttributesTexture: 1,
       invPoolSizeVertex: [this_.invPoolSize.x, this_.invPoolSize.z],

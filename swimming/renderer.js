@@ -439,7 +439,8 @@ Renderer.prototype.renderWater = function (water, sky, swimmers, raceTime, shado
   this.chinaTexture.bind(8);
   this.lettersTexture.bind(7);
   water.areaConservationTexture.bind(5);
-  if (Swimmer.swimmersAttributesTexture) Swimmer.swimmersAttributesTexture.bind(6);
+  const swimmersAttributesTexture = Swimmer.getAttributesTexture();
+  if (swimmersAttributesTexture) swimmersAttributesTexture.bind(6);
   this.gl.enable(this.gl.CULL_FACE);
 
   for (var i = 0; i < 2; i++) {

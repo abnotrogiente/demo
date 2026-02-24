@@ -50,7 +50,7 @@ var angleZ = 0;
 let translateX = 0;
 let translateY = 0;
 var zoomDistance = 4.0;
-Swimmer.initSwimmersAttributesTexture(gl);
+Swimmer.initAttributes(gl);
 
 const videoStartTime = 17;
 let videoTime = 0;
@@ -68,6 +68,21 @@ let params = {
 const gui = new GUI();
 function updateResolutionWarning() {
   document.getElementById('warning').hidden = !(resolution.x * resolution.y > 300000 && (water && water.areaConservationEnabled));
+}
+
+let timeSinceFrameRateUpdate = 0;
+let frameRate = 0;
+let frameRateCounter = 0;
+function updateFrameRateHTML(dt) {
+  timeSinceFrameRateUpdate += dt;
+  frameRate += 1 / dt;
+  frameRateCounter++;
+  if (timeSinceFrameRateUpdate >= 1) {
+    frameRate /= frameRateCounter;
+    document.getElementById('fps').innerText = `${(1 / dt).toFixed(1)} FPS`;
+    timeSinceFrameRateUpdate = 0;
+    frameRateCounter = 0;
+  }
 }
 function reset() {
   console.log("reset");
@@ -537,6 +552,8 @@ window.onload = function () {
 
     renderer.updateCaustics(water);
     videoTime += dt;
+    updateFrameRateHTML(dt);
+
   }
 
   function draw(time) {
@@ -545,8 +562,7 @@ window.onload = function () {
       renderer.lightDir = GL.Vector.fromAngles((90 - angleY) * Math.PI / 180, -angleX * Math.PI / 180);
       if (paused) renderer.updateCaustics(water);
     }
-
-    if (Swimmer.showFlags) Swimmer.updateAttributesTexture(gl, swimmers);
+    if (Swimmer.showFlags) Swimmer.updateAttributesTexture(swimmers);
     water.addOrRemoveVisualizationWaves(true, swimmers, raceTime);
     water.updateNormals();
 
