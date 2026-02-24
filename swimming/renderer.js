@@ -165,6 +165,12 @@ function Renderer(gl, water, flagCenter, flagSize) {
       uniform sampler2D france;
       uniform sampler2D china;
       uniform vec2 flagSize;
+
+      uniform float shadowRadius;
+      uniform float shadowPower;
+      uniform bool showCircle;
+      uniform float shadowCircleRadius;
+      uniform float shadowCircleStroke;
       
       // Color declarations
       #define RED     vec3( 1,.3,.4)
@@ -206,6 +212,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
         if (ray.y < 0.0) {
           color *= waterColor;
           vec2 position = origin.xz;
+          vec2 projectedPosition = position;
           if (!showFlags) return color;
           vec2 coord = position / poolSize.xz + .5;
           vec3 divingWave = getDivingWaves(coord);
@@ -237,7 +244,16 @@ function Renderer(gl, water, flagCenter, flagSize) {
               color = flagColor;              
             }
             vec3 letterColor = GREEN/.4 * printFrame(vec2(1. - flagCoord.y - 1.5, 1. - flagCoord.x) / 15., getAttributeSpeed(i), 2);
-            if (max(letterColor.r, max(letterColor.g, letterColor.b)) > .3) color = letterColor; 
+            if (max(letterColor.r, max(letterColor.g, letterColor.b)) > .3) color = letterColor;
+            if (abs(getAltitude(i)) < .2) continue;
+            vec2 diff = (projectedPosition - swimmerPos);
+            vec2 diffNormalized = diff/shadowRadius;
+            float distSq = dot(diffNormalized, diffNormalized);
+            float attenuation = min(1., pow(distSq, shadowPower));
+            color *= attenuation;
+            if (!showCircle) continue;
+            distSq = dot(diff, diff);
+            color += max(0.,1.-abs((shadowCircleRadius - distSq)/shadowCircleStroke)) * vec3(1., 1., 0.);
           }
         }
         return color;
@@ -410,7 +426,7 @@ Renderer.prototype.updateCaustics = function (water) {
  * @param {*} sky 
  * @param {Swimmer[]} swimmers 
  */
-Renderer.prototype.renderWater = function (water, sky, swimmers, raceTime) {
+Renderer.prototype.renderWater = function (water, sky, swimmers, raceTime, shadowParams) {
   var tracer = new GL.Raytracer();
   water.textureA.bind(0);
   this.tileTexture.bind(1);
@@ -449,7 +465,12 @@ Renderer.prototype.renderWater = function (water, sky, swimmers, raceTime) {
       wr: water.WR_position,
       swimmersNumber: swimmers.length,
       showFlags: Swimmer.showFlags,
-      time: raceTime
+      time: raceTime,
+      shadowRadius: shadowParams.shadowRadius,
+      shadowPower: shadowParams.shadowPower,
+      showCircle: shadowParams.showCircle,
+      shadowCircleRadius: shadowParams.circleRadius,
+      shadowCircleStroke: shadowParams.circleStroke
     }).draw(water.plane);
   }
   this.gl.disable(this.gl.CULL_FACE);
