@@ -244,16 +244,19 @@ function Renderer(gl, water, flagCenter, flagSize) {
               color = flagColor;              
             }
             vec3 letterColor = GREEN/.4 * printFrame(vec2(1. - flagCoord.y - 1.5, 1. - flagCoord.x) / 15., getAttributeSpeed(i), 2);
+            float altitude = getAltitude(i);
             if (max(letterColor.r, max(letterColor.g, letterColor.b)) > .3) color = letterColor;
-            if (abs(getAltitude(i)) < .2) continue;
+            if (abs(altitude) < .15) continue;
             vec2 diff = (projectedPosition - swimmerPos);
             vec2 diffNormalized = diff/shadowRadius;
             float distSq = dot(diffNormalized, diffNormalized);
             float attenuation = min(1., pow(distSq, shadowPower));
+            float altitudeAttenuation = min(1., abs(altitude));
+            attenuation = 1.-(1.-attenuation)*altitudeAttenuation;
             color *= attenuation;
             if (!showCircle) continue;
             distSq = dot(diff, diff);
-            color += max(0.,1.-abs((shadowCircleRadius - distSq)/shadowCircleStroke)) * vec3(1., 1., 0.);
+            color += max(0.,1.-abs((shadowCircleRadius - distSq)/shadowCircleStroke)) * vec3(1., 1., 0.) * altitudeAttenuation;
           }
         }
         return color;
