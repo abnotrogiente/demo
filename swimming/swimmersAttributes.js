@@ -18,7 +18,7 @@ const pointVertexShaderSource = `#version 300 es
         vec2 center = iData1.rg;
         vec2 ips = vec2(.5, .5);
         gl_Position = vec4(center * 2. * invPoolSize, 0., 1.); // TODO SET ips TO invPoolSize
-        gl_PointSize = 20.;
+        gl_PointSize = 1.;
     }
 
 `;
@@ -46,11 +46,12 @@ const volumeVertexShaderSource = `#version 300 es
 const volumeFragmentShaderSource = `#version 300 es
     precision highp float;
     uniform sampler2D tex;
+    //uniform vec2 poolSize;
     in vec2 fragCoord;
     out vec4 fragColor;
 
     float volumeInSphere(vec2 diff, float altitude, float cyclePhase) {
-        const float radius = .5;
+        const float radius = .25;
         float t = length(diff) / radius;
         float dy = exp(-pow(t * 1.5, 6.0));
         float ymin = min(0.0, altitude - dy);
@@ -59,10 +60,10 @@ const volumeFragmentShaderSource = `#version 300 es
     }
 
     void main() {
-        const vec2 textureSize = vec2(256., 256.); // TODO Uniform
+        const vec2 textureSize = vec2(256, 256); // TODO Uniform
         const vec2 poolSize = vec2(2., 2.); // TODO uniform
         vec2 delta = vec2(1./textureSize.x, 1./textureSize.y);
-        const float radius = .5;
+        const float radius = .25;
         const int rx = int(radius / poolSize.x * textureSize.x / poolSize.x);
         const int ry = int(radius / poolSize.y *textureSize.y / poolSize.y);
         float res = 0.;
@@ -232,7 +233,7 @@ class SwimmersAttributes {
         this.gl.enableVertexAttribArray(vertexLocation);
 
         this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
-        this.gl.activeTexture(this.gl.TEXTURE12);
+        this.gl.activeTexture(this.gl.TEXTURE0);
         this.gl.bindTexture(this.gl.TEXTURE_2D, this.pointsTexture.id);
         // this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
         this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
@@ -242,8 +243,7 @@ class SwimmersAttributes {
     }
 
     pointPass() {
-        // this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.pointsFrameBuffer);
-        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.pointsFrameBuffer);
         this.gl.useProgram(this.programPoints);
         const data1Location = this.gl.getAttribLocation(this.programPoints, 'iData1');
 
@@ -283,8 +283,8 @@ class SwimmersAttributes {
             this.gl.enableVertexAttribArray(data3Location);
         }
 
-        //this.gl.viewport(0, 0, this.pointsTexture.width, this.pointsTexture.height);
-        //this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+        this.gl.viewport(0, 0, this.pointsTexture.width, this.pointsTexture.height);
+        this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
         this.gl.drawArrays(this.gl.POINTS, 0, this.numSwimmers);
     }
 
@@ -293,7 +293,7 @@ class SwimmersAttributes {
         this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
 
         this.pointPass();
-        //this.volumePass();
+        this.volumePass();
 
         this.gl.disable(this.gl.BLEND);
     }
