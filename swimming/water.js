@@ -261,7 +261,7 @@ Water.prototype.updateSpheres = function (dt) {
   this.WR_position += dt * speed;
   for (let i = 0; i < this.spheres.length; i++) {
     const sphere = this.spheres[i];
-    this.moveSphere(sphere.oldCenter, sphere.center, sphere.radius);
+    //this.moveSphere(sphere.oldCenter, sphere.center, sphere.radius);
   }
 };
 
