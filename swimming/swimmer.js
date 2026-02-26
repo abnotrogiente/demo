@@ -38,6 +38,15 @@ class Swimmer {
         return Swimmer.attributes.texture;
     }
 
+    static bindDisplacementTexture = (i) => {
+        Swimmer.attributes.displacementTexture.bind(i);
+    }
+
+    static bindOldDisplacementTexture = (i) => {
+        Swimmer.attributes.oldDisplacementTexture.bind(i);
+    }
+
+
     static reset = (poolSize, resolution) => {
         Swimmer.attributes.createRenderingTexture(resolution.x, resolution.y);
         Swimmer.attributes.poolSize = poolSize;
@@ -101,7 +110,6 @@ class Swimmer {
 
         if (Swimmer.raceHasStarted || Swimmer.swimming) {
             if (!this.started && Swimmer.raceHasStarted) {
-                console.log("go : " + time);
                 if (time > this.reactionTime) {
                     this.swim(true, poolSize);
                     this.jump(poolSize);
@@ -132,7 +140,6 @@ class Swimmer {
             this.divingDistance = this.body.center.z + poolSize.z / 2;
             this.divingTime = time;
             this.hasDove = true;
-            console.log("dived : " + this.divingDistance);
         }
     }
 }

@@ -48,6 +48,8 @@ const volumeFragmentShaderSource = `#version 300 es
     uniform sampler2D tex;
     uniform vec2 poolSize;
     uniform bool horizontal;
+    uniform bool show;
+    uniform bool blur;
     in vec2 fragCoord;
     out vec4 fragColor;
 
@@ -64,6 +66,10 @@ const volumeFragmentShaderSource = `#version 300 es
     vec4 horizontalPass(float radius, vec2 delta, int rx) {
         float radiusSq = radius*radius;
         vec4 res = vec4(0., 0., 0., .5);
+        int N = textureSize(tex, 0).x;
+        // float dx_texel = fragCoord.x * float(N) - floor(fragCoord.x * float(N)) - .5;
+        // dx_texel /= float(N);
+        // dx_texel *= poolSize.x;
         for(int i = -rx; i < rx; i++) {
             float i_float = float(i);
             //TODO tester si vraiment dans kernel
@@ -87,26 +93,47 @@ const volumeFragmentShaderSource = `#version 300 es
         // vec4 info = texture(tex, fragCoord);
         // return info;
         float radiusSq = radius*radius;
+        int M = textureSize(tex, 0).y;
+        float dy_texel = fragCoord.y * float(M) - floor(fragCoord.y * float(M)) - .5;
+        dy_texel /= float(M);
+
+        
+        
+        int N = textureSize(tex, 0).x;
+        float dx_texel = fragCoord.x * float(N) - floor(fragCoord.x * float(N)) - .5;
+        dx_texel /= float(N);
+
+        vec2 d_texel = vec2(dx_texel, dy_texel);
+
+        float dy = dy_texel * poolSize.y;
         vec4 res = vec4(0., 0., 0., .5);
         for(int j = -ry; j < ry; j++) {
             float j_float = float(j);
             //TODO tester si vraiment dans kernel
             float diff = j_float * delta.y;
             vec2 p = fragCoord + vec2(0., diff);
+            vec2 p_centered = p - d_texel;
+            vec4 info_centered = texture(tex, p_centered);
+            p -= vec2(0., dy_texel);
             vec4 info = texture(tex, p);
+            // info = info_centered;
             float Y = diff * poolSize.y;
-            if(info.rgb != vec3(0., 0., 0.) && abs(Y) <= info.g) {
-                float X = info.r;
-
-                //res.b = 1.;
-                res.r = volumeInSphere(vec2(-X, -Y), info.b, info.g) * 5.;
-                //res.r = 10.*abs(X);
+            Y -= dy;
+            if(info_centered.rgb != vec3(0., 0., 0.) && abs(Y) <= info.g) {
+                float X = info_centered.r;
+                res.r = volumeInSphere(vec2(X, Y), 2.*info_centered.b, info.g) * 5.;
             }
         }
         return res;
     }
 
     void main() {
+
+        if (show) {
+            fragColor = vec4(texture(tex, fragCoord).rgb, .7);
+            return;
+        }
+
         ivec2 textureSizeInt = textureSize(tex, 0);
         vec2 textureSize = vec2(float(textureSizeInt.x), float(textureSizeInt.y));
         vec2 delta = vec2(1./textureSize.x, 1./textureSize.y);
@@ -114,18 +141,6 @@ const volumeFragmentShaderSource = `#version 300 es
         float radiusSq = radius*radius;
         int rx = int(radius * textureSize.x / poolSize.x);
         int ry = int(radius * textureSize.y / poolSize.y);
-        vec4 res = vec4(0., 0., 0., .5);
-        // for(int i = -rx; i < rx; i++) {
-        //     float i_float = float(i);
-        //     for(int j = -ry; j < ry; j++) {
-        //         //TODO tester si vraiment dans kernel
-        //         float j_float = float(j);
-        //         vec2 diff = vec2(i_float, j_float) * delta;
-        //         vec2 p = fragCoord + diff;
-        //         vec4 info = texture(tex, p);
-        //         if(info.b != 0.) res.r += volumeInSphere(-diff*poolSize, info.r, info.g) * 5.;
-        //     }
-        // }
 
         if (horizontal) fragColor = horizontalPass(radius, delta, rx);
         else fragColor = verticalPass(radius, delta, ry);
@@ -240,12 +255,20 @@ class SwimmersAttributes {
         this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, attachmentPoint, this.gl.TEXTURE_2D, this.pointsTexture.id, 0);
         this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
 
-        this.horizontalPassTexture = new GL.Texture(width, height, { type: this.gl.FLOAT, filter: this.gl.NEAREST }); // TODO try unsigned bytes here.
+        this.horizontalPassTexture = new GL.Texture(width, height, { type: this.gl.FLOAT, filter: this.gl.LINEAR }); // TODO try unsigned bytes here.
         this.horizontalPassFrameBuffer = this.gl.createFramebuffer();
         this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.horizontalPassFrameBuffer);
-        //const attachmentPoint = this.gl.COLOR_ATTACHMENT0;
         this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, attachmentPoint, this.gl.TEXTURE_2D, this.horizontalPassTexture.id, 0);
         this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+
+        this.displacementTexture = new GL.Texture(width, height, { type: this.gl.FLOAT, filter: this.gl.LINEAR }); // TODO try unsigned bytes here.
+        this.displacementFrameBuffer = this.gl.createFramebuffer();
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.displacementFrameBuffer);
+        this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, attachmentPoint, this.gl.TEXTURE_2D, this.displacementTexture.id, 0);
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+
+        this.oldDisplacementTexture = new GL.Texture(width, height, { type: this.gl.FLOAT, filter: this.gl.LINEAR }); // TODO try unsigned bytes here.
+
     }
 
     buildProgram(vertexSource, fragmentSource) {
@@ -278,6 +301,9 @@ class SwimmersAttributes {
         const horizontalLocation = this.gl.getUniformLocation(this.programVolume, "horizontal");
         this.gl.uniform1i(horizontalLocation, true);
 
+        const showLocation = this.gl.getUniformLocation(this.programVolume, "show");
+        this.gl.uniform1i(showLocation, false);
+
         const sizeVertex = 2;
         const type = this.gl.FLOAT;
         const normalize = false;
@@ -300,13 +326,29 @@ class SwimmersAttributes {
 
         this.gl.uniform1i(horizontalLocation, false);
 
-        this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
+        this.gl.uniform1i(showLocation, false);
+
 
         this.gl.activeTexture(this.gl.TEXTURE0);
         this.gl.bindTexture(this.gl.TEXTURE_2D, this.horizontalPassTexture.id);
 
+        // this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+        this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
         this.gl.drawElements(this.gl.TRIANGLES, 6, this.gl.UNSIGNED_SHORT, 0);
 
+        // // SHOW
+
+        // this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+
+        // this.gl.uniform1i(showLocation, true);
+
+
+        // this.gl.activeTexture(this.gl.TEXTURE0);
+        // this.gl.bindTexture(this.gl.TEXTURE_2D, this.displacementTexture.id);
+
+        // // this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+        // this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
+        // this.gl.drawElements(this.gl.TRIANGLES, 6, this.gl.UNSIGNED_SHORT, 0);
     }
 
     pointPass() {
@@ -355,7 +397,18 @@ class SwimmersAttributes {
         this.gl.drawArrays(this.gl.POINTS, 0, this.numSwimmers);
     }
 
+    updateOldDisplacementTexture() {
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.displacementFrameBuffer);
+        this.gl.activeTexture(this.gl.TEXTURE0);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.oldDisplacementTexture.id);
+        this.gl.copyTexSubImage2D(this.gl.TEXTURE_2D, 0, 0, 0, 0, 0, this.oldDisplacementTexture.width, this.oldDisplacementTexture.height);
+        // this.gl.copyTexImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, 0, 0, this.oldDisplacementTexture.width, this.oldDisplacementTexture.height, 0);
+    }
+
     draw() {
+
+        this.updateOldDisplacementTexture();
+
         this.gl.enable(this.gl.BLEND);
         this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
 
