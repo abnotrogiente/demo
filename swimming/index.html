@@ -117,6 +117,15 @@ Released under the MIT license
       pointer-events: none;
     }
 
+    #fps {
+      top: 10px;
+      left: 10px;
+      color: purple;
+      font-size: 30px;
+      z-index: 2;
+      pointer-events: none;
+    }
+
     @media (max-width: 600px) {
       small {
         font-size: 8px;
@@ -132,7 +141,7 @@ Released under the MIT license
   </style>
 
 
-<script type="module" crossorigin src="/demo/assets/swimming-46NI1qqW.js"></script>
+<script type="module" crossorigin src="/demo/assets/swimming-Bm2dCLd-.js"></script>
 <link rel="modulepreload" crossorigin href="/demo/assets/modulepreload-polyfill-B5Qt9EMX.js">
 <link rel="modulepreload" crossorigin href="/demo/assets/lil-gui.module.min-Vka56b52.js">
 
@@ -158,6 +167,7 @@ Released under the MIT license
     Drag on the water to start ripples. <br /> <br />
     <div id="resolution">Resolution: 256 x 256</div>
     <div hidden="true" id="warning">Area conservation should be disabled for best performance.</div>
+    <div id="fps"></div>
   </div>
 
 
