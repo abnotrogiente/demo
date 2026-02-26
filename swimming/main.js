@@ -15,6 +15,7 @@ import GUI from 'three/examples/jsm/libs/lil-gui.module.min.js';
 import { Video } from './video.js';
 import { Swimmer } from './swimmer.js';
 import { MAX_SPARKS } from './video.js';
+import { params } from './params.js';
 
 
 function text2html(text) {
@@ -50,7 +51,6 @@ var angleZ = 0;
 let translateX = 0;
 let translateY = 0;
 var zoomDistance = 4.0;
-Swimmer.initSwimmersAttributesTexture(gl);
 
 const videoStartTime = 17;
 let videoTime = 0;
@@ -59,15 +59,26 @@ var paused = false;
 var flagCenter;
 var flagSize;
 var poolSize = new GL.Vector(2.0, 1.0, 2.0);
+Swimmer.initAttributes(gl, poolSize);
 let resolution = new GL.Vector(256, 256);
-let params = {
-  numSteps: 2, focal: 45,
-  sparks: { enabled: false, glow: 5., glowOffset: .5, lengthFactor: 1., stroke: .01, num: 40, sizeFactor: 50, fov: Math.PI / 4 },
-  shadow: { enabled: true, shadowRadius: .5, shadowPower: .5, showCircle: true, circleRadius: 1., circleStroke: .15 }
-};
 const gui = new GUI();
 function updateResolutionWarning() {
   document.getElementById('warning').hidden = !(resolution.x * resolution.y > 300000 && (water && water.areaConservationEnabled));
+}
+
+let timeSinceFrameRateUpdate = 0;
+let frameRate = 0;
+let frameRateCounter = 0;
+function updateFrameRateHTML(dt) {
+  timeSinceFrameRateUpdate += dt;
+  frameRate += 1 / dt;
+  frameRateCounter++;
+  if (timeSinceFrameRateUpdate >= 1) {
+    frameRate /= frameRateCounter;
+    document.getElementById('fps').innerText = `${(1 / dt).toFixed(1)} FPS`;
+    timeSinceFrameRateUpdate = 0;
+    frameRateCounter = 0;
+  }
 }
 function reset() {
   console.log("reset");
@@ -186,6 +197,9 @@ window.onload = function () {
   shadowFolder.add(params.shadow, "showCircle").name("circle");
   shadowFolder.add(params.shadow, "circleRadius", .5, 2).name("circle radius");
   shadowFolder.add(params.shadow, "circleStroke", .1, .5).name("circle stroke");
+
+  const simulationFolder = folder.addFolder("Simulation");
+  simulationFolder.add(params.simulation, "optimized").name("optimized");
 
   // folder.add(params, 'numSteps', 1, 10).step(1).name("number of simulation steps");
   renderer = new Renderer(gl, water, flagCenter, flagSize);
@@ -538,6 +552,8 @@ window.onload = function () {
 
     renderer.updateCaustics(water);
     videoTime += dt;
+    updateFrameRateHTML(dt);
+
   }
 
   function draw(time) {
@@ -546,8 +562,7 @@ window.onload = function () {
       renderer.lightDir = GL.Vector.fromAngles((90 - angleY) * Math.PI / 180, -angleX * Math.PI / 180);
       if (paused) renderer.updateCaustics(water);
     }
-
-    if (Swimmer.showFlags) Swimmer.updateAttributesTexture(gl, swimmers);
+    if (Swimmer.showFlags) Swimmer.updateAttributesTexture(swimmers);
     water.addOrRemoveVisualizationWaves(true, swimmers, raceTime);
     water.updateNormals();
 
@@ -569,6 +584,7 @@ window.onload = function () {
     renderer.renderCube(water);
     renderer.renderWater(water, cubemap, swimmers, raceTime, params.shadow);
     renderer.renderSpheres(water);
+    // Swimmer.attributes.draw();
     video.render(raceTime, params.sparks, poolSize);
     gl.disable(gl.DEPTH_TEST);
     water.addOrRemoveVisualizationWaves(false, swimmers, raceTime);

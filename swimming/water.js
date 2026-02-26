@@ -10,6 +10,7 @@ import GL from './lightgl.js';
 import { Sphere } from './sphere.js';
 import { Swimmer } from './swimmer.js';
 import { swimmersHelperFunctions } from './swimmer.js';
+import { params } from './params.js';
 
 // The data in the texture is (position.y, velocity.y, normal.x, normal.z)
 function Water(gl, poolSize, resolution = null) {
@@ -112,13 +113,29 @@ function Water(gl, poolSize, resolution = null) {
     fragColor = info;
   }
   `);
-  this.sphereShader = new GL.Shader(vertexShader, `
+  this.sphereShader = new GL.Shader(`
+    out vec2 coord;
+    uniform vec2 invPoolSizeVertex;
+    void main() {
+      coord = gl_Vertex.xy * invPoolSizeVertex + 0.5;
+      // displacement = texture(displacementTexture, coord).r;
+      // oldDisplacement = texture(oldDisplacementTexture, coord).r;
+
+      gl_Position = vec4(gl_Vertex.xy * 2. * invPoolSizeVertex, 0., 1.0);
+    }
+  `, `
     uniform sampler2D tex;
-    uniform vec3 oldCenter;
-    uniform vec3 newCenter;
-    uniform float radius;
+    
+    
     uniform vec3 poolSize;
     in vec2 coord;
+    uniform sampler2D oldDisplacementTexture;
+    uniform sampler2D displacementTexture;
+    uniform bool optimized;
+    uniform float radius;
+    uniform vec3 newCenter;
+    uniform vec3 oldCenter;
+
     out vec4 fragColor;
     
     float volumeInSphere(vec3 center) {
@@ -131,13 +148,23 @@ function Water(gl, poolSize, resolution = null) {
   }
 
   void main() {
-      /* get vertex info */
-      vec4 info = texture(tex, coord);
 
-    /* add the old volume */
+  vec4 info = texture(tex, coord);
+  
+  if (optimized) {
+      float displacement = texture(displacementTexture, coord).r;
+      float oldDisplacement = texture(oldDisplacementTexture, coord).r;
+
+      
+      info.r += oldDisplacement - displacement;
+      fragColor = info;
+      return;
+    }
+
+    // /* add the old volume */
     info.r += volumeInSphere(oldCenter);
 
-    /* subtract the new volume */
+    // /* subtract the new volume */
     info.r -= volumeInSphere(newCenter);
 
     fragColor = info;
@@ -174,6 +201,8 @@ Water.prototype.reset = function (poolSize, resolution = null) {
     this.W = 256;
     this.H = 256;
   }
+  Swimmer.reset(new GL.Vector(poolSize.x, poolSize.z), new GL.Vector(this.W, this.H));
+  //Swimmer.attributes.createRenderingTexture(this.W, this.H);
   this.plane = GL.Mesh.plane({ detail: 255, width: poolSize.x, height: poolSize.z });
   this.delta = new GL.Vector(1 / this.W, 1 / this.H);
   /**@type {WebGLRenderingContext} */
@@ -224,7 +253,8 @@ Water.prototype.addOrRemoveVisualizationWaves = function (add, swimmers, raceTim
 
   this.textureB.drawTo(function () {
     this_.textureA.bind();
-    if (Swimmer.swimmersAttributesTexture) Swimmer.swimmersAttributesTexture.bind(1);
+    const swimmersAttributesTexture = Swimmer.getAttributesTexture();
+    if (swimmersAttributesTexture) swimmersAttributesTexture.bind(1);
     this_.visualizationWavesShader.uniforms({
       swimmersAttributesTexture: 1,
       invPoolSizeVertex: [this_.invPoolSize.x, this_.invPoolSize.z],
@@ -256,9 +286,31 @@ Water.prototype.updateSpheres = function (dt) {
   const speed = 2.4;
   this.prev_WR_position = this.WR_position;
   this.WR_position += dt * speed;
-  for (let i = 0; i < this.spheres.length; i++) {
-    const sphere = this.spheres[i];
-    this.moveSphere(sphere.oldCenter, sphere.center, sphere.radius);
+  if (params.simulation.optimized) {
+    Swimmer.attributes.draw();
+
+    this.textureB.drawTo(() => {
+      this.textureA.bind();
+      Swimmer.bindDisplacementTexture(1);
+      Swimmer.bindOldDisplacementTexture(2);
+      this.sphereShader.uniforms({
+        oldDisplacementTexture: 2,
+        displacementTexture: 1,
+        invPoolSizeVertex: [this.invPoolSize.x, this.invPoolSize.z],
+        poolSize: [this.poolSize.x, this.poolSize.y, this.poolSize.z],
+        optimized: true
+      }).draw(this.plane);
+      this.textureB.swapWith(this.textureA);
+      Swimmer.attributes.draw();
+
+    })
+  }
+
+  else {
+    for (let i = 0; i < this.spheres.length; i++) {
+      const sphere = this.spheres[i];
+      this.moveSphere(sphere.oldCenter, sphere.center, sphere.radius);
+    }
   }
 };
 
@@ -271,7 +323,8 @@ Water.prototype.moveSphere = function (oldCenter, newCenter, radius) {
       oldCenter: oldCenter,
       newCenter: newCenter,
       radius: radius,
-      poolSize: [this_.poolSize.x, this_.poolSize.y, this_.poolSize.z]
+      poolSize: [this_.poolSize.x, this_.poolSize.y, this_.poolSize.z],
+      optimized: false
     }).draw(this_.plane);
   });
   this.textureB.swapWith(this.textureA);

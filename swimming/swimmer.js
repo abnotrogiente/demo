@@ -1,5 +1,7 @@
 import GL from "./lightgl";
 import { Sphere } from "./sphere";
+import { SwimmersAttributes } from "./swimmersAttributes";
+import { ARM_DELTA_X, FOOT_DELTA_X, FOOT_DELTA_Z, MAX_NUM_SWIMMER, NUM_VEC_ATTRIBUTES } from "./swimmersConstants";
 
 function gaussianRandom(mean = 0, stdev = 1) {
     const u = 1 - Math.random(); // Converting [0,1) to (0,1]
@@ -20,49 +22,35 @@ class Swimmer {
     static raceHasStarted = false;
     static swimming = false;
     static showFlags = true;
-    static numAttributes = 5;
-    static numVecAttributes = Math.ceil(Swimmer.numAttributes / 4);
-    static maxNumSwimmer = 10;
-    static swimmersAttributesTexture = null;
-    /**@type {GL.Mesh.plane} */
-    static plane = null;
-    /**@type {GL.Shader} */
-    static attributeShader = null;
-    /**
-     * 
-     * @param {WebGLRenderingContext} gl 
-     */
-    static initSwimmersAttributesTexture = (gl) => {
-        const filter = gl.NEAREST;
-        Swimmer.plane = GL.Mesh.plane();
-        Swimmer.swimmersAttributesTexture = new GL.Texture(Swimmer.maxNumSwimmer, Swimmer.numVecAttributes, { type: gl.FLOAT, filter: filter });
+
+    /**@type {SwimmersAttributes} */
+    static attributes;
+
+    static initAttributes = (gl) => {
+        Swimmer.attributes = new SwimmersAttributes(gl);
     }
 
-    /**
-     * 
-     * @param {WebGLRenderingContext} gl 
-     * @param {Swimmer[]} swimmers
-     */
-    static updateAttributesTexture = (gl, swimmers) => {
-        const swimmersAttributes = new Float32Array(Swimmer.numVecAttributes * 4 * Swimmer.maxNumSwimmer);
-        for (let i = 0; i < swimmers.length; i++) {
-            swimmersAttributes[4 * i] = swimmers[i].body.center.x;
-            swimmersAttributes[4 * i + 1] = swimmers[i].body.center.z;
-            swimmersAttributes[4 * i + 2] = swimmers[i].divingDistance;
-            swimmersAttributes[4 * i + 3] = swimmers[i].divingTime;
+    static updateAttributesTexture = (swimmers) => {
+        Swimmer.attributes.update(swimmers);
+    }
 
-            //Second row of attributes
-            swimmersAttributes[Swimmer.maxNumSwimmer * 4 + 4 * i] = swimmers[i].reactionTime;
-            swimmersAttributes[Swimmer.maxNumSwimmer * 4 + 4 * i + 1] = swimmers[i].body.velocity.z * 3.6;
-            swimmersAttributes[Swimmer.maxNumSwimmer * 4 + 4 * i + 2] = swimmers[i].nationality;
-            swimmersAttributes[Swimmer.maxNumSwimmer * 4 + 4 * i + 3] = swimmers[i].body.center.y;
-        }
-        // Write back to textureA
-        gl.bindTexture(gl.TEXTURE_2D, Swimmer.swimmersAttributesTexture.id);
-        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
-        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, Swimmer.maxNumSwimmer, Swimmer.numVecAttributes, gl.RGBA, gl.FLOAT, swimmersAttributes);
-        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-    };
+    static getAttributesTexture = () => {
+        return Swimmer.attributes.texture;
+    }
+
+    static bindDisplacementTexture = (i) => {
+        Swimmer.attributes.displacementTexture.bind(i);
+    }
+
+    static bindOldDisplacementTexture = (i) => {
+        Swimmer.attributes.oldDisplacementTexture.bind(i);
+    }
+
+
+    static reset = (poolSize, resolution) => {
+        Swimmer.attributes.createRenderingTexture(resolution.x, resolution.y);
+        Swimmer.attributes.poolSize = poolSize;
+    }
 
     constructor(center) {
         this.startingPoint = new GL.Vector(center.x, center.y, center.z);
@@ -122,7 +110,6 @@ class Swimmer {
 
         if (Swimmer.raceHasStarted || Swimmer.swimming) {
             if (!this.started && Swimmer.raceHasStarted) {
-                console.log("go : " + time);
                 if (time > this.reactionTime) {
                     this.swim(true, poolSize);
                     this.jump(poolSize);
@@ -130,14 +117,15 @@ class Swimmer {
                 else return;
             }
             this.body.addForce(this.force);
+            this.cyclePhase = armPulsation * time % 2 * Math.PI;
             const offset1 = this.getArmOffset(time, 0);
             const offset2 = this.getArmOffset(time, Math.PI);
             const offset3 = this.getArmOffset(time * 2, 0);
             const offset4 = this.getArmOffset(time * 2, Math.PI);
-            this.rightArm.move(this.body.center.add(offset1).add(new GL.Vector(.3, 0, 0)));
-            this.leftArm.move(this.body.center.add(offset2).add(new GL.Vector(-.3, 0, 0)));
-            this.rightFoot.move(this.body.center.add(new GL.Vector(.15, offset3.y * 0.5, -1)));
-            this.leftFoot.move(this.body.center.add(new GL.Vector(-.15, offset4.y * 0.5, -1)));
+            this.rightArm.move(this.body.center.add(offset1).add(new GL.Vector(ARM_DELTA_X, 0, 0)));
+            this.leftArm.move(this.body.center.add(offset2).add(new GL.Vector(-ARM_DELTA_X, 0, 0)));
+            this.rightFoot.move(this.body.center.add(new GL.Vector(FOOT_DELTA_X, offset3.y * 0.5, -FOOT_DELTA_Z)));
+            this.leftFoot.move(this.body.center.add(new GL.Vector(-FOOT_DELTA_X, offset4.y * 0.5, -FOOT_DELTA_Z)));
         }
         else {
             this.rightArm.move(AWAY);
@@ -152,7 +140,6 @@ class Swimmer {
             this.divingDistance = this.body.center.z + poolSize.z / 2;
             this.divingTime = time;
             this.hasDove = true;
-            console.log("dived : " + this.divingDistance);
         }
     }
 }
@@ -163,48 +150,48 @@ const swimmersHelperFunctions = `
     #define PI 3.1415926536
     uniform sampler2D swimmersAttributesTexture;
     const int SWIMMERS_NUM_ATTRIBUTES = 4;
-    const vec2 TEXTURE_SIZE = vec2(`+ Swimmer.maxNumSwimmer + `, ` + Swimmer.numVecAttributes + `);
+    const vec2 TEXTURE_SIZE = vec2(`+ NUM_VEC_ATTRIBUTES + `, ` + MAX_NUM_SWIMMER + `);
     uniform float swimmersNumber;
     uniform float time;
 
     vec2 getAttributePosition(int i) {
         float i_float = float(i);
-        vec2 pixel = vec2(i_float, 0.);
+        vec2 pixel = vec2(0., i_float);
         vec4 attributes = texture(swimmersAttributesTexture, (pixel + .5) / TEXTURE_SIZE);
         return attributes.rg;
     }
 
     float getAttributeSpeed(int i) {
         float i_float = float(i);
-        vec2 pixel = vec2(i_float, 1.);
+        vec2 pixel = vec2(1., i_float);
         vec4 attributes = texture(swimmersAttributesTexture, (pixel + .5) / TEXTURE_SIZE);
         return attributes.g;
     }
 
     vec2 getAttributeDiving(int i) {
         float i_float = float(i);
-        vec2 pixel = vec2(i_float, 0.);
+        vec2 pixel = vec2(0., i_float);
         vec4 attributes = texture(swimmersAttributesTexture, (pixel + .5) / TEXTURE_SIZE);
         return attributes.ba;
     }
 
     float getAttributeReactionTime(int i ) {
         float i_float = float(i);
-        vec2 pixel = vec2(i_float, 1.);
+        vec2 pixel = vec2(1., i_float);
         vec4 attributes = texture(swimmersAttributesTexture, (pixel + .5) / TEXTURE_SIZE);
         return attributes.r;
     }
 
     float getNationality(int i ) {
         float i_float = float(i);
-        vec2 pixel = vec2(i_float, 1.);
+        vec2 pixel = vec2(1., i_float);
         vec4 attributes = texture(swimmersAttributesTexture, (pixel + .5) / TEXTURE_SIZE);
         return attributes.b;
     }
 
     float getAltitude(int i ) {
         float i_float = float(i);
-        vec2 pixel = vec2(i_float, 1.);
+        vec2 pixel = vec2(1., i_float);
         vec4 attributes = texture(swimmersAttributesTexture, (pixel + .5) / TEXTURE_SIZE);
         return attributes.a;
     }
