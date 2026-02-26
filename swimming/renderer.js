@@ -242,9 +242,14 @@ function Renderer(gl, water, flagCenter, flagSize) {
               vec3 flagColor;
               if(getNationality(i) < .5) flagColor = texture(france, vec2(1.-flagCoord.y,1.- flagCoord.x)).xyz;
               else flagColor = texture(china, vec2(1.-flagCoord.y,1.- flagCoord.x)).xyz;
-              color = flagColor;              
+              color = flagColor;
+              float delta = .1;
+              vec2 delta_tex = vec2(delta, delta) / flagSize;
+              if (min(flagCoord.y, 1.- flagCoord.y) <= delta_tex.y 
+                || min(flagCoord.x, 1. - flagCoord.x) <= delta_tex.x) color = vec3(1., 1., 1.);
             }
-            vec3 letterColor = GREEN/.4 * printFrame(vec2(1. - flagCoord.y - 1.5, 1. - flagCoord.x) / 15., getAttributeSpeed(i), 2);
+            vec2 letterCoord = flagCoord.yx * 2.;
+            vec3 letterColor = GREEN/.4 * printFrame(vec2(1. - letterCoord.x - 1.5, 1. - letterCoord.y) / 15., getAttributeSpeed(i), 2);
             float altitude = getAltitude(i);
             if (max(letterColor.r, max(letterColor.g, letterColor.b)) > .3) color = letterColor;
             if (!shadowEnabled || abs(altitude) < .15) continue;
@@ -458,7 +463,7 @@ Renderer.prototype.renderWater = function (water, sky, swimmers, raceTime, shado
       swimmersAttributesTexture: 6,
       iChannel0: 7,
       areaConservation: water.areaConservationEnabled,
-      flagSize: [.66, 1.],
+      flagSize: [1.5, 2.],
       flagCenter: [this.flagCenter.x, this.flagCenter.y],
       poolSize: [water.poolSize.x, water.poolSize.y, water.poolSize.z],
       poolSizeVertexShader: [water.poolSize.x, water.poolSize.y, water.poolSize.z],
