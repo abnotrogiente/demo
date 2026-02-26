@@ -182,6 +182,8 @@ function Renderer(gl, water, flagCenter, flagSize) {
       
       ` + swimmersHelperFunctions + textHelperFunctions + `
       makeStrF(printFrame) _num_ __ _k _m _DIV _h _endNum
+
+      makeStr(printStar) _STAR _end
       
       bool isOnConservedAreaGrid(vec2 pos, float size) {
         vec2 gridCoord = pos / size;
@@ -248,10 +250,20 @@ function Renderer(gl, water, flagCenter, flagSize) {
               if (min(flagCoord.y, 1.- flagCoord.y) <= delta_tex.y 
                 || min(flagCoord.x, 1. - flagCoord.x) <= delta_tex.x) color = vec3(1., 1., 1.);
             }
-            vec2 letterCoord = flagCoord.yx * 2.;
-            vec3 letterColor = GREEN/.4 * printFrame(vec2(1. - letterCoord.x - 1.5, 1. - letterCoord.y) / 15., getAttributeSpeed(i), 2);
-            float altitude = getAltitude(i);
+            vec2 letterCoord = flagCoord.yx;
+            letterCoord = vec2(-.5, .75) - letterCoord;
+            letterCoord /= 10.;
+            vec3 letterColor = GREEN/.4 * printFrame(letterCoord, getAttributeSpeed(i), 2);
             if (max(letterColor.r, max(letterColor.g, letterColor.b)) > .3) color = letterColor;
+            
+            if (isFirst(i)) {
+              vec2 starCoord = letterCoord + vec2(.35, 0.);
+              // vec2 uv = starCoord * 50.;
+              vec3 starColor = vec3(1., 1., 0.) * printStar(starCoord);
+              if (max(starColor.r, max(starColor.g, starColor.b)) > .1) color = starColor;
+            }
+            
+            float altitude = getAltitude(i);
             if (!shadowEnabled || abs(altitude) < .15) continue;
             vec2 diff = (projectedPosition - swimmerPos);
             vec2 diffNormalized = diff/shadowRadius;

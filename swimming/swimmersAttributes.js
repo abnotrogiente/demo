@@ -192,6 +192,23 @@ class SwimmersAttributes {
 
     /**
      * 
+     * @param {Swimmer[]} swimmers 
+     */
+    #findFirst(swimmers) {
+        let maxDist = -this.poolSize.y;
+        let indexFirst = -1;
+        for (let i = 0; i < swimmers.length; i++) {
+            const dist = swimmers[i].body.center.z;
+            if (dist > maxDist) {
+                maxDist = dist;
+                indexFirst = i;
+            }
+        }
+        return indexFirst;
+    }
+
+    /**
+     * 
      * @param {*} index 
      * @param {Sphere} sphere 
      */
@@ -207,7 +224,7 @@ class SwimmersAttributes {
      * @param {*} index 
      * @param {Swimmer} swimmer 
      */
-    #addSwimmerInformation(index, swimmer) {
+    #addSwimmerInformation(index, swimmer, first = false) {
         this.#addSphereInformation(index, swimmer.body);
 
         this.swimmersAttributes[this.numVecAttributes * 4 * index + 2] = swimmer.divingDistance;
@@ -218,7 +235,7 @@ class SwimmersAttributes {
         this.swimmersAttributes[this.numVecAttributes * 4 * index + 5] = swimmer.body.velocity.z * 3.6;
         this.swimmersAttributes[this.numVecAttributes * 4 * index + 6] = swimmer.nationality;
 
-        this.swimmersAttributes[this.numVecAttributes * 4 * index + 8] = swimmer.cyclePhase;
+        this.swimmersAttributes[this.numVecAttributes * 4 * index + 8] = first ? 1 : 0;
     }
 
     /**
@@ -228,10 +245,12 @@ class SwimmersAttributes {
     update(swimmers) {
         this.numSwimmers = swimmers.length;
         const numSpheres = 5;
+        const indexFirst = this.#findFirst(swimmers);
         this.swimmersAttributes = new Float32Array(this.numVecAttributes * 4 * this.maxNumSwimmer * numSpheres);
         for (let i = 0; i < swimmers.length; i++) {
             const swimmer = swimmers[i];
-            this.#addSwimmerInformation(i, swimmer);
+            const first = i == indexFirst;
+            this.#addSwimmerInformation(i, swimmer, first);
             this.#addSphereInformation(swimmers.length + i, swimmer.leftArm);
             this.#addSphereInformation(2 * swimmers.length + i, swimmer.rightArm);
             this.#addSphereInformation(3 * swimmers.length + i, swimmer.leftFoot);

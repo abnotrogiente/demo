@@ -122,6 +122,7 @@ uniform sampler2D iChannel0;
 */
 
 // Special characters
+#define _STAR 28,
 #define __    32,
 #define _EX   33, // " ! "
 #define _DBQ  34, // " " "
