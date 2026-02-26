@@ -1,4 +1,5 @@
 import GL from "./lightgl";
+import { Sphere } from "./sphere";
 import { Swimmer } from "./swimmer";
 import { ARM_DELTA_X, FOOT_DELTA_X, FOOT_DELTA_Z, MAX_NUM_SWIMMER, NUM_VEC_ATTRIBUTES } from "./swimmersConstants";
 
@@ -49,6 +50,7 @@ const volumeFragmentShaderSource = `#version 300 es
     uniform vec2 poolSize;
     uniform bool horizontal;
     uniform bool show;
+    uniform bool swapColor;
     uniform bool blur;
     in vec2 fragCoord;
     out vec4 fragColor;
@@ -131,6 +133,7 @@ const volumeFragmentShaderSource = `#version 300 es
 
         if (show) {
             fragColor = vec4(texture(tex, fragCoord).rgb, .7);
+            if (swapColor) fragColor = vec4(texture(tex, fragCoord).grb, .7);
             return;
         }
 
@@ -188,28 +191,52 @@ class SwimmersAttributes {
     }
 
     /**
+     * 
+     * @param {*} index 
+     * @param {Sphere} sphere 
+     */
+    #addSphereInformation(index, sphere) {
+        this.swimmersAttributes[this.numVecAttributes * 4 * index] = sphere.center.x;
+        this.swimmersAttributes[this.numVecAttributes * 4 * index + 1] = sphere.center.z;
+        this.swimmersAttributes[this.numVecAttributes * 4 * index + 7] = sphere.center.y;
+    }
+
+
+    /**
+     * 
+     * @param {*} index 
+     * @param {Swimmer} swimmer 
+     */
+    #addSwimmerInformation(index, swimmer) {
+        this.#addSphereInformation(index, swimmer.body);
+
+        this.swimmersAttributes[this.numVecAttributes * 4 * index + 2] = swimmer.divingDistance;
+        this.swimmersAttributes[this.numVecAttributes * 4 * index + 3] = swimmer.divingTime;
+
+        //Second row of attributes
+        this.swimmersAttributes[this.numVecAttributes * 4 * index + 4] = swimmer.reactionTime;
+        this.swimmersAttributes[this.numVecAttributes * 4 * index + 5] = swimmer.body.velocity.z * 3.6;
+        this.swimmersAttributes[this.numVecAttributes * 4 * index + 6] = swimmer.nationality;
+
+        this.swimmersAttributes[this.numVecAttributes * 4 * index + 8] = swimmer.cyclePhase;
+    }
+
+    /**
      *
      * @param {Swimmer[]} swimmers
      */
     update(swimmers) {
         this.numSwimmers = swimmers.length;
-        this.swimmersAttributes = new Float32Array(this.numVecAttributes * 4 * this.maxNumSwimmer);
+        const numSpheres = 5;
+        this.swimmersAttributes = new Float32Array(this.numVecAttributes * 4 * this.maxNumSwimmer * numSpheres);
         for (let i = 0; i < swimmers.length; i++) {
-            this.swimmersAttributes[this.numVecAttributes * 4 * i] = swimmers[i].body.center.x;
-            this.swimmersAttributes[this.numVecAttributes * 4 * i + 1] = swimmers[i].body.center.z;
-            this.swimmersAttributes[this.numVecAttributes * 4 * i + 2] = swimmers[i].divingDistance;
-            this.swimmersAttributes[this.numVecAttributes * 4 * i + 3] = swimmers[i].divingTime;
+            const swimmer = swimmers[i];
+            this.#addSwimmerInformation(i, swimmer);
+            this.#addSphereInformation(swimmers.length + i, swimmer.leftArm);
+            this.#addSphereInformation(2 * swimmers.length + i, swimmer.rightArm);
+            this.#addSphereInformation(3 * swimmers.length + i, swimmer.leftFoot);
+            this.#addSphereInformation(4 * swimmers.length + i, swimmer.rightFoot);
 
-            //Second row of attributes
-            this.swimmersAttributes[this.numVecAttributes * 4 * i + 4] = swimmers[i].reactionTime;
-            this.swimmersAttributes[this.numVecAttributes * 4 * i + 5] = swimmers[i].body.velocity.z * 3.6;
-            this.swimmersAttributes[this.numVecAttributes * 4 * i + 6] = swimmers[i].nationality;
-            this.swimmersAttributes[this.numVecAttributes * 4 * i + 7] = swimmers[i].body.center.y;
-
-            this.swimmersAttributes[this.numVecAttributes * 4 * i + 8] = swimmers[i].cyclePhase;
-            // this.swimmersAttributes[this.numVecAttributes * 4 * i + 9] = swimmers[i].rightArm.center.y;
-            // this.swimmersAttributes[this.numVecAttributes * 4 * i + 10] = swimmers[i].leftFoot.center.y;
-            // this.swimmersAttributes[this.numVecAttributes * 4 * i + 11] = swimmers[i].rightFoot.center.y;
         }
         // Write back to textureA
         this.gl.bindTexture(this.gl.TEXTURE_2D, this.texture.id);
@@ -261,13 +288,17 @@ class SwimmersAttributes {
         this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, attachmentPoint, this.gl.TEXTURE_2D, this.horizontalPassTexture.id, 0);
         this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
 
-        this.displacementTexture = new GL.Texture(width, height, { type: this.gl.FLOAT, filter: this.gl.LINEAR }); // TODO try unsigned bytes here.
+        const N = height / 4;
+        const W = N;
+        const H = N;
+
+        this.displacementTexture = new GL.Texture(W, H, { type: this.gl.FLOAT, filter: this.gl.LINEAR }); // TODO try unsigned bytes here.
         this.displacementFrameBuffer = this.gl.createFramebuffer();
         this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.displacementFrameBuffer);
         this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, attachmentPoint, this.gl.TEXTURE_2D, this.displacementTexture.id, 0);
         this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
 
-        this.oldDisplacementTexture = new GL.Texture(width, height, { type: this.gl.FLOAT, filter: this.gl.LINEAR }); // TODO try unsigned bytes here.
+        this.oldDisplacementTexture = new GL.Texture(W, H, { type: this.gl.FLOAT, filter: this.gl.LINEAR }); // TODO try unsigned bytes here.
 
     }
 
@@ -304,6 +335,9 @@ class SwimmersAttributes {
         const showLocation = this.gl.getUniformLocation(this.programVolume, "show");
         this.gl.uniform1i(showLocation, false);
 
+        const swapColorLocation = this.gl.getUniformLocation(this.programVolume, "swapColor");
+        this.gl.uniform1i(swapColorLocation, false);
+
         const sizeVertex = 2;
         const type = this.gl.FLOAT;
         const normalize = false;
@@ -322,7 +356,7 @@ class SwimmersAttributes {
 
         //VERTICAL PASS
 
-        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.displacementFrameBuffer);
 
         this.gl.uniform1i(horizontalLocation, false);
 
@@ -332,9 +366,10 @@ class SwimmersAttributes {
         this.gl.activeTexture(this.gl.TEXTURE0);
         this.gl.bindTexture(this.gl.TEXTURE_2D, this.horizontalPassTexture.id);
 
-        // this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
-        this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
+        this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+        this.gl.viewport(0, 0, this.displacementTexture.width, this.displacementTexture.height);
         this.gl.drawElements(this.gl.TRIANGLES, 6, this.gl.UNSIGNED_SHORT, 0);
+        this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
 
         // // SHOW
 
@@ -343,10 +378,27 @@ class SwimmersAttributes {
         // this.gl.uniform1i(showLocation, true);
 
 
+
         // this.gl.activeTexture(this.gl.TEXTURE0);
         // this.gl.bindTexture(this.gl.TEXTURE_2D, this.displacementTexture.id);
 
         // // this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+        // this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
+        // //this.gl.drawElements(this.gl.TRIANGLES, 6, this.gl.UNSIGNED_SHORT, 0);
+
+
+        // // SHOW OLD
+
+        // this.gl.uniform1i(showLocation, true);
+
+        // this.gl.uniform1i(swapColorLocation, true);
+
+
+
+        // this.gl.activeTexture(this.gl.TEXTURE0);
+        // this.gl.bindTexture(this.gl.TEXTURE_2D, this.oldDisplacementTexture.id);
+
+        // //this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
         // this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
         // this.gl.drawElements(this.gl.TRIANGLES, 6, this.gl.UNSIGNED_SHORT, 0);
     }
@@ -394,7 +446,7 @@ class SwimmersAttributes {
 
         this.gl.viewport(0, 0, this.pointsTexture.width, this.pointsTexture.height);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
-        this.gl.drawArrays(this.gl.POINTS, 0, this.numSwimmers);
+        this.gl.drawArrays(this.gl.POINTS, 0, 5 * this.numSwimmers);
     }
 
     updateOldDisplacementTexture() {

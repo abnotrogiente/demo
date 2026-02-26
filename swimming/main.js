@@ -15,6 +15,7 @@ import GUI from 'three/examples/jsm/libs/lil-gui.module.min.js';
 import { Video } from './video.js';
 import { Swimmer } from './swimmer.js';
 import { MAX_SPARKS } from './video.js';
+import { params } from './params.js';
 
 
 function text2html(text) {
@@ -60,11 +61,7 @@ var flagSize;
 var poolSize = new GL.Vector(2.0, 1.0, 2.0);
 Swimmer.initAttributes(gl, poolSize);
 let resolution = new GL.Vector(256, 256);
-let params = {
-  numSteps: 2, focal: 45,
-  sparks: { enabled: false, glow: 5., glowOffset: .5, lengthFactor: 1., stroke: .01, num: 40, sizeFactor: 50, fov: Math.PI / 4 },
-  shadow: { shadowRadius: .5, shadowPower: .5, showCircle: true, circleRadius: 1., circleStroke: .15 }
-};
+
 const gui = new GUI();
 function updateResolutionWarning() {
   document.getElementById('warning').hidden = !(resolution.x * resolution.y > 300000 && (water && water.areaConservationEnabled));
@@ -200,6 +197,9 @@ window.onload = function () {
   shadowFolder.add(params.shadow, "showCircle").name("circle");
   shadowFolder.add(params.shadow, "circleRadius", .5, 2).name("circle radius");
   shadowFolder.add(params.shadow, "circleStroke", .1, .5).name("circle stroke");
+
+  const simulationFolder = folder.addFolder("Simulation");
+  simulationFolder.add(params.simulation, "optimized").name("optimized");
 
   // folder.add(params, 'numSteps', 1, 10).step(1).name("number of simulation steps");
   renderer = new Renderer(gl, water, flagCenter, flagSize);
@@ -584,7 +584,7 @@ window.onload = function () {
     renderer.renderCube(water);
     renderer.renderWater(water, cubemap, swimmers, raceTime, params.shadow);
     renderer.renderSpheres(water);
-    Swimmer.attributes.draw();
+    // Swimmer.attributes.draw();
     video.render(raceTime, params.sparks, poolSize);
     gl.disable(gl.DEPTH_TEST);
     water.addOrRemoveVisualizationWaves(false, swimmers, raceTime);
