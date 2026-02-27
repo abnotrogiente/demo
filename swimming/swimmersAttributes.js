@@ -194,6 +194,22 @@ class SwimmersAttributes {
      * 
      * @param {Swimmer[]} swimmers 
      */
+    #rankSwimmers(swimmers) {
+        /**
+         * 
+         * @param {Swimmer} swimmer1 
+         * @param {Swimmer} swimmer2 
+         */
+        const compareSwimmers = function (swimmer1, swimmer2) {
+            return swimmer2.body.center.z - swimmer1.body.center.z;
+        }
+        return swimmers.sort(compareSwimmers);
+    }
+
+    /**
+     * 
+     * @param {Swimmer[]} swimmers 
+     */
     #findFirst(swimmers) {
         let maxDist = -params.simulation.poolSize.z;
         let indexFirst = -1;
@@ -247,8 +263,9 @@ class SwimmersAttributes {
         const numSpheres = 5;
         const indexFirst = this.#findFirst(swimmers);
         this.swimmersAttributes = new Float32Array(this.numVecAttributes * 4 * this.maxNumSwimmer * numSpheres);
+        const rankedSwimmers = this.#rankSwimmers(swimmers);
         for (let i = 0; i < swimmers.length; i++) {
-            const swimmer = swimmers[i];
+            const swimmer = rankedSwimmers[i];
             const first = i == indexFirst;
             this.#addSwimmerInformation(i, swimmer, first);
             this.#addSphereInformation(swimmers.length + i, swimmer.leftArm);

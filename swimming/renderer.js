@@ -183,6 +183,9 @@ function Renderer(gl, water, flagCenter, flagSize) {
       #define GREEN   vec3(.2, 1,.4)
       #define BLUE    vec3(.2,.8, 1)
       #define RAINBOW abs(cos(uv.x + vec3(5,6,1)))
+      #define GOLD    vec3(1., 1., 0.)
+      #define SILVER  vec3(.8, .8, .8)
+      #define BRONZE  vec3(.75, .54, .44)
       
       
       ` + swimmersHelperFunctions + textHelperFunctions + `
@@ -258,14 +261,17 @@ function Renderer(gl, water, flagCenter, flagSize) {
         if (max(visColor.r, max(visColor.g, visColor.b)) > .3) color = visColor;
       }
 
-      void drawRanks(in vec2 position, in vec2 swimmerPosition, in bool first, out vec3 color) {
+      void drawRanks(in vec2 position, in vec2 swimmerPosition, in int rank, out vec3 color) {
         float visSize = flagSize.x / 2.;
         vec2 visPosition = swimmerPosition - position + vec2(0., 2.);
         vec2 visCoord = toTextCoord(visPosition, visSize);
         
 
-        vec3 visColor = vec3(1., 1., 0.)/.4 * printStar(visCoord);
-        if (first && max(visColor.r, max(visColor.g, visColor.b)) > .3) color = visColor;
+        vec3 visColor = vec3(1., 1., 1.)*printStar(visCoord);
+        if (max(visColor.r, max(visColor.g, visColor.b)) <= .3) return;
+        if (rank == 0) color = GOLD * visColor;
+        else if (rank == 1) color = SILVER * visColor;
+        else if (rank == 2) color = BRONZE * visColor;
       }
 
       void drawShadows(in vec2 projectedPosition, in vec2 swimmerPosition, in float altitude, out vec3 color) {
@@ -299,7 +305,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
           drawFlags(position, swimmerPos, getNationality(i), color);
 
           if (showSpeed) drawSpeed(position, swimmerPos, getAttributeSpeed(i), color);
-          if (showRanks) drawRanks(projectedPosition, swimmerPos, isFirst(i), color);
+          if (showRanks) drawRanks(projectedPosition, swimmerPos, i, color);
           if (shadowEnabled) drawShadows(projectedPosition, swimmerPos, getAltitude(i), color);
         }
       
