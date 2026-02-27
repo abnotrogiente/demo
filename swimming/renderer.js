@@ -160,6 +160,10 @@ function Renderer(gl, water, flagCenter, flagSize) {
       in vec3 position;
       out vec4 fragColor;
       uniform bool showFlags;
+      uniform bool showRanks;
+      uniform bool showWR;
+      uniform bool showSpeed;
+      uniform bool showDivingDistance;
       uniform samplerCube sky;
       uniform bool showProjectionGrid;
       uniform bool showAreaConservedGrid;
@@ -217,10 +221,10 @@ function Renderer(gl, water, flagCenter, flagSize) {
           color *= waterColor;
           vec2 position = origin.xz;
           vec2 projectedPosition = position;
-          if (!showFlags) return color;
+          if (!(showFlags || showWR || showRanks || showSpeed || showDivingDistance)) return color;
           vec2 coord = position / poolSize.xz + .5;
           vec3 divingWave = getDivingWaves(coord);
-          if (divingWave.z > 0.) {
+          if (showDivingDistance && divingWave.z > 0.) {
             color = (1. - divingWave.y) * color + divingWave.y * vec3(0., 1., 0.);
           }
           for (int i = 0; i < 10; i++) {
@@ -232,7 +236,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
             vec2 flagCenterNew = vec2(swimmer_x, swimmer_z - 2.5);
             vec2 flagCorner = flagCenterNew - flagSize / 2.;
             if (showProjectionGrid && isOnConservedAreaGrid(position, 0.1)) color = vec3(1., 1., 0.); /* Debug conserved area grid */
-            if (abs(origin.z + poolSize.z / 2. - wr) < .05) color = vec3(1., 1., 0.); 
+            if (showWR && abs(origin.z + poolSize.z / 2. - wr) < .05) color = vec3(1., 1., 0.); 
             if (areaConservation) {
               vec2 coord = origin.xz / poolSize.xz + 0.5;
               position = texture(areaConservationTexture, coord).xy;
@@ -241,7 +245,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
             if (showAreaConservedGrid && isOnConservedAreaGrid(position, 0.1)) color = vec3(1., 0., 0.); /* Debug conserved area grid */
             vec2 posFlag = position - flagCorner - flagSize / 2.;/*Fixes the corner of the flag on the XZ plane*/
             vec2 flagCoord = posFlag / flagSize + 0.5;
-            if (abs(posFlag.x) <= flagSize.x / 2. && abs(posFlag.y) <= flagSize.y / 2.) {
+            if (showFlags && abs(posFlag.x) <= flagSize.x / 2. && abs(posFlag.y) <= flagSize.y / 2.) {
               vec3 flagColor;
               if(getNationality(i) < .5) flagColor = texture(france, vec2(1.-flagCoord.y,1.- flagCoord.x)).xyz;
               else flagColor = texture(china, vec2(1.-flagCoord.y,1.- flagCoord.x)).xyz;
@@ -255,13 +259,13 @@ function Renderer(gl, water, flagCenter, flagSize) {
             letterCoord = vec2(-.5, .75) - letterCoord;
             letterCoord /= 10.;
             vec3 letterColor = GREEN/.4 * printFrame(letterCoord, getAttributeSpeed(i), 2);
-            if (max(letterColor.r, max(letterColor.g, letterColor.b)) > .3) color = letterColor;
+            if (showSpeed && max(letterColor.r, max(letterColor.g, letterColor.b)) > .3) color = letterColor;
             
             if (isFirst(i)) {
               vec2 starCoord = letterCoord + vec2(.35, 0.);
               // vec2 uv = starCoord * 50.;
               vec3 starColor = vec3(1., 1., 0.) * printStar(starCoord);
-              if (max(starColor.r, max(starColor.g, starColor.b)) > .1) color = starColor;
+              if (showRanks && max(starColor.r, max(starColor.g, starColor.b)) > .1) color = starColor;
             }
             
             float altitude = getAltitude(i);
@@ -488,6 +492,10 @@ Renderer.prototype.renderWater = function (water, sky, swimmers, raceTime, shado
       wr: water.WR_position,
       swimmersNumber: swimmers.length,
       showFlags: params.visualizations.showFlags,
+      showRanks: params.visualizations.showRanks,
+      showWR: params.visualizations.showWR,
+      showSpeed: params.visualizations.showSpeed,
+      showDivingDistance: params.visualizations.showDivingDistance,
       time: raceTime,
       shadowEnabled: shadowParams.enabled,
       shadowRadius: shadowParams.shadowRadius,

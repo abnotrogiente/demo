@@ -525,7 +525,7 @@ window.onload = function () {
       renderer.lightDir = GL.Vector.fromAngles((90 - angleY) * Math.PI / 180, -angleX * Math.PI / 180);
       if (paused) renderer.updateCaustics(water);
     }
-    if (params.visualizations.showFlags) Swimmer.updateAttributesTexture(swimmers);
+    if (params.isOneVisualizationEnabled()) Swimmer.updateAttributesTexture(swimmers);
     water.addOrRemoveVisualizationWaves(true, swimmers, raceTime);
     water.updateNormals();
 

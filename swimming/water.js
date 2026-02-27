@@ -173,6 +173,8 @@ function Water(gl, resolution = null) {
     uniform sampler2D tex;
     uniform bool add;
     uniform vec3 poolSize;
+    uniform bool showWR;
+    uniform bool showDivingDistance;
     in vec2 coord;
     out vec4 fragColor;
 
@@ -180,7 +182,9 @@ function Water(gl, resolution = null) {
 
     void main() {
       vec4 info = texture(tex, coord);
-      float w = getDivingWaves(coord).x + getRecordWave(coord);
+      float w = 0.;
+      if(showDivingDistance) w += getDivingWaves(coord).x;
+      if(showWR) w += getRecordWave(coord);
       info.r += add ? w : -w;
       fragColor = info;
     }
@@ -254,6 +258,8 @@ Water.prototype.addOrRemoveVisualizationWaves = function (add, swimmers, raceTim
     if (swimmersAttributesTexture) swimmersAttributesTexture.bind(1);
     this_.visualizationWavesShader.uniforms({
       swimmersAttributesTexture: 1,
+      showDivingDistance: params.visualizations.showDivingDistance,
+      showWR: params.visualizations.showWR,
       invPoolSizeVertex: [this_.invPoolSize.x, this_.invPoolSize.z],
       poolSize: [params.simulation.poolSize.x, params.simulation.poolSize.y, params.simulation.poolSize.z],
       wr: this_.WR_position,

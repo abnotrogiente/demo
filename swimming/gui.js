@@ -14,8 +14,17 @@ const createGUI = function (gl, reset) {
 
     const visualizationsFolder = gui.addFolder("visualizations");
     visualizationsFolder.close();
-    visualizationsFolder.add(params.visualizations, 'areaConservationEnabled', 'areaConservationEnabled').name('area conservation').listen();
+    // visualizationsFolder.add(params.visualizations,"enabled").name('enabled').listen().onChange((value) => {
+    //     params.visualizations.showFlags = value;
+    //     params.visualizations.show
+    // });
     visualizationsFolder.add(params.visualizations, "showFlags").name('show flags').listen();
+    visualizationsFolder.add(params.visualizations, "showWR").name('show world record').listen();
+    visualizationsFolder.add(params.visualizations, "showSpeed").name('show speed').listen();
+    visualizationsFolder.add(params.visualizations, "showRanks").name('show ranks').listen();
+    visualizationsFolder.add(params.visualizations, "showDivingDistance").name('show diving distance').listen();
+    visualizationsFolder.add(params.visualizations.shadow, "enabled").name("show shadow");
+    visualizationsFolder.add(params.visualizations, 'areaConservationEnabled', 'areaConservationEnabled').name('area conservation').listen();
 
     const videoFolder = visualizationsFolder.addFolder("video");
     videoFolder.close();
@@ -34,7 +43,6 @@ const createGUI = function (gl, reset) {
 
     const shadowFolder = visualizationsFolder.addFolder("Swimmers shadows");
     shadowFolder.close();
-    shadowFolder.add(params.visualizations.shadow, "enabled").name("enable");
     shadowFolder.add(params.visualizations.shadow, "shadowRadius", 0, 2).name("shadow radius");
     shadowFolder.add(params.visualizations.shadow, "shadowPower", 0.1, 2).name("shadow power");
     shadowFolder.add(params.visualizations.shadow, "showCircle").name("circle");
