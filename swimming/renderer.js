@@ -199,6 +199,113 @@ function Renderer(gl, water, flagCenter, flagSize) {
         float dist_sq = dot(diff, diff);
         return dist_sq < R*R && dist_sq > r*r;
       }
+
+
+      void drawWorldRecordLine(in vec2 position, out vec3 color) {
+        if (abs(position.y + poolSize.z / 2. - wr) < .05) color = vec3(1., 1., 0.); 
+      }
+
+      void drawDivingRipples(in vec2 coord, out vec3 color) {
+        vec3 divingWave = getDivingWaves(coord);
+        bool toDraw = divingWave.z > 0.;
+        float blending = divingWave.y;
+        if (toDraw) {
+          color = (1. - blending) * color + blending * vec3(0., 1., 0.);
+        }
+      
+      }
+
+      void drawFlags(in vec2 position, in vec2 swimmerPos, in float nationality, out vec3 color) {
+        float swimmer_x = swimmerPos.x;
+        float swimmer_z = swimmerPos.y;
+        vec2 flagCenterNew = vec2(swimmer_x, swimmer_z - 2.5);
+        // TODO nettoyer
+        vec2 flagCorner = flagCenterNew - flagSize / 2.;
+        
+        if (areaConservation) {
+          //vec2 coord = position / poolSize.xz + 0.5;
+          //position = texture(areaConservationTexture, coord).xy;
+          flagCorner = texture(areaConservationTexture, flagCorner / poolSize.xz + 0.5).xy;
+        }
+        if (showAreaConservedGrid && isOnConservedAreaGrid(position, 0.1)) color = vec3(1., 0., 0.); /* Debug conserved area grid */
+        vec2 posFlag = position - flagCorner - flagSize / 2.;/*Fixes the corner of the flag on the XZ plane*/
+        vec2 flagCoord = posFlag / flagSize + 0.5;
+        if (showFlags && abs(posFlag.x) <= flagSize.x / 2. && abs(posFlag.y) <= flagSize.y / 2.) {
+          vec3 flagColor;
+          if(nationality < .5) flagColor = texture(france, vec2(1.-flagCoord.y,1.- flagCoord.x)).xyz;
+          else flagColor = texture(china, vec2(1.-flagCoord.y,1.- flagCoord.x)).xyz;
+          color = flagColor;
+          float delta = .1;
+          vec2 delta_tex = vec2(delta, delta) / flagSize;
+          if (min(flagCoord.y, 1.- flagCoord.y) <= delta_tex.y 
+            || min(flagCoord.x, 1. - flagCoord.x) <= delta_tex.x) color = vec3(1., 1., 1.);
+        }
+      }
+
+      vec2 toTextCoord(vec2 position, float textSize) {
+        position = position.yx;
+        position.y += textSize / 2.;
+        return position / (20. * textSize);
+      }
+
+      void drawSpeed(in vec2 position, in vec2 swimmerPosition, in float speed, out vec3 color) {
+        float visSize = flagSize.x / 2.;
+        vec2 visPosition = swimmerPosition - position - vec2(0., 5.);
+        vec2 visCoord = toTextCoord(visPosition, visSize);
+        
+
+        vec3 visColor = GREEN/.4 * printFrame(visCoord, speed, 2);
+        if (max(visColor.r, max(visColor.g, visColor.b)) > .3) color = visColor;
+      }
+
+      void drawRanks(in vec2 position, in vec2 swimmerPosition, in bool first, out vec3 color) {
+        float visSize = flagSize.x / 2.;
+        vec2 visPosition = swimmerPosition - position + vec2(0., 2.);
+        vec2 visCoord = toTextCoord(visPosition, visSize);
+        
+
+        vec3 visColor = vec3(1., 1., 0.)/.4 * printStar(visCoord);
+        if (first && max(visColor.r, max(visColor.g, visColor.b)) > .3) color = visColor;
+      }
+
+      void drawShadows(in vec2 projectedPosition, in vec2 swimmerPosition, in float altitude, out vec3 color) {
+        if (!shadowEnabled || abs(altitude) < .15) return;
+        vec2 diff = (projectedPosition - swimmerPosition);
+        vec2 diffNormalized = diff/shadowRadius;
+        float distSq = dot(diffNormalized, diffNormalized);
+        float attenuation = min(1., pow(distSq, shadowPower));
+        float altitudeAttenuation = min(1., abs(altitude));
+        attenuation = 1.-(1.-attenuation)*altitudeAttenuation;
+        color *= attenuation;
+        if (!showCircle) return;
+        distSq = dot(diff, diff);
+        color += max(0.,1.-abs((shadowCircleRadius - distSq)/shadowCircleStroke)) * vec3(1., 1., 0.) * altitudeAttenuation;
+      }
+
+      void drawVisualizations(in vec2 position, out vec3 color) {
+        vec2 projectedPosition = position;
+        vec2 coord = position / poolSize.xz + .5;
+        if (showDivingDistance) drawDivingRipples(coord, color);
+        for (int i = 0; i < 10; i++) {
+          float i_float = float(i);
+          if (i_float > swimmersNumber - 0.1) break;
+          vec2 swimmerPos = getAttributePosition(i);
+          if (showProjectionGrid && isOnConservedAreaGrid(position, 0.1)) color = vec3(1., 1., 0.); /* Debug conserved area grid */
+          if (showWR) drawWorldRecordLine(position, color); 
+          if (areaConservation) {
+            vec2 coord = position / poolSize.xz + 0.5;
+            position = texture(areaConservationTexture, coord).xy;
+          }
+          drawFlags(position, swimmerPos, getNationality(i), color);
+
+          if (showSpeed) drawSpeed(position, swimmerPos, getAttributeSpeed(i), color);
+          if (showRanks) drawRanks(projectedPosition, swimmerPos, isFirst(i), color);
+          if (shadowEnabled) drawShadows(projectedPosition, swimmerPos, getAltitude(i), color);
+        }
+      
+      }
+
+
       vec3 getSurfaceRayColor(vec3 origin, vec3 ray, vec3 waterColor) {
         vec3 color;
         float q = intersectSphere(origin, ray, sphereCenter, sphereRadius);
@@ -219,68 +326,9 @@ function Renderer(gl, water, flagCenter, flagSize) {
         }
         if (ray.y < 0.0) {
           color *= waterColor;
-          vec2 position = origin.xz;
-          vec2 projectedPosition = position;
-          if (!(showFlags || showWR || showRanks || showSpeed || showDivingDistance)) return color;
-          vec2 coord = position / poolSize.xz + .5;
-          vec3 divingWave = getDivingWaves(coord);
-          if (showDivingDistance && divingWave.z > 0.) {
-            color = (1. - divingWave.y) * color + divingWave.y * vec3(0., 1., 0.);
-          }
-          for (int i = 0; i < 10; i++) {
-            float i_float = float(i);
-            if (i_float > swimmersNumber - 0.1) break;
-            vec2 swimmerPos = getAttributePosition(i);
-            float swimmer_x = swimmerPos.x;
-            float swimmer_z = swimmerPos.y;
-            vec2 flagCenterNew = vec2(swimmer_x, swimmer_z - 2.5);
-            vec2 flagCorner = flagCenterNew - flagSize / 2.;
-            if (showProjectionGrid && isOnConservedAreaGrid(position, 0.1)) color = vec3(1., 1., 0.); /* Debug conserved area grid */
-            if (showWR && abs(origin.z + poolSize.z / 2. - wr) < .05) color = vec3(1., 1., 0.); 
-            if (areaConservation) {
-              vec2 coord = origin.xz / poolSize.xz + 0.5;
-              position = texture(areaConservationTexture, coord).xy;
-              flagCorner = texture(areaConservationTexture, flagCorner / poolSize.xz + 0.5).xy;
-            }
-            if (showAreaConservedGrid && isOnConservedAreaGrid(position, 0.1)) color = vec3(1., 0., 0.); /* Debug conserved area grid */
-            vec2 posFlag = position - flagCorner - flagSize / 2.;/*Fixes the corner of the flag on the XZ plane*/
-            vec2 flagCoord = posFlag / flagSize + 0.5;
-            if (showFlags && abs(posFlag.x) <= flagSize.x / 2. && abs(posFlag.y) <= flagSize.y / 2.) {
-              vec3 flagColor;
-              if(getNationality(i) < .5) flagColor = texture(france, vec2(1.-flagCoord.y,1.- flagCoord.x)).xyz;
-              else flagColor = texture(china, vec2(1.-flagCoord.y,1.- flagCoord.x)).xyz;
-              color = flagColor;
-              float delta = .1;
-              vec2 delta_tex = vec2(delta, delta) / flagSize;
-              if (min(flagCoord.y, 1.- flagCoord.y) <= delta_tex.y 
-                || min(flagCoord.x, 1. - flagCoord.x) <= delta_tex.x) color = vec3(1., 1., 1.);
-            }
-            vec2 letterCoord = flagCoord.yx;
-            letterCoord = vec2(-.5, .75) - letterCoord;
-            letterCoord /= 10.;
-            vec3 letterColor = GREEN/.4 * printFrame(letterCoord, getAttributeSpeed(i), 2);
-            if (showSpeed && max(letterColor.r, max(letterColor.g, letterColor.b)) > .3) color = letterColor;
-            
-            if (isFirst(i)) {
-              vec2 starCoord = letterCoord + vec2(.35, 0.);
-              // vec2 uv = starCoord * 50.;
-              vec3 starColor = vec3(1., 1., 0.) * printStar(starCoord);
-              if (showRanks && max(starColor.r, max(starColor.g, starColor.b)) > .1) color = starColor;
-            }
-            
-            float altitude = getAltitude(i);
-            if (!shadowEnabled || abs(altitude) < .15) continue;
-            vec2 diff = (projectedPosition - swimmerPos);
-            vec2 diffNormalized = diff/shadowRadius;
-            float distSq = dot(diffNormalized, diffNormalized);
-            float attenuation = min(1., pow(distSq, shadowPower));
-            float altitudeAttenuation = min(1., abs(altitude));
-            attenuation = 1.-(1.-attenuation)*altitudeAttenuation;
-            color *= attenuation;
-            if (!showCircle) continue;
-            distSq = dot(diff, diff);
-            color += max(0.,1.-abs((shadowCircleRadius - distSq)/shadowCircleStroke)) * vec3(1., 1., 0.) * altitudeAttenuation;
-          }
+          if (showFlags || showWR || showRanks || showSpeed || showDivingDistance) drawVisualizations(origin.xz, color);
+          
+          
         }
         return color;
       }
