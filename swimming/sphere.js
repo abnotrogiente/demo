@@ -1,4 +1,5 @@
 import GL from './lightgl.js';
+import { params } from './params.js';
 
 const GRAVITY = new GL.Vector(0, -4, 0);
 
@@ -24,10 +25,9 @@ class Sphere {
     /**
      * 
      * @param {float} dt 
-     * @param {GL.Vector} poolSize 
      * @param {boolean} isSwimming 
      */
-    update(dt, poolSize) {
+    update(dt) {
         if (!this.cinematic) {
             this.oldCenter = new GL.Vector(this.center.x, this.center.y, this.center.z);
             const percentUnderWater = Math.max(0, Math.min(1, (this.radius - this.center.y) / (2 * this.radius)));
@@ -41,7 +41,7 @@ class Sphere {
             this.center = this.center.add(this.velocity.multiply(dt));
 
             // Bounce off the bottom
-            if (this.center.y < this.radius - poolSize.y) {
+            if (this.center.y < this.radius - params.simulation.poolSize.y) {
                 this.center.y = this.radius - 1;
                 this.velocity.y = Math.abs(this.velocity.y) * 0.7;
             }

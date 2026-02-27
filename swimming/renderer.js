@@ -11,6 +11,7 @@ import { Swimmer } from './swimmer.js';
 import { Water } from './water.js';
 import { swimmersHelperFunctions } from './swimmer.js';
 import { textHelperFunctions } from './renderText.js';
+import { params } from './params.js';
 
 var helperFunctions = `
   const float IOR_AIR = 1.0;
@@ -418,7 +419,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
   `);
 }
 Renderer.prototype.reset = function () {
-  this.cubeMesh = GL.Mesh.cube({ width: this.water.poolSize.x, height: 2., depth: this.water.poolSize.z });
+  this.cubeMesh = GL.Mesh.cube({ width: params.simulation.poolSize.x, height: 2., depth: params.simulation.poolSize.z });
   // this.cubeMesh = GL.Mesh.cube();
   this.cubeMesh.triangles.splice(4, 2);
   this.cubeMesh.compile();
@@ -474,11 +475,11 @@ Renderer.prototype.renderWater = function (water, sky, swimmers, raceTime, shado
       areaConservationTexture: 5,
       swimmersAttributesTexture: 6,
       iChannel0: 7,
-      areaConservation: water.areaConservationEnabled,
+      areaConservation: params.visualizations.areaConservationEnabled,
       flagSize: [1.5, 2.],
       flagCenter: [this.flagCenter.x, this.flagCenter.y],
-      poolSize: [water.poolSize.x, water.poolSize.y, water.poolSize.z],
-      poolSizeVertexShader: [water.poolSize.x, water.poolSize.y, water.poolSize.z],
+      poolSize: [params.simulation.poolSize.x, params.simulation.poolSize.y, params.simulation.poolSize.z],
+      poolSizeVertexShader: [params.simulation.poolSize.x, params.simulation.poolSize.y, params.simulation.poolSize.z],
       eye: tracer.eye,
       sphereCenter: this.sphereCenter,
       sphereRadius: this.sphereRadius,
@@ -486,7 +487,7 @@ Renderer.prototype.renderWater = function (water, sky, swimmers, raceTime, shado
       showAreaConservedGrid: water.showAreaConservedGrid,
       wr: water.WR_position,
       swimmersNumber: swimmers.length,
-      showFlags: Swimmer.showFlags,
+      showFlags: params.visualizations.showFlags,
       time: raceTime,
       shadowEnabled: shadowParams.enabled,
       shadowRadius: shadowParams.shadowRadius,
@@ -523,7 +524,7 @@ Renderer.prototype.renderSphere = function (water, sphere) {
     causticTex: 1,
     sphereCenter: [sphere.center.x, sphere.center.y, sphere.center.z],
     sphereRadius: sphere.radius,
-    poolSize: [water.poolSize.x, water.poolSize.y, water.poolSize.z]
+    poolSize: [params.simulation.poolSize.x, params.simulation.poolSize.y, params.simulation.poolSize.z],
   }).draw(sphere.mesh);
 };
 
@@ -536,7 +537,7 @@ Renderer.prototype.renderSphereOld = function (water) {
     causticTex: 1,
     sphereCenter: this.sphereCenter,
     sphereRadius: this.sphereRadius,
-    poolSize: [water.poolSize.x, water.poolSize.y, water.poolSize.z]
+    poolSize: [params.simulation.poolSize.x, params.simulation.poolSize.y, params.simulation.poolSize.z],
   }).draw(this.sphereMesh);
 };
 
@@ -552,7 +553,7 @@ Renderer.prototype.renderCube = function (water) {
     causticTex: 2,
     sphereCenter: this.sphereCenter,
     sphereRadius: this.sphereRadius,
-    poolSize: [water.poolSize.x, water.poolSize.y, water.poolSize.z]
+    poolSize: [params.simulation.poolSize.x, params.simulation.poolSize.y, params.simulation.poolSize.z],
   }).draw(this.cubeMesh);
   this.gl.disable(this.gl.CULL_FACE);
 };

@@ -1,4 +1,5 @@
 import GL from "./lightgl.js";
+import { params } from "./params.js";
 import { Swimmer } from "./swimmer.js";
 import { swimmersHelperFunctions } from "./swimmer.js";
 
@@ -323,8 +324,10 @@ class Video {
 
     }
 
-    render(time, sparksParams, poolSize) {
-        if (!this.show) return;
+    render(time) {
+        const sparksParams = params.visualizations.sparks;
+        const poolSize = params.simulation.poolSize;
+        if (!params.visualizations.video.show) return;
         if (this.copyVideo) {
             this.updateTexture();
         }
@@ -357,9 +360,6 @@ class Video {
             fov: sparksParams.fov
         }).draw(this.mesh);
         this.gl.disable(this.gl.BLEND);
-        // uniform float sparksGlowOffset;
-        // uniform float sparksGlowStroke;
-        // uniform float sparksNumber;
     }
 
 

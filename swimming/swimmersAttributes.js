@@ -1,4 +1,5 @@
 import GL from "./lightgl";
+import { params } from "./params";
 import { Sphere } from "./sphere";
 import { Swimmer } from "./swimmer";
 import { ARM_DELTA_X, FOOT_DELTA_X, FOOT_DELTA_Z, MAX_NUM_SWIMMER, NUM_VEC_ATTRIBUTES } from "./swimmersConstants";
@@ -168,13 +169,12 @@ class SwimmersAttributes {
      *
      * @param {WebGLRenderingContext} gl
      */
-    constructor(gl, poolSize) {
+    constructor(gl) {
         this.numVecAttributes = NUM_VEC_ATTRIBUTES;
         this.maxNumSwimmer = MAX_NUM_SWIMMER;
         this.gl = gl;
         const filter = gl.NEAREST;
         this.texture = new GL.Texture(this.numVecAttributes, this.maxNumSwimmer, { type: gl.FLOAT, filter: filter });
-        this.poolSize = poolSize;
 
         this.initPrograms();
 
@@ -195,7 +195,7 @@ class SwimmersAttributes {
      * @param {Swimmer[]} swimmers 
      */
     #findFirst(swimmers) {
-        let maxDist = -this.poolSize.y;
+        let maxDist = -params.simulation.poolSize.z;
         let indexFirst = -1;
         for (let i = 0; i < swimmers.length; i++) {
             const dist = swimmers[i].body.center.z;
@@ -346,7 +346,7 @@ class SwimmersAttributes {
         const vertexLocation = this.gl.getAttribLocation(this.programVolume, "iVertex");
 
         const poolSizeLocation = this.gl.getUniformLocation(this.programVolume, "poolSize");
-        this.gl.uniform2f(poolSizeLocation, this.poolSize.x, this.poolSize.y);
+        this.gl.uniform2f(poolSizeLocation, params.simulation.poolSize.x, params.simulation.poolSize.z);
 
         const horizontalLocation = this.gl.getUniformLocation(this.programVolume, "horizontal");
         this.gl.uniform1i(horizontalLocation, true);
@@ -432,7 +432,7 @@ class SwimmersAttributes {
         const data3Location = this.gl.getAttribLocation(this.programPoints, 'iData3');
 
         const invPoolSizeLocation = this.gl.getUniformLocation(this.programPoints, "invPoolSize");
-        this.gl.uniform2f(invPoolSizeLocation, 1. / this.poolSize.x, 1. / this.poolSize.y);
+        this.gl.uniform2f(invPoolSizeLocation, 1. / params.simulation.poolSize.x, 1. / params.simulation.poolSize.z);
 
 
 

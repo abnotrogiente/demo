@@ -13,10 +13,8 @@ import { swimmersHelperFunctions } from './swimmer.js';
 import { params } from './params.js';
 
 // The data in the texture is (position.y, velocity.y, normal.x, normal.z)
-function Water(gl, poolSize, resolution = null) {
+function Water(gl, resolution = null) {
   this.gl = gl;
-  this.damping = 0.02;
-  this.areaConservationEnabled = true;
   this.visualizationWavesEnabled = true;
   this.sqrt_2_PI = Math.sqrt(2 * Math.PI);
   /**@type {Sphere[]} */
@@ -30,7 +28,7 @@ function Water(gl, poolSize, resolution = null) {
     }
   `;
 
-  this.reset(poolSize, resolution);
+  this.reset(resolution);
   if (!GL.Texture.canUseFloatingPointTextures()) {
     //throw new Error('This demo requires the OES_texture_float extension');
   }
@@ -189,7 +187,7 @@ function Water(gl, poolSize, resolution = null) {
     `);
 }
 
-Water.prototype.reset = function (poolSize, resolution = null) {
+Water.prototype.reset = function (resolution = null) {
   this.WR_position = 100000;
   this.prev_WR_position = 0;
   if (resolution !== null) {
@@ -201,9 +199,9 @@ Water.prototype.reset = function (poolSize, resolution = null) {
     this.W = 256;
     this.H = 256;
   }
-  Swimmer.reset(new GL.Vector(poolSize.x, poolSize.z), new GL.Vector(this.W, this.H));
+  Swimmer.reset(new GL.Vector(this.W, this.H));
   //Swimmer.attributes.createRenderingTexture(this.W, this.H);
-  this.plane = GL.Mesh.plane({ detail: 255, width: poolSize.x, height: poolSize.z });
+  this.plane = GL.Mesh.plane({ detail: 255, width: params.simulation.poolSize.x, height: params.simulation.poolSize.z });
   this.delta = new GL.Vector(1 / this.W, 1 / this.H);
   /**@type {WebGLRenderingContext} */
   const g = this.gl;
@@ -215,8 +213,7 @@ Water.prototype.reset = function (poolSize, resolution = null) {
   this.showAreaConservedGrid = false;
   this.showProjectionGrid = false;
 
-  this.poolSize = poolSize;
-  this.invPoolSize = new GL.Vector(1 / poolSize.x, 1 / poolSize.y, 1 / poolSize.z);
+  this.invPoolSize = new GL.Vector(1 / params.simulation.poolSize.x, 1 / params.simulation.poolSize.y, 1 / params.simulation.poolSize.z);
   var filter = GL.Texture.canUseFloatingPointLinearFiltering() ? this.gl.LINEAR : this.gl.NEAREST;
   if ((!this.textureA.canDrawTo() || !this.textureB.canDrawTo()) && GL.Texture.canUseHalfFloatingPointTextures()) {
     console.log("No draw");
@@ -235,7 +232,7 @@ Water.prototype.addDrop = function (x, y, radius, strength) {
       center: [x, y],
       radius: radius,
       strength: strength,
-      poolSize: [this_.poolSize.x, this_.poolSize.y, this_.poolSize.z]
+      poolSize: [params.simulation.poolSize.x, params.simulation.poolSize.y, params.simulation.poolSize.z]
     }).draw(this_.plane);
   });
   this.textureB.swapWith(this.textureA);
@@ -258,7 +255,7 @@ Water.prototype.addOrRemoveVisualizationWaves = function (add, swimmers, raceTim
     this_.visualizationWavesShader.uniforms({
       swimmersAttributesTexture: 1,
       invPoolSizeVertex: [this_.invPoolSize.x, this_.invPoolSize.z],
-      poolSize: [this_.poolSize.x, this_.poolSize.y, this_.poolSize.z],
+      poolSize: [params.simulation.poolSize.x, params.simulation.poolSize.y, params.simulation.poolSize.z],
       wr: this_.WR_position,
       sqrt_2_PI: this_.sqrt_2_PI,
       add: add,
@@ -297,7 +294,7 @@ Water.prototype.updateSpheres = function (dt) {
         oldDisplacementTexture: 2,
         displacementTexture: 1,
         invPoolSizeVertex: [this.invPoolSize.x, this.invPoolSize.z],
-        poolSize: [this.poolSize.x, this.poolSize.y, this.poolSize.z],
+        poolSize: [params.simulation.poolSize.x, params.simulation.poolSize.y, params.simulation.poolSize.z],
         optimized: true
       }).draw(this.plane);
       this.textureB.swapWith(this.textureA);
@@ -323,7 +320,7 @@ Water.prototype.moveSphere = function (oldCenter, newCenter, radius) {
       oldCenter: oldCenter,
       newCenter: newCenter,
       radius: radius,
-      poolSize: [this_.poolSize.x, this_.poolSize.y, this_.poolSize.z],
+      poolSize: [params.simulation.poolSize.x, params.simulation.poolSize.y, params.simulation.poolSize.z],
       optimized: false
     }).draw(this_.plane);
   });
@@ -339,9 +336,9 @@ Water.prototype.stepSimulation = function () {
       delta: [this_.delta.x, this_.delta.y],
       wr: this_.WR_position,
       prev_wr: this_.prev_WR_position,
-      poolSize: [this_.poolSize.x, this_.poolSize.y, this_.poolSize.z],
+      poolSize: [params.simulation.poolSize.x, params.simulation.poolSize.y, params.simulation.poolSize.z],
       sqrt_2_PI: this_.sqrt_2_PI,
-      damping: this_.damping
+      damping: params.simulation.waterDamping
     }).draw(this_.plane);
   });
   this.textureB.swapWith(this.textureA);
@@ -362,13 +359,10 @@ Water.prototype.updateNormals = function () {
   this.textureB.swapWith(this.textureA);
 };
 
-Water.prototype.setAreaConservation = function (enabled) {
-  this.areaConservationEnabled = enabled;
-}
 
 Water.prototype.updateAreaConservation = function () {
 
-  if (!this.areaConservationEnabled) {
+  if (!params.visualizations.areaConservationEnabled) {
     return;
   }
   var this_ = this;
@@ -419,8 +413,8 @@ Water.prototype.updateAreaConservation = function () {
     writeBuf[i * 4 + 1] = 1.0;
   }
   // Example: modify and write back (only for float)
-  const dx_proj = this.poolSize.x / this.W;
-  const dz_proj = this.poolSize.z / this.H;
+  const dx_proj = params.simulation.poolSize.x / this.W;
+  const dz_proj = params.simulation.poolSize.z / this.H;
   const dx_proj_sq = dx_proj * dx_proj;
   const dz_proj_sq = dz_proj * dz_proj;
   if (this.textureA.type === this.gl.FLOAT) {

@@ -1,4 +1,5 @@
 import GL from "./lightgl";
+import { params } from "./params";
 import { Sphere } from "./sphere";
 import { SwimmersAttributes } from "./swimmersAttributes";
 import { ARM_DELTA_X, FOOT_DELTA_X, FOOT_DELTA_Z, MAX_NUM_SWIMMER, NUM_VEC_ATTRIBUTES } from "./swimmersConstants";
@@ -21,7 +22,6 @@ class Swimmer {
     static useGravity = false;
     static raceHasStarted = false;
     static swimming = false;
-    static showFlags = true;
 
     /**@type {SwimmersAttributes} */
     static attributes;
@@ -47,9 +47,8 @@ class Swimmer {
     }
 
 
-    static reset = (poolSize, resolution) => {
+    static reset = (resolution) => {
         Swimmer.attributes.createRenderingTexture(resolution.x, resolution.y);
-        Swimmer.attributes.poolSize = poolSize;
     }
 
     constructor(center) {
@@ -83,18 +82,18 @@ class Swimmer {
         this.nationality = Math.random() > .5 ? 0 : 1;
     }
 
-    jump(poolSize) {
+    jump() {
         this.body.cinematic = false;
         this.body.velocity = new GL.Vector(0, 0, 4.5 + gaussianRandom(0, 1));
-        this.body.center = new GL.Vector(this.startingPoint.x, 1, -poolSize.z / 2.);
+        this.body.center = new GL.Vector(this.startingPoint.x, 1, -params.simulation.poolSize.z / 2.);
     }
 
-    swim(start, poolSize) {
+    swim(start) {
         this.started = start;
         if (start) {
             this.body.cinematic = false;
             this.useGravity = true;
-            this.body.center = new GL.Vector(this.startingPoint.x, 0, -poolSize.z / 2.);
+            this.body.center = new GL.Vector(this.startingPoint.x, 0, -params.simulation.poolSize.z / 2.);
         }
         else {
             this.body.velocity = new GL.Vector(0, 0, 0);
@@ -106,13 +105,13 @@ class Swimmer {
         return new GL.Vector(0., Math.cos(armPulsation * time + phase), Math.sin(armPulsation * time + phase)).multiply(armAmplitude);
     }
 
-    update(dt, time, poolSize) {
+    update(dt, time) {
 
         if (Swimmer.raceHasStarted || Swimmer.swimming) {
             if (!this.started && Swimmer.raceHasStarted) {
                 if (time > this.reactionTime) {
-                    this.swim(true, poolSize);
-                    this.jump(poolSize);
+                    this.swim(true);
+                    this.jump();
                 }
                 else return;
             }
@@ -134,10 +133,10 @@ class Swimmer {
             this.leftFoot.move(AWAY);
         }
 
-        for (let sphere of this.spheres) sphere.update(dt, poolSize);
+        for (let sphere of this.spheres) sphere.update(dt);
 
         if (!this.hasDove && this.body.center.y <= 0 && this.body.oldCenter.y >= 0) {
-            this.divingDistance = this.body.center.z + poolSize.z / 2;
+            this.divingDistance = this.body.center.z + params.simulation.poolSize.z / 2;
             this.divingTime = time;
             this.hasDove = true;
         }
