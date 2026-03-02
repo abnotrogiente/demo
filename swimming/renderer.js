@@ -17,6 +17,7 @@ var helperFunctions = `
   const float IOR_AIR = 1.0;
   const float IOR_WATER = 1.333;
   const vec3 abovewaterColor = vec3(0.25, 1.0, 1.25);
+  const vec3 skyColor = vec3(.4, .8, 1.);
   const vec3 underwaterColor = vec3(0.4, 0.9, 1.0);
   uniform vec3 light;
   uniform vec3 sphereCenter;
@@ -327,6 +328,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
             color = getWallColor(hit);
           } else {
             color = texture(sky, ray).rgb;
+            color = skyColor;
             color += vec3(pow(max(0.0, dot(light, ray)), 5000.0)) * vec3(10.0, 8.0, 6.0);
           }
         }

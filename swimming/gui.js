@@ -28,6 +28,8 @@ const createGUI = function (gl, reset) {
 
     const videoFolder = visualizationsFolder.addFolder("video");
     videoFolder.close();
+    videoFolder.add(params.visualizations.video, "thresholdBlending").name("threshold blending");
+    videoFolder.add(params.visualizations.video, "blendingThreshold", .1, .5).name("blending threshold");
     videoFolder.add(params.visualizations.video, 'show').name("show").listen();
 
     // lengthFactor: 1.5, stroke: .004, num: 40 

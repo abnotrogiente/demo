@@ -278,12 +278,22 @@ class Video {
     uniform sampler2D uSampler;
     uniform bool sparksEnabled;
     uniform vec3 poolSize;
+    uniform bool thresholdBlending;
+    uniform float blendingThreshold;
 
     ` + sparksHelper + `` + swimmersHelperFunctions + `
 
     void main(void) {
         highp vec4 texelColor = texture(uSampler, vTextureCoord);
-        fragColor = vec4(texelColor.rgb, 0.5);
+        vec3 waterColor = vec3(.294, .812, 1.);
+        float r = .5;
+        if (thresholdBlending) {
+            r = 1.;
+            if (length(waterColor - texelColor.rgb) < blendingThreshold ||
+             length(texelColor.rgb) > 1.5 && texelColor.b > .1 + (texelColor.r + texelColor.g) * .5) r = 0.3;
+        }
+        fragColor = vec4(texelColor.rgb, r);
+        //fragColor.a += 1. - r;
         if (!sparksEnabled) return;
         vec3 spark1 = sparks(gl_FragCoord.xy, vec3(2., 1., -poolSize.z / 2.), .1);
         vec3 spark2 = sparks(gl_FragCoord.xy, vec3(-2., 1., -poolSize.z / 2.), .1);
@@ -297,6 +307,9 @@ class Video {
         }
         // fragColor = vec4(mix(fragColor.rgb, spark, .5), max(0.5, 2.*length(spark)));
         fragColor = vec4(mix(fragColor.rgb, spark, 2.*length(spark)), max(0.5, 2.*length(spark)));
+        if (thresholdBlending) {
+            fragColor.a = r;
+        }
         // fragColor = vec4(fragColor.rgb + spark, max(0.5, 2.*length(spark)));
         // float m = max(fragColor.r, max(fragColor.g, fragColor.b));
         // if (m > 1.) fragColor.rgb /= m;
@@ -357,7 +370,9 @@ class Video {
             sparksNumber: sparksParams.num,
             sparksLengthFactor: sparksParams.lengthFactor,
             sparksSizeFactor: sparksParams.sizeFactor,
-            fov: sparksParams.fov
+            fov: sparksParams.fov,
+            thresholdBlending: params.visualizations.video.thresholdBlending,
+            blendingThreshold: params.visualizations.video.blendingThreshold
         }).draw(this.mesh);
         this.gl.disable(this.gl.BLEND);
     }
