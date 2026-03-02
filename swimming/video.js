@@ -340,7 +340,7 @@ class Video {
     render(time) {
         const sparksParams = params.visualizations.sparks;
         const poolSize = params.simulation.poolSize;
-        if (!params.visualizations.video.show) return;
+        if (!params.video.show) return;
         if (this.copyVideo) {
             this.updateTexture();
         }
@@ -371,8 +371,8 @@ class Video {
             sparksLengthFactor: sparksParams.lengthFactor,
             sparksSizeFactor: sparksParams.sizeFactor,
             fov: sparksParams.fov,
-            thresholdBlending: params.visualizations.video.thresholdBlending,
-            blendingThreshold: params.visualizations.video.blendingThreshold
+            thresholdBlending: params.video.thresholdBlending,
+            blendingThreshold: params.video.blendingThreshold
         }).draw(this.mesh);
         this.gl.disable(this.gl.BLEND);
     }

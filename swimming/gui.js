@@ -26,11 +26,11 @@ const createGUI = function (gl, reset) {
     visualizationsFolder.add(params.visualizations.shadow, "enabled").name("show shadow");
     visualizationsFolder.add(params.visualizations, 'areaConservationEnabled', 'areaConservationEnabled').name('area conservation').listen();
 
-    const videoFolder = visualizationsFolder.addFolder("video");
+    const videoFolder = gui.addFolder("video");
     videoFolder.close();
-    videoFolder.add(params.visualizations.video, "thresholdBlending").name("threshold blending");
-    videoFolder.add(params.visualizations.video, "blendingThreshold", .1, .5).name("blending threshold");
-    videoFolder.add(params.visualizations.video, 'show').name("show").listen();
+    videoFolder.add(params.video, "thresholdBlending").name("threshold blending");
+    videoFolder.add(params.video, "blendingThreshold", .1, .5).name("blending threshold");
+    videoFolder.add(params.video, 'show').name("show").listen();
 
     // lengthFactor: 1.5, stroke: .004, num: 40 
     const sparksFolder = visualizationsFolder.addFolder("Sparks");

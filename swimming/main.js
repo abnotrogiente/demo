@@ -404,7 +404,7 @@ window.onload = function () {
       console.log("Swimming " + (Swimmer.swimming ? "enabled." : "disabled."));
     }
     else if (e.which == 'V'.charCodeAt(0)) {
-      params.visualizations.video.show = !params.visualizations.video.show;
+      params.video.show = !params.video.show;
     }
     else if (e.which == 'O'.charCodeAt(0)) {
       params.simulation.poolSize.x = 25;
