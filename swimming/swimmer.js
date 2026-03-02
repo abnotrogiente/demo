@@ -278,8 +278,8 @@ const swimmersHelperFunctions = `
 
         vec2 breakoutLocation = vec2(swimmer_x, breakoutDistance - poolSize.z / 2.);
 
-        float breakoutDistRange = 3.;
-        float breakoutDistMin = 12.;
+        float breakoutDistRange = 8.;
+        float breakoutDistMin = 5.;
         float intensity = (breakoutDistance - breakoutDistMin) / breakoutDistRange;
         
         ripples(coord, breakoutLocation, breakoutTime, intensity, res);
