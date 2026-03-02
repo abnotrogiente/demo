@@ -178,6 +178,12 @@ function Renderer(gl, water, flagCenter, flagSize) {
       uniform bool showCircle;
       uniform float shadowCircleRadius;
       uniform float shadowCircleStroke;
+      uniform float showNeighboursLinesMode;
+
+      // Show neighbours lines modes
+      #define LINES_NONE 0
+      #define LINES_ONLY_MEDALS 1
+      #define LINES_ALL 2
       
       // Color declarations
       #define RED     vec3( 1,.3,.4)
@@ -289,6 +295,38 @@ function Renderer(gl, water, flagCenter, flagSize) {
         color += max(0.,1.-abs((shadowCircleRadius - distSq)/shadowCircleStroke)) * vec3(1., 1., 0.) * altitudeAttenuation;
       }
 
+      void drawLine(in vec2 projectedPosition, in vec2 swimmerPosition, in int swimmerRank, in vec3 lineColor, out vec3 color) {
+        int linesMode = int(showNeighboursLinesMode);  
+        if (linesMode == LINES_ONLY_MEDALS && swimmerRank > 2) return;
+        float lineThickness = .1;
+        if (swimmerRank > 2) lineThickness = .03;
+        float lineLength = poolSize.x / 30.;
+        float line_z = getSwimmerPosition(swimmerRank).y;
+        if (abs(projectedPosition.y - line_z) <= lineThickness && 
+            abs(projectedPosition.x - swimmerPosition.x) <= lineLength) color = lineColor;
+      }
+
+      void drawSwimmerLines(in vec2 projectedPosition, in vec2 swimmerPosition, in int swimmerRank, out vec3 color) {
+        int linesMode = int(showNeighboursLinesMode);
+        if (linesMode == 0) return;
+        float colorAttenuation = .7;
+        vec3 aheadColor = vec3(0., 1., 0.) * colorAttenuation;
+        vec3 behindColor = vec3(1., 0., 0.) * colorAttenuation;
+
+        
+
+        if (swimmerRank == 0) behindColor = SILVER;
+        else if (swimmerRank == 1) {
+          aheadColor = GOLD * 5.;
+          behindColor = BRONZE;
+        }
+        else if (swimmerRank == 2) aheadColor = SILVER;
+        else if (swimmerRank == 3) aheadColor = BRONZE;
+
+        if (swimmerRank != 0) drawLine(projectedPosition, swimmerPosition, swimmerRank-1, aheadColor, color);
+        if (float(swimmerRank) < swimmersNumber - 1.) drawLine(projectedPosition, swimmerPosition, swimmerRank+1, behindColor, color);
+      }
+
       void drawVisualizations(in vec2 position, out vec3 color) {
         vec2 projectedPosition = position;
         vec2 coord = position / poolSize.xz + .5;
@@ -304,6 +342,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
             position = texture(areaConservationTexture, coord).xy;
           }
           drawFlags(position, swimmerPos, getSwimmerNationality(i), color);
+          drawSwimmerLines(projectedPosition, swimmerPos, i, color);
 
           if (showSpeed) drawSpeed(position, swimmerPos, getSwimmerSpeed(i), color);
           if (showRanks) drawRanks(projectedPosition, swimmerPos, i, color);
@@ -558,7 +597,8 @@ Renderer.prototype.renderWater = function (water, sky, swimmers, raceTime, shado
       shadowPower: shadowParams.shadowPower,
       showCircle: shadowParams.showCircle,
       shadowCircleRadius: shadowParams.circleRadius,
-      shadowCircleStroke: shadowParams.circleStroke
+      shadowCircleStroke: shadowParams.circleStroke,
+      showNeighboursLinesMode: Math.round(params.visualizations.neighboursLinesModesDict[params.visualizations.showNeighboursLines])
     }).draw(water.plane);
   }
   this.gl.disable(this.gl.CULL_FACE);

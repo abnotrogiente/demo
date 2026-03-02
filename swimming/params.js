@@ -4,6 +4,7 @@ let params = {
     numSteps: 2, focal: 45,
     visualizations: {
         enabled: true, showFlags: true, showRanks: true, showWR: true, showSpeed: true, showDivingDistance: true,
+        showNeighboursLines: "only medals", neighboursLinesModesDict: { "none": 0, "only medals": 1, "all": 2 },
         areaConservationEnabled: true,
         shadow: { enabled: true, shadowRadius: .5, shadowPower: .5, showCircle: true, circleRadius: .6, circleStroke: .15 },
         sparks: { enabled: false, glow: 5., glowOffset: .5, lengthFactor: 1., stroke: .01, num: 40, sizeFactor: 50, fov: Math.PI / 4 }

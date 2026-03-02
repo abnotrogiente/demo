@@ -327,7 +327,7 @@ window.onload = function () {
 
   document.onmousedown = function (e) {
     if (!isHelpElement(e.target)) {
-      e.preventDefault();
+      //e.preventDefault();
       startDrag(e.pageX, e.pageY, e);
     }
   };
