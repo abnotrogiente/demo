@@ -457,7 +457,10 @@ window.onload = function () {
       startRace();
       Swimmer.useGravity = true;
 
-      for (let swimmer of swimmers) swimmer.hasDove = false;
+      for (let swimmer of swimmers) {
+        swimmer.hasDove = false;
+        swimmer.hasBrokeOut = false;
+      }
     }
     else if (e.which == 'H'.charCodeAt(0)) {
       document.getElementById("commands").hidden = !document.getElementById("commands").hidden;

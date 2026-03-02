@@ -295,18 +295,18 @@ function Renderer(gl, water, flagCenter, flagSize) {
         for (int i = 0; i < 10; i++) {
           float i_float = float(i);
           if (i_float > swimmersNumber - 0.1) break;
-          vec2 swimmerPos = getAttributePosition(i);
+          vec2 swimmerPos = getSwimmerPosition(i);
           if (showProjectionGrid && isOnConservedAreaGrid(position, 0.1)) color = vec3(1., 1., 0.); /* Debug conserved area grid */
           if (showWR) drawWorldRecordLine(position, color); 
           if (areaConservation) {
             vec2 coord = position / poolSize.xz + 0.5;
             position = texture(areaConservationTexture, coord).xy;
           }
-          drawFlags(position, swimmerPos, getNationality(i), color);
+          drawFlags(position, swimmerPos, getSwimmerNationality(i), color);
 
-          if (showSpeed) drawSpeed(position, swimmerPos, getAttributeSpeed(i), color);
+          if (showSpeed) drawSpeed(position, swimmerPos, getSwimmerSpeed(i), color);
           if (showRanks) drawRanks(projectedPosition, swimmerPos, i, color);
-          if (shadowEnabled) drawShadows(projectedPosition, swimmerPos, getAltitude(i), color);
+          if (shadowEnabled) drawShadows(projectedPosition, swimmerPos, getSwimmerAltitude(i), color);
         }
       
       }

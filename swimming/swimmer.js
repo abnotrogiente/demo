@@ -79,6 +79,9 @@ class Swimmer {
         this.divingDistance = 0;
         this.divingTime = 1000;
 
+        this.breakoutDistance = 0;
+        this.breakoutTime = 1000;
+
         this.nationality = Math.random() > .5 ? 0 : 1;
     }
 
@@ -116,15 +119,17 @@ class Swimmer {
                 else return;
             }
             this.body.addForce(this.force);
-            this.cyclePhase = armPulsation * time % 2 * Math.PI;
-            const offset1 = this.getArmOffset(time, 0);
-            const offset2 = this.getArmOffset(time, Math.PI);
-            const offset3 = this.getArmOffset(time * 2, 0);
-            const offset4 = this.getArmOffset(time * 2, Math.PI);
-            this.rightArm.move(this.body.center.add(offset1).add(new GL.Vector(ARM_DELTA_X, 0, 0)));
-            this.leftArm.move(this.body.center.add(offset2).add(new GL.Vector(-ARM_DELTA_X, 0, 0)));
-            this.rightFoot.move(this.body.center.add(new GL.Vector(FOOT_DELTA_X, offset3.y * 0.5, -FOOT_DELTA_Z)));
-            this.leftFoot.move(this.body.center.add(new GL.Vector(-FOOT_DELTA_X, offset4.y * 0.5, -FOOT_DELTA_Z)));
+            if (this.hasBrokeOut) {
+                this.cyclePhase = armPulsation * time % 2 * Math.PI;
+                const offset1 = this.getArmOffset(time, 0);
+                const offset2 = this.getArmOffset(time, Math.PI);
+                const offset3 = this.getArmOffset(time * 2, 0);
+                const offset4 = this.getArmOffset(time * 2, Math.PI);
+                this.rightArm.move(this.body.center.add(offset1).add(new GL.Vector(ARM_DELTA_X, 0, 0)));
+                this.leftArm.move(this.body.center.add(offset2).add(new GL.Vector(-ARM_DELTA_X, 0, 0)));
+                this.rightFoot.move(this.body.center.add(new GL.Vector(FOOT_DELTA_X, offset3.y * 0.5, -FOOT_DELTA_Z)));
+                this.leftFoot.move(this.body.center.add(new GL.Vector(-FOOT_DELTA_X, offset4.y * 0.5, -FOOT_DELTA_Z)));
+            }
         }
         else {
             this.rightArm.move(AWAY);
@@ -135,10 +140,18 @@ class Swimmer {
 
         for (let sphere of this.spheres) sphere.update(dt);
 
-        if (!this.hasDove && this.body.center.y <= 0 && this.body.oldCenter.y >= 0) {
+        if (!this.hasDove && this.body.center.y < 0 && this.body.oldCenter.y >= 0) {
             this.divingDistance = this.body.center.z + params.simulation.poolSize.z / 2;
             this.divingTime = time;
             this.hasDove = true;
+        }
+
+        const radius = this.body.radius;
+        if (!this.hasBrokeOut && this.body.center.y > -radius && this.body.oldCenter.y <= -radius) {
+            this.breakoutDistance = this.body.center.z + params.simulation.poolSize.z / 2;
+            this.breakoutTime = time;
+            this.hasBrokeOut = true;
+            console.log("BREAKOUT : " + this.breakoutDistance);
         }
     }
 }
@@ -153,53 +166,53 @@ const swimmersHelperFunctions = `
     uniform float swimmersNumber;
     uniform float time;
 
-    vec2 getAttributePosition(int i) {
+    vec2 getSwimmerPosition(int i) {
         float i_float = float(i);
         vec2 pixel = vec2(0., i_float);
         vec4 attributes = texture(swimmersAttributesTexture, (pixel + .5) / TEXTURE_SIZE);
         return attributes.rg;
     }
 
-    float getAttributeSpeed(int i) {
+    float getSwimmerSpeed(int i) {
         float i_float = float(i);
         vec2 pixel = vec2(1., i_float);
         vec4 attributes = texture(swimmersAttributesTexture, (pixel + .5) / TEXTURE_SIZE);
         return attributes.g;
     }
 
-    vec2 getAttributeDiving(int i) {
+    vec2 getSwimmerDivingInfo(int i) {
         float i_float = float(i);
         vec2 pixel = vec2(0., i_float);
         vec4 attributes = texture(swimmersAttributesTexture, (pixel + .5) / TEXTURE_SIZE);
         return attributes.ba;
     }
 
-    float getAttributeReactionTime(int i ) {
+    vec2 getSwimmerBreakoutInfo(int i) {
+        float i_float = float(i);
+        vec2 pixel = vec2(2., i_float);
+        vec4 attributes = texture(swimmersAttributesTexture, (pixel + .5) / TEXTURE_SIZE);
+        return attributes.rg;
+    }
+
+    float getSwimmerReactionTime(int i ) {
         float i_float = float(i);
         vec2 pixel = vec2(1., i_float);
         vec4 attributes = texture(swimmersAttributesTexture, (pixel + .5) / TEXTURE_SIZE);
         return attributes.r;
     }
 
-    float getNationality(int i ) {
+    float getSwimmerNationality(int i ) {
         float i_float = float(i);
         vec2 pixel = vec2(1., i_float);
         vec4 attributes = texture(swimmersAttributesTexture, (pixel + .5) / TEXTURE_SIZE);
         return attributes.b;
     }
 
-    float getAltitude(int i ) {
+    float getSwimmerAltitude(int i ) {
         float i_float = float(i);
         vec2 pixel = vec2(1., i_float);
         vec4 attributes = texture(swimmersAttributesTexture, (pixel + .5) / TEXTURE_SIZE);
         return attributes.a;
-    }
-
-    bool isFirst(int i) {
-        float i_float = float(i);
-        vec2 pixel = vec2(2., i_float);
-        vec4 attributes = texture(swimmersAttributesTexture, (pixel + .5) / TEXTURE_SIZE);
-        return attributes.r > .5;
     }
 
 
@@ -215,47 +228,78 @@ const swimmersHelperFunctions = `
         return 0.;
     }
 
+    void ripples(in vec2 coord, in vec2 eventPosition, in float eventTime, float intensity, out vec3 res) {
+        float timeSinceDiving = time - eventTime;
+        const float rippleSpeed = .5;
+        const float maxTime = 10.;
+        const float lambda = 2. * PI / 0.6;
+        float frequency = 2.;
+        float omega = 2. * PI * frequency;
+        vec2 center = eventPosition;
+        vec2 pos = (coord - .5) * poolSize.xz;
+        vec2 diff = pos - center;
+        float d = sqrt(dot(diff, diff));
+        d*=2.;
+        
+        float r_max_max = 0.5;
+        
+        float r_max = max(0.3, intensity * r_max_max);
+        float attenuationDist = r_max;
+        
+        float duration = 1.5;
+        float c =  cos(lambda * d - omega * timeSinceDiving);
+        float attenuation = exp(-d / attenuationDist - timeSinceDiving / duration);
+        bool condition = timeSinceDiving > d / frequency;
+        if (condition) res.x += .05 * attenuation * c;
+        if (c > 0.8 && condition) {
+            res.y = max(res.y, min(1., 15.*attenuation));
+            res.z = 1.;
+        }
+    }
+
+    void divingRipples(in vec2 coord, in vec2 swimmerPosition, in vec2 divingInfo, out vec3 res) {
+        float swimmer_x = swimmerPosition.x;
+        float divingDistance = divingInfo.x;
+        float divingTime = divingInfo.y;
+
+        vec2 divingLocation = vec2(swimmer_x, divingDistance - poolSize.z / 2.);
+
+        float divingDistRange = 2.;
+        float divingDistMin = 2.;
+        float intensity = (divingDistance - divingDistMin) / divingDistRange;
+        
+        ripples(coord, divingLocation, divingTime, intensity, res);
+    }
+
+    void breakoutRipples(in vec2 coord, in vec2 swimmerPosition, in vec2 breakoutInfo, out vec3 res) {
+        float swimmer_x = swimmerPosition.x;
+        float breakoutDistance = breakoutInfo.x;
+        float breakoutTime = breakoutInfo.y;
+
+        vec2 breakoutLocation = vec2(swimmer_x, breakoutDistance - poolSize.z / 2.);
+
+        float breakoutDistRange = 3.;
+        float breakoutDistMin = 12.;
+        float intensity = (breakoutDistance - breakoutDistMin) / breakoutDistRange;
+        
+        ripples(coord, breakoutLocation, breakoutTime, intensity, res);
+    }
+
+
+
     vec3 getDivingWaves(vec2 coord) {
         vec3 res = vec3(0., 0., -1.);
         
         for (int i = 0; i < 10; i++) {
             float i_float = float(i);
             if (i_float > swimmersNumber - 0.1) break;
-            vec2 swimmerPos = getAttributePosition(i);
-            float swimmer_x = swimmerPos.x;
-            float swimmer_z = swimmerPos.y;
-            vec2 swimmerDiving = getAttributeDiving(i);
-            float divingDistance = swimmerDiving.x;
-            float divingTime = swimmerDiving.y;
-
-            float timeSinceDiving = time - divingTime;
-            const float rippleSpeed = .5;
-            const float maxTime = 10.;
-            const float lambda = 2. * PI / 0.6;
-            float frequency = 2.;
-            float omega = 2. * PI * frequency;
-            vec2 center = vec2(swimmer_x, divingDistance - poolSize.z / 2.);
-            vec2 pos = (coord - .5) * poolSize.xz;
-            vec2 diff = pos - center;
-            float d = sqrt(dot(diff, diff));
-            d*=2.;
+            vec2 swimmerPos = getSwimmerPosition(i);
+            vec2 divingInfo = getSwimmerDivingInfo(i);
+            vec2 breakoutInfo = getSwimmerBreakoutInfo(i);
             
-            float r_max_max = 0.5;
-            float divingDistRange = 2.;
-            float divingDistMin = 2.;
-            float intensity = (divingDistance - divingDistMin) / divingDistRange;
-            float r_max = max(0.3, intensity * r_max_max);
-            float attenuationDist = r_max;
+            divingRipples(coord, swimmerPos, divingInfo, res);
+            breakoutRipples(coord, swimmerPos, breakoutInfo, res);
             
-            float duration = 1.5;
-            float c =  cos(lambda * d - omega * timeSinceDiving);
-            float attenuation = exp(-d / attenuationDist - timeSinceDiving / duration);
-            bool condition = timeSinceDiving > d / frequency;
-            if (condition) res.x += .05 * attenuation * c;
-            if (c > 0.8 && condition) {
-                res.y = max(res.y, min(1., 15.*attenuation));
-                res.z = 1.;
-            }
         }
         return res;
     }

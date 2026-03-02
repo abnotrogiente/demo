@@ -292,7 +292,7 @@ class Video {
         for (int i = 0; i < 10; i++) {
             float i_float = float(i);
             vec3 sparkPos = vec3(25. / 2. - 25. / 10. / 2. - i_float * 25./10., 1., -25.);
-            float reactionTime = getAttributeReactionTime(i);
+            float reactionTime = getSwimmerReactionTime(i);
             spark += sparks(gl_FragCoord.xy, sparkPos, reactionTime);
         }
         // fragColor = vec4(mix(fragColor.rgb, spark, .5), max(0.5, 2.*length(spark)));

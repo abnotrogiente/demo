@@ -31,7 +31,7 @@ class Sphere {
         if (!this.cinematic) {
             this.oldCenter = new GL.Vector(this.center.x, this.center.y, this.center.z);
             const percentUnderWater = Math.max(0, Math.min(1, (this.radius - this.center.y) / (2 * this.radius)));
-            const floatingForce = GRAVITY.multiply(-1.35 * this.mass * percentUnderWater); // 1.1 before // then 1.35
+            const floatingForce = GRAVITY.multiply(-1.1 * this.mass * percentUnderWater); // 1.1 before // then 1.35
             const drag = this.velocity.unit().multiply(-1000 * this.radiusSquared * percentUnderWater * this.velocity.dot(this.velocity)); // 1000 before
             this.addForce(drag);
             this.addForce(floatingForce);
