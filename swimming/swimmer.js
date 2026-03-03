@@ -17,6 +17,10 @@ const armAmplitude = 0.5;
 const armFrequency = 1;
 const armPulsation = 2 * Math.PI * armFrequency;
 
+const TIME_KEY = "Temps (s)";
+const EVENT_KEY = "event";
+const DISTANCE_KEY = "distance (m)";
+
 
 class Swimmer {
     static useGravity = false;
@@ -53,7 +57,7 @@ class Swimmer {
 
     constructor(center) {
         this.startingPoint = new GL.Vector(center.x, center.y, center.z);
-        this.center = new GL.Vector(center.x, center.y, center.z);
+        this.center = new GL.Vector(center.x, center.y, center.z); // TODO not this
         this.force = new GL.Vector(0, 0, 190 + gaussianRandom(0, 20));
 
         this.reactionTime = Math.max(0.1, gaussianRandom(0.15, 0.02));
@@ -83,10 +87,47 @@ class Swimmer {
         this.breakoutTime = 1000;
 
         this.nationality = Math.random() > .5 ? 0 : 1;
+
+        this.currendDataIndex = 0;
+    }
+
+    async parseData(source) {
+        fetch(source)
+            .then(res => {
+                const contentType = res.headers.get("content-type");
+                if (!contentType || !contentType.includes("text/csv")) {
+                    console.log("no file found : " + source);
+                    return null;
+                }
+                return res.text();
+            })
+            .then(text => {
+                if (!text) return;
+                const rows = text.split('\n');
+                const headers = rows[0].split(',');
+                this.data = rows.slice(1).map(row => {
+                    const values = row.split(",");
+                    return Object.fromEntries(
+                        headers.map((h, i) => [h, values[i]])
+                    );
+                }
+                );
+                //console.log("data parsed");
+                //console.log("data : " + JSON.stringify(this.data, null, 2));
+                //console.log("time0 : " + this.data[0]["Temps (s)"]);
+            });
+
+    }
+
+    getDistanceTraveled() {
+        const speed = this.body.velocity.z;
+        const D = params.simulation.poolSize.z;
+        const z = this.body.center.z + D / 2;
+        return speed >= 0. ? z : 2 * D - z;
     }
 
     jump() {
-        this.body.cinematic = false;
+        if (!this.data) this.body.cinematic = false;
         this.body.velocity = new GL.Vector(0, 0, 4.5 + gaussianRandom(0, 1));
         this.body.center = new GL.Vector(this.startingPoint.x, 1, -params.simulation.poolSize.z / 2.);
     }
@@ -94,7 +135,7 @@ class Swimmer {
     swim(start) {
         this.started = start;
         if (start) {
-            this.body.cinematic = false;
+            if (!this.data) this.body.cinematic = false;
             this.useGravity = true;
             this.body.center = new GL.Vector(this.startingPoint.x, 0, -params.simulation.poolSize.z / 2.);
         }
@@ -105,16 +146,19 @@ class Swimmer {
     }
 
     getArmOffset(time, phase) {
-        return new GL.Vector(0., Math.cos(armPulsation * time + phase), Math.sin(armPulsation * time + phase)).multiply(armAmplitude);
+        const omega = this.body.velocity.z >= 0 ? armPulsation : -armPulsation;
+        return new GL.Vector(0., Math.cos(omega * time + phase), Math.sin(omega * time + phase)).multiply(armAmplitude);
     }
 
     update(dt, time) {
 
         if (Swimmer.raceHasStarted || Swimmer.swimming) {
             if (!this.started && Swimmer.raceHasStarted) {
-                if (time > this.reactionTime) {
+                if (this.data || time > this.reactionTime) {
+                    if (this.data) this.body.cinematic = true;
                     this.swim(true);
                     this.jump();
+                    this.currendDataIndex = 0;
                 }
                 else return;
             }
@@ -127,8 +171,9 @@ class Swimmer {
                 const offset4 = this.getArmOffset(time * 2, Math.PI);
                 this.rightArm.move(this.body.center.add(offset1).add(new GL.Vector(ARM_DELTA_X, 0, 0)));
                 this.leftArm.move(this.body.center.add(offset2).add(new GL.Vector(-ARM_DELTA_X, 0, 0)));
-                this.rightFoot.move(this.body.center.add(new GL.Vector(FOOT_DELTA_X, offset3.y * 0.5, -FOOT_DELTA_Z)));
-                this.leftFoot.move(this.body.center.add(new GL.Vector(-FOOT_DELTA_X, offset4.y * 0.5, -FOOT_DELTA_Z)));
+                const dz = this.body.velocity.z >= 0 ? -FOOT_DELTA_Z : FOOT_DELTA_Z;
+                this.rightFoot.move(this.body.center.add(new GL.Vector(FOOT_DELTA_X, offset3.y * 0.5, dz)));
+                this.leftFoot.move(this.body.center.add(new GL.Vector(-FOOT_DELTA_X, offset4.y * 0.5, dz)));
             }
         }
         else {
@@ -139,6 +184,37 @@ class Swimmer {
         }
 
         for (let sphere of this.spheres) sphere.update(dt);
+        if (this.started && this.data && this.currendDataIndex < this.data.length && this.data[this.currendDataIndex][TIME_KEY] < time) {
+            let nextDistanceTarget = 0;
+            let nextEventTime = time;
+            if (this.currendDataIndex + 1 < this.data.length) {
+                nextDistanceTarget = parseFloat(this.data[this.currendDataIndex + 1][DISTANCE_KEY]);
+                nextEventTime = parseFloat(this.data[this.currendDataIndex + 1][TIME_KEY]);
+            }
+            const D = params.simulation.poolSize.z;
+            let y = 0;
+            // console.log("next event time : " + nextEventTime);
+            if (this.data[this.currendDataIndex][EVENT_KEY] == "enter") {
+                nextEventTime = (time + nextEventTime) / 2;
+                nextDistanceTarget = (this.body.center.z + D / 2 + nextDistanceTarget) / 2;
+                const event = {
+                    [TIME_KEY]: nextEventTime,
+                    [DISTANCE_KEY]: nextDistanceTarget,
+                };
+                // console.log("before : " + JSON.stringify(this.data, null, 2));
+                this.data.splice(this.currendDataIndex + 1, 0, event);
+                console.log("after : " + JSON.stringify(this.data, null, 2));
+                // this.currendDataIndex--;
+                y = -1.5;
+            }
+
+            if (nextDistanceTarget > D) nextDistanceTarget = 2 * D - nextDistanceTarget;
+            nextDistanceTarget -= params.simulation.poolSize.z / 2;
+            const targetPos = new GL.Vector(this.startingPoint.x, y, nextDistanceTarget);
+            this.body.setTarget(targetPos, nextEventTime - time);
+
+            this.currendDataIndex++;
+        }
 
         if (!this.hasDove && this.body.center.y < 0 && this.body.oldCenter.y >= 0) {
             this.divingDistance = this.body.center.z + params.simulation.poolSize.z / 2;

@@ -26,6 +26,7 @@ const createGUI = function (gl, reset) {
     visualizationsFolder.add(params.visualizations, "showDivingDistance").name('show diving distance').listen();
     visualizationsFolder.add(params.visualizations.shadow, "enabled").name("show shadow");
     visualizationsFolder.add(params.visualizations, 'areaConservationEnabled', 'areaConservationEnabled').name('area conservation').listen();
+    visualizationsFolder.add(params.visualizations, "showSpheres").name('show spheres').listen();
 
     const videoFolder = gui.addFolder("video");
     videoFolder.close();

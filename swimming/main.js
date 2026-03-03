@@ -53,7 +53,8 @@ let translateX = 0;
 let translateY = 0;
 var zoomDistance = 4.0;
 
-const videoStartTime = 17;
+// const videoStartTime = 17;
+const videoStartTime = 16.5;
 let videoTime = 0;
 let raceTime = 0;
 var paused = false;
@@ -90,11 +91,14 @@ function reset() {
   renderer.reset();
 
   const dx = params.simulation.poolSize.x / numSwimmers;
-  let x = -params.simulation.poolSize.x / 2 + dx / 2;
+  let x = params.simulation.poolSize.x / 2 - dx / 2;
+  let i = 0;
   for (let swimmer of swimmers) {
     swimmer.body.center.x = x;
     swimmer.startingPoint.x = x;
-    x += dx;
+    swimmer.parseData("./assets/race-data/" + i + ".csv");
+    i++;
+    x -= dx;
   }
 }
 
@@ -552,7 +556,7 @@ window.onload = function () {
     renderer.sphereRadius = radius;
     renderer.renderCube(water);
     renderer.renderWater(water, cubemap, swimmers, raceTime, params.visualizations.shadow);
-    renderer.renderSpheres(water);
+    if (params.visualizations.showSpheres) renderer.renderSpheres(water);
     // Swimmer.attributes.draw();
     video.render(raceTime);
     gl.disable(gl.DEPTH_TEST);

@@ -201,7 +201,7 @@ class SwimmersAttributes {
          * @param {Swimmer} swimmer2 
          */
         const compareSwimmers = function (swimmer1, swimmer2) {
-            return swimmer2.body.center.z - swimmer1.body.center.z;
+            return swimmer2.getDistanceTraveled() - swimmer1.getDistanceTraveled();
         }
         return swimmers.sort(compareSwimmers);
     }

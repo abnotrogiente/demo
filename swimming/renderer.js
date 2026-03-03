@@ -225,10 +225,11 @@ function Renderer(gl, water, flagCenter, flagSize) {
       
       }
 
-      void drawFlags(in vec2 position, in vec2 swimmerPos, in float nationality, out vec3 color) {
+      void drawFlags(in vec2 position, in vec2 swimmerPos, in float nationality, float speed, out vec3 color) {
         float swimmer_x = swimmerPos.x;
         float swimmer_z = swimmerPos.y;
-        vec2 flagCenterNew = vec2(swimmer_x, swimmer_z - 2.5);
+        float dz = speed >= 0. ? -2.5 : 2.5;
+        vec2 flagCenterNew = vec2(swimmer_x, swimmer_z + dz);
         // TODO nettoyer
         vec2 flagCorner = flagCenterNew - flagSize / 2.;
         
@@ -260,17 +261,19 @@ function Renderer(gl, water, flagCenter, flagSize) {
 
       void drawSpeed(in vec2 position, in vec2 swimmerPosition, in float speed, out vec3 color) {
         float visSize = flagSize.x / 2.;
-        vec2 visPosition = swimmerPosition - position - vec2(0., 5.);
+        float dz = speed >= 0.? 5. : -5. - 9. * visSize * .75 ;
+        vec2 visPosition = swimmerPosition - position - vec2(0., dz);
         vec2 visCoord = toTextCoord(visPosition, visSize);
         
 
-        vec3 visColor = GREEN/.4 * printFrame(visCoord, speed, 2);
+        vec3 visColor = GREEN/.4 * printFrame(visCoord, abs(speed), 2);
         if (max(visColor.r, max(visColor.g, visColor.b)) > .3) color = visColor;
       }
 
-      void drawRanks(in vec2 position, in vec2 swimmerPosition, in int rank, out vec3 color) {
+      void drawRanks(in vec2 position, in vec2 swimmerPosition, in int rank, in float speed, out vec3 color) {
         float visSize = flagSize.x / 2.;
-        vec2 visPosition = swimmerPosition - position + vec2(0., 2.);
+        float dz = speed >= 0.? 2. : -2.;
+        vec2 visPosition = swimmerPosition - position + vec2(0., dz);
         vec2 visCoord = toTextCoord(visPosition, visSize);
         
 
@@ -341,11 +344,13 @@ function Renderer(gl, water, flagCenter, flagSize) {
             vec2 coord = position / poolSize.xz + 0.5;
             position = texture(areaConservationTexture, coord).xy;
           }
-          drawFlags(position, swimmerPos, getSwimmerNationality(i), color);
+
+          float speed = getSwimmerSpeed(i);
+          drawFlags(position, swimmerPos, getSwimmerNationality(i), speed, color);
           drawSwimmerLines(projectedPosition, swimmerPos, i, color);
 
-          if (showSpeed) drawSpeed(position, swimmerPos, getSwimmerSpeed(i), color);
-          if (showRanks) drawRanks(projectedPosition, swimmerPos, i, color);
+          if (showSpeed) drawSpeed(position, swimmerPos, speed, color);
+          if (showRanks) drawRanks(projectedPosition, swimmerPos, i, speed, color);
           if (shadowEnabled) drawShadows(projectedPosition, swimmerPos, getSwimmerAltitude(i), color);
         }
       
