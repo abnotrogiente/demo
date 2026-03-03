@@ -37,6 +37,7 @@ function handleError(text) {
 window.onerror = handleError
 /**@type {WebGLRenderingContext} */
 var gl = GL.create();
+gl.canvas.tabIndex = 0;
 /**@type {Water} */
 var water;
 var cubemap;
@@ -326,6 +327,7 @@ window.onload = function () {
   });
 
   document.onmousedown = function (e) {
+    gl.canvas.focus();
     if (!isHelpElement(e.target)) {
       //e.preventDefault();
       startDrag(e.pageX, e.pageY, e);
@@ -369,8 +371,7 @@ window.onload = function () {
     for (let swimmer of swimmers) swimmer.swim(false);
   }
 
-
-  document.onkeydown = function (e) {
+  const onkeydown = function (e) {
     if (e.which == ' '.charCodeAt(0)) paused = !paused;
     else if (e.which == 'G'.charCodeAt(0)) {
       for (let swimmer of swimmers) swimmer.body.cinematic = !swimmer.body.cinematic;
@@ -491,6 +492,8 @@ window.onload = function () {
       console.log("increasing y resolution");
     }
   };
+
+  gl.canvas.addEventListener("keydown", onkeydown);
 
 
   function getArmOffset(time, phase) {
