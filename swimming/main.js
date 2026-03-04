@@ -416,7 +416,6 @@ window.onload = function () {
       params.video.show = !params.video.show;
     }
     else if (e.which == 'O'.charCodeAt(0)) {
-      params.swimmers.showSpheres = false;
       params.simulation.poolSize.x = 25;
       params.simulation.poolSize.y = 2;
       params.simulation.poolSize.z = 50;
