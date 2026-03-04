@@ -367,7 +367,7 @@ window.onload = function () {
 
   function startRace() {
     Swimmer.raceHasStarted = true;
-    for (let swimmer of swimmers) swimmer.started = false;
+    for (let swimmer of swimmers) swimmer.startRace();
   }
 
   function stopRace() {
@@ -378,12 +378,12 @@ window.onload = function () {
   const onkeydown = function (e) {
     if (e.which == ' '.charCodeAt(0)) paused = !paused;
     else if (e.which == 'G'.charCodeAt(0)) {
-      for (let swimmer of swimmers) swimmer.body.cinematic = !swimmer.body.cinematic;
       Swimmer.useGravity = !Swimmer.useGravity;
+      for (let swimmer of swimmers) swimmer.body.cinematic = Swimmer.useGravity;
     }
     else if (e.which == 'L'.charCodeAt(0) && paused) draw();
     else if (e.which == 'J'.charCodeAt(0)) {
-      jump();
+      swimmers.forEach(swimmer => swimmer.jump(2));
     }
     else if (e.which == 'C'.charCodeAt(0)) {
       params.visualizations.areaConservationEnabled = !params.visualizations.areaConservationEnabled;
@@ -412,6 +412,7 @@ window.onload = function () {
       params.video.show = !params.video.show;
     }
     else if (e.which == 'O'.charCodeAt(0)) {
+      params.visualizations.showSpheres = false;
       params.simulation.poolSize.x = 25;
       params.simulation.poolSize.y = 2;
       params.simulation.poolSize.z = 50;
@@ -461,11 +462,6 @@ window.onload = function () {
       if (video.copyVideo) video.video.currentTime = videoTime;
       startRace();
       Swimmer.useGravity = true;
-
-      for (let swimmer of swimmers) {
-        swimmer.hasDove = false;
-        swimmer.hasBrokeOut = false;
-      }
     }
     else if (e.which == 'H'.charCodeAt(0)) {
       document.getElementById("commands").hidden = !document.getElementById("commands").hidden;

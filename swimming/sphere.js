@@ -29,7 +29,8 @@ class Sphere {
      * @param {boolean} isSwimming 
      */
     update(dt) {
-        this.oldCenter = new GL.Vector(this.center.x, this.center.y, this.center.z);
+        if (!this.moved) this.oldCenter = new GL.Vector(this.center.x, this.center.y, this.center.z);
+        this.moved = false;
         if (!this.cinematic) {
             const percentUnderWater = Math.max(0, Math.min(1, (this.radius - this.center.y) / (2 * this.radius)));
             const floatingForce = GRAVITY.multiply(-1.1 * this.mass * percentUnderWater); // 1.1 before // then 1.35
@@ -79,6 +80,7 @@ class Sphere {
      * @param {GL.Vector} newCenter 
      */
     move(newCenter) {
+        this.moved = true;
         this.oldCenter = new GL.Vector(this.center.x, this.center.y, this.center.z);
         this.center = new GL.Vector(newCenter.x, newCenter.y, newCenter.z);
         if (!this.cinematic) console.warn("Moving a non cinematic sphere.");

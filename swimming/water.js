@@ -310,6 +310,7 @@ Water.prototype.updateSpheres = function (dt) {
   }
 
   else {
+    console.log("update spheres");
     for (let i = 0; i < this.spheres.length; i++) {
       const sphere = this.spheres[i];
       this.moveSphere(sphere.oldCenter, sphere.center, sphere.radius);

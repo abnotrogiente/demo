@@ -126,14 +126,21 @@ class Swimmer {
         return speed >= 0. ? z : 2 * D - z;
     }
 
-    jump() {
+    startRace() {
+        this.hasBrokeOut = false;
+        this.hasDove = false;
+        this.hasReacted = false;
+    }
+
+    jump(velocity = 4.5) {
         if (!this.data) this.body.cinematic = false;
-        this.body.velocity = new GL.Vector(0, 0, 4.5 + gaussianRandom(0, 1));
+        this.body.velocity = new GL.Vector(0, 0, velocity + gaussianRandom(0, 1));
         this.body.center = new GL.Vector(this.startingPoint.x, 1, -params.simulation.poolSize.z / 2.);
     }
 
     swim(start) {
-        this.started = start;
+        this.hasReacted = start;
+        this.isSwimming = start;
         if (start) {
             if (!this.data) this.body.cinematic = false;
             this.useGravity = true;
@@ -150,41 +157,8 @@ class Swimmer {
         return new GL.Vector(0., Math.cos(omega * time + phase), Math.sin(omega * time + phase)).multiply(armAmplitude);
     }
 
-    update(dt, time) {
-
-        if (Swimmer.raceHasStarted || Swimmer.swimming) {
-            if (!this.started && Swimmer.raceHasStarted) {
-                if (this.data || time > this.reactionTime) {
-                    if (this.data) this.body.cinematic = true;
-                    this.swim(true);
-                    this.jump();
-                    this.currendDataIndex = 0;
-                }
-                else return;
-            }
-            this.body.addForce(this.force);
-            if (this.hasBrokeOut) {
-                this.cyclePhase = armPulsation * time % 2 * Math.PI;
-                const offset1 = this.getArmOffset(time, 0);
-                const offset2 = this.getArmOffset(time, Math.PI);
-                const offset3 = this.getArmOffset(time * 2, 0);
-                const offset4 = this.getArmOffset(time * 2, Math.PI);
-                this.rightArm.move(this.body.center.add(offset1).add(new GL.Vector(ARM_DELTA_X, 0, 0)));
-                this.leftArm.move(this.body.center.add(offset2).add(new GL.Vector(-ARM_DELTA_X, 0, 0)));
-                const dz = this.body.velocity.z >= 0 ? -FOOT_DELTA_Z : FOOT_DELTA_Z;
-                this.rightFoot.move(this.body.center.add(new GL.Vector(FOOT_DELTA_X, offset3.y * 0.5, dz)));
-                this.leftFoot.move(this.body.center.add(new GL.Vector(-FOOT_DELTA_X, offset4.y * 0.5, dz)));
-            }
-        }
-        else {
-            this.rightArm.move(AWAY);
-            this.leftArm.move(AWAY);
-            this.rightFoot.move(AWAY);
-            this.leftFoot.move(AWAY);
-        }
-
-        for (let sphere of this.spheres) sphere.update(dt);
-        if (this.started && this.data && this.currendDataIndex < this.data.length && this.data[this.currendDataIndex][TIME_KEY] < time) {
+    handleTracking(time) {
+        if (this.hasReacted && this.data && this.currendDataIndex < this.data.length && this.data[this.currendDataIndex][TIME_KEY] < time) {
             let nextDistanceTarget = 0;
             let nextEventTime = time;
             if (this.currendDataIndex + 1 < this.data.length) {
@@ -201,10 +175,7 @@ class Swimmer {
                     [TIME_KEY]: nextEventTime,
                     [DISTANCE_KEY]: nextDistanceTarget,
                 };
-                // console.log("before : " + JSON.stringify(this.data, null, 2));
                 this.data.splice(this.currendDataIndex + 1, 0, event);
-                console.log("after : " + JSON.stringify(this.data, null, 2));
-                // this.currendDataIndex--;
                 y = -1.5;
             }
 
@@ -215,6 +186,52 @@ class Swimmer {
 
             this.currendDataIndex++;
         }
+    }
+
+    moveSpheresAway() {
+        this.rightArm.move(AWAY);
+        this.leftArm.move(AWAY);
+        this.rightFoot.move(AWAY);
+        this.leftFoot.move(AWAY);
+    }
+
+    moveSpheres(time) {
+        this.cyclePhase = armPulsation * time % 2 * Math.PI;
+        const offset1 = this.getArmOffset(time, 0);
+        const offset2 = this.getArmOffset(time, Math.PI);
+        const offset3 = this.getArmOffset(time * 2, 0);
+        const offset4 = this.getArmOffset(time * 2, Math.PI);
+        this.rightArm.move(this.body.center.add(offset1).add(new GL.Vector(ARM_DELTA_X, 0, 0)));
+        this.leftArm.move(this.body.center.add(offset2).add(new GL.Vector(-ARM_DELTA_X, 0, 0)));
+        const dz = this.body.velocity.z >= 0 ? -FOOT_DELTA_Z : FOOT_DELTA_Z;
+        this.rightFoot.move(this.body.center.add(new GL.Vector(FOOT_DELTA_X, offset3.y * 0.5, dz)));
+        this.leftFoot.move(this.body.center.add(new GL.Vector(-FOOT_DELTA_X, offset4.y * 0.5, dz)));
+    }
+
+    update(dt, time) {
+
+        if (!this.hasReacted && Swimmer.raceHasStarted) {
+            if (this.data || time > this.reactionTime) {
+                if (this.data) this.body.cinematic = true;
+                this.swim(true);
+                this.jump();
+                this.currendDataIndex = 0;
+            }
+        }
+
+        this.moveSpheresAway();
+
+        if (this.isSwimming) {
+            this.body.addForce(this.force);
+            if (this.body.center.y > -this.body.radius) {
+                this.moveSpheres(time);
+            }
+        }
+
+        for (let sphere of this.spheres) sphere.update(dt);
+
+        this.handleTracking(time);
+
 
         if (!this.hasDove && this.body.center.y < 0 && this.body.oldCenter.y >= 0) {
             this.divingDistance = this.body.center.z + params.simulation.poolSize.z / 2;
