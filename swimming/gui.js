@@ -21,6 +21,7 @@ const createGUI = function (gl, reset) {
     visualizationsFolder.add(params.visualizations, "showFlags").name('show flags').listen();
     visualizationsFolder.add(params.visualizations, "showWR").name('show world record').listen();
     visualizationsFolder.add(params.visualizations, "showNeighboursLines", ["none", "only medals", "all"]).name('show neighbours lines').listen();
+    visualizationsFolder.add(params.visualizations, "showMedals", ["none", "stars", "bright"]).name('show potential medals').listen();
     visualizationsFolder.add(params.visualizations, "showSpeed").name('show speed').listen();
     visualizationsFolder.add(params.visualizations, "showRanks").name('show ranks').listen();
     visualizationsFolder.add(params.visualizations, "showDivingDistance").name('show diving distance').listen();

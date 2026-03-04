@@ -5,6 +5,7 @@ let params = {
     visualizations: {
         enabled: true, showFlags: true, showRanks: true, showWR: true, showSpeed: true, showDivingDistance: true,
         showNeighboursLines: "only medals", neighboursLinesModesDict: { "none": 0, "only medals": 1, "all": 2 },
+        showMedals: "stars", medalsModesDict: { "none": 0, "stars": 1, "bright": 2 },
         areaConservationEnabled: true,
         showSpheres: false,
         shadow: { enabled: true, shadowRadius: .5, shadowPower: .5, showCircle: true, circleRadius: .6, circleStroke: .15 },
