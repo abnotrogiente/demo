@@ -179,11 +179,17 @@ function Renderer(gl, water, flagCenter, flagSize) {
       uniform float shadowCircleRadius;
       uniform float shadowCircleStroke;
       uniform float showNeighboursLinesMode;
+      uniform float showMedalsMode;
 
       // Show neighbours lines modes
       #define LINES_NONE 0
       #define LINES_ONLY_MEDALS 1
       #define LINES_ALL 2
+
+      // Show medals modes
+      #define MEDALS_NONE 0
+      #define MEDALS_STARS 1
+      #define MEDALS_BRIGHT 2
       
       // Color declarations
       #define RED     vec3( 1,.3,.4)
@@ -269,16 +275,24 @@ function Renderer(gl, water, flagCenter, flagSize) {
       }
 
       void drawRanks(in vec2 position, in vec2 swimmerPosition, in int rank, out vec3 color) {
+        int showMode = int(showMedalsMode);
+        if (showMode == MEDALS_NONE) return;
         float visSize = flagSize.x / 2.;
         vec2 visPosition = swimmerPosition - position + vec2(0., 2.);
         vec2 visCoord = toTextCoord(visPosition, visSize);
-        
 
+        
+        
         vec3 visColor = vec3(1., 1., 1.)*printStar(visCoord);
-        if (max(visColor.r, max(visColor.g, visColor.b)) <= .3) return;
-        if (rank == 0) color = GOLD * visColor;
-        else if (rank == 1) color = SILVER * visColor;
-        else if (rank == 2) color = BRONZE * visColor;
+        //if (max(visColor.r, max(visColor.g, visColor.b)) <= .3) return;
+        // visColor *= pow(length(visPosition), 1.0);
+        vec3 medalColor = vec3(0);
+        if (rank == 0) medalColor = GOLD;
+        else if (rank == 1) medalColor = SILVER;
+        else if (rank == 2) medalColor = BRONZE;
+        else return;
+        if (showMode == MEDALS_STARS && max(visColor.r, max(visColor.g, visColor.b)) > .3) color = visColor * medalColor;
+        else if (showMode == MEDALS_BRIGHT) color += 0.2/pow(length(visPosition), 1.) * medalColor;
       }
 
       void drawShadows(in vec2 projectedPosition, in vec2 swimmerPosition, in float altitude, out vec3 color) {
@@ -308,7 +322,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
 
       void drawSwimmerLines(in vec2 projectedPosition, in vec2 swimmerPosition, in int swimmerRank, out vec3 color) {
         int linesMode = int(showNeighboursLinesMode);
-        if (linesMode == 0) return;
+        if (linesMode == LINES_NONE) return;
         float colorAttenuation = .7;
         vec3 aheadColor = vec3(0., 1., 0.) * colorAttenuation;
         vec3 behindColor = vec3(1., 0., 0.) * colorAttenuation;
@@ -598,7 +612,8 @@ Renderer.prototype.renderWater = function (water, sky, swimmers, raceTime, shado
       showCircle: shadowParams.showCircle,
       shadowCircleRadius: shadowParams.circleRadius,
       shadowCircleStroke: shadowParams.circleStroke,
-      showNeighboursLinesMode: Math.round(params.visualizations.neighboursLinesModesDict[params.visualizations.showNeighboursLines])
+      showNeighboursLinesMode: Math.round(params.visualizations.neighboursLinesModesDict[params.visualizations.showNeighboursLines]),
+      showMedalsMode: Math.round(params.visualizations.medalsModesDict[params.visualizations.showMedals])
     }).draw(water.plane);
   }
   this.gl.disable(this.gl.CULL_FACE);
