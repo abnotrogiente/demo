@@ -366,6 +366,10 @@ window.onload = function () {
   };
 
   function startRace() {
+    Swimmer.useGravity = true;
+    water.WR_position = 0;
+    videoTime = videoStartTime;
+    if (video.copyVideo) video.video.currentTime = videoTime;
     Swimmer.raceHasStarted = true;
     for (let swimmer of swimmers) swimmer.startRace();
   }
@@ -453,15 +457,10 @@ window.onload = function () {
     }
     else if (e.which == 'W'.charCodeAt(0)) {
       if (Swimmer.raceHasStarted) {
-        Swimmer.raceHasStarted = false;
         stopRace();
         return;
       }
-      water.WR_position = 0;
-      videoTime = videoStartTime;
-      if (video.copyVideo) video.video.currentTime = videoTime;
       startRace();
-      Swimmer.useGravity = true;
     }
     else if (e.which == 'H'.charCodeAt(0)) {
       document.getElementById("commands").hidden = !document.getElementById("commands").hidden;

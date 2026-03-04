@@ -161,23 +161,25 @@ class Swimmer {
         if (this.hasReacted && this.data && this.currendDataIndex < this.data.length && this.data[this.currendDataIndex][TIME_KEY] < time) {
             let nextDistanceTarget = 0;
             let nextEventTime = time;
+            const nextData = this.data[this.currendDataIndex + 1];
             if (this.currendDataIndex + 1 < this.data.length) {
-                nextDistanceTarget = parseFloat(this.data[this.currendDataIndex + 1][DISTANCE_KEY]);
-                nextEventTime = parseFloat(this.data[this.currendDataIndex + 1][TIME_KEY]);
+                nextDistanceTarget = parseFloat(nextData[DISTANCE_KEY]);
+                nextEventTime = parseFloat(nextData[TIME_KEY]);
             }
             const D = params.simulation.poolSize.z;
             let y = 0;
-            // console.log("next event time : " + nextEventTime);
-            if (this.data[this.currendDataIndex][EVENT_KEY] == "enter") {
+            if (this.data[this.currendDataIndex][EVENT_KEY] == "enter" && nextData[EVENT_KEY] != "under") {
                 nextEventTime = (time + nextEventTime) / 2;
                 nextDistanceTarget = (this.body.center.z + D / 2 + nextDistanceTarget) / 2;
                 const event = {
                     [TIME_KEY]: nextEventTime,
                     [DISTANCE_KEY]: nextDistanceTarget,
+                    [EVENT_KEY]: "under"
                 };
                 this.data.splice(this.currendDataIndex + 1, 0, event);
                 y = -1.5;
             }
+            if (nextData[EVENT_KEY] == "under") y = -1.5;
 
             if (nextDistanceTarget > D) nextDistanceTarget = 2 * D - nextDistanceTarget;
             nextDistanceTarget -= params.simulation.poolSize.z / 2;
