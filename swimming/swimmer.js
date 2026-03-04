@@ -12,7 +12,7 @@ function gaussianRandom(mean = 0, stdev = 1) {
     return z * stdev + mean;
 }
 
-const AWAY = new GL.Vector(1000, 0, 0);
+const AWAY = new GL.Vector(1000, 0, -1000);
 const armAmplitude = 0.5;
 const armFrequency = 1;
 const armPulsation = 2 * Math.PI * armFrequency;
