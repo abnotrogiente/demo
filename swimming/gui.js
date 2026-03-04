@@ -27,7 +27,6 @@ const createGUI = function (gl, reset) {
     visualizationsFolder.add(params.visualizations, "showDivingDistance").name('show diving distance').listen();
     visualizationsFolder.add(params.visualizations.shadow, "enabled").name("show shadow");
     visualizationsFolder.add(params.visualizations, 'areaConservationEnabled', 'areaConservationEnabled').name('area conservation').listen();
-    visualizationsFolder.add(params.visualizations, "showSpheres").name('show spheres').listen();
 
     const videoFolder = gui.addFolder("video");
     videoFolder.close();
@@ -61,6 +60,12 @@ const createGUI = function (gl, reset) {
     simulationFolder.add(params.simulation.poolSize, 'z', 1, 50).name('pool height').onChange(function (value) { reset(); }).listen();
     simulationFolder.add(params.simulation.poolSize, 'y', 1, 3).name('pool depth').onChange(function (value) { reset(); }).listen();
     simulationFolder.add(params.simulation, 'waterDamping', 0.005, 0.15).name('water damping').listen();
+
+    const swimmersFolder = gui.addFolder("swimmers");
+    swimmersFolder.close();
+    swimmersFolder.add(params.swimmers, "showSpheres").name('show spheres').listen();
+    swimmersFolder.add(params.swimmers, "useTracking").name('use tracking data').listen();
+
 
     const cameraFolder = gui.addFolder("camera");
     cameraFolder.close();

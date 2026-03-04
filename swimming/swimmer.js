@@ -89,6 +89,8 @@ class Swimmer {
         this.nationality = Math.random() > .5 ? 0 : 1;
 
         this.currendDataIndex = 0;
+
+        this.useTracking = false;
     }
 
     async parseData(source) {
@@ -133,7 +135,7 @@ class Swimmer {
     }
 
     jump(velocity = 4.5) {
-        if (!this.data) this.body.cinematic = false;
+        this.body.cinematic = false;
         this.body.velocity = new GL.Vector(0, 0, velocity + gaussianRandom(0, 1));
         this.body.center = new GL.Vector(this.startingPoint.x, 1, -params.simulation.poolSize.z / 2.);
     }
@@ -141,8 +143,9 @@ class Swimmer {
     swim(start) {
         this.hasReacted = start;
         this.isSwimming = start;
+        if (!start) this.body.followTarget = false;
         if (start) {
-            if (!this.data) this.body.cinematic = false;
+            this.body.cinematic = false;
             this.useGravity = true;
             this.body.center = new GL.Vector(this.startingPoint.x, 0, -params.simulation.poolSize.z / 2.);
         }
@@ -158,7 +161,7 @@ class Swimmer {
     }
 
     handleTracking(time) {
-        if (this.hasReacted && this.data && this.currendDataIndex < this.data.length && this.data[this.currendDataIndex][TIME_KEY] < time) {
+        if (this.hasReacted && this.useTracking && this.currendDataIndex < this.data.length && this.data[this.currendDataIndex][TIME_KEY] < time) {
             let nextDistanceTarget = 0;
             let nextEventTime = time;
             const nextData = this.data[this.currendDataIndex + 1];
@@ -168,7 +171,8 @@ class Swimmer {
             }
             const D = params.simulation.poolSize.z;
             let y = 0;
-            if (this.data[this.currendDataIndex][EVENT_KEY] == "enter" && nextData[EVENT_KEY] != "under") {
+            const currentEvent = this.data[this.currendDataIndex][EVENT_KEY];
+            if (currentEvent == "enter" || currentEvent == "turn" && nextData[EVENT_KEY] != "under") {
                 nextEventTime = (time + nextEventTime) / 2;
                 nextDistanceTarget = (this.body.center.z + D / 2 + nextDistanceTarget) / 2;
                 const event = {
@@ -179,7 +183,7 @@ class Swimmer {
                 this.data.splice(this.currendDataIndex + 1, 0, event);
                 y = -1.5;
             }
-            if (nextData[EVENT_KEY] == "under") y = -1.5;
+            if (nextData && nextData[EVENT_KEY] == "under") y = -1.5;
 
             if (nextDistanceTarget > D) nextDistanceTarget = 2 * D - nextDistanceTarget;
             nextDistanceTarget -= params.simulation.poolSize.z / 2;
@@ -211,12 +215,19 @@ class Swimmer {
     }
 
     update(dt, time) {
-
+        if (!Swimmer.raceHasStarted) this.useTracking = params.swimmers.useTracking && this.data;
         if (!this.hasReacted && Swimmer.raceHasStarted) {
-            if (this.data || time > this.reactionTime) {
-                if (this.data) this.body.cinematic = true;
+            if (this.useTracking || time > this.reactionTime) {
                 this.swim(true);
                 this.jump();
+                if (this.useTracking) {
+                    this.body.cinematic = true;
+                    this.body.followTarget = true;
+                    this.body.setTarget(null);
+                } else if (params.swimmers.useTracking) {
+                    this.swim(false);
+                    this.body.move(AWAY);
+                }
                 this.currendDataIndex = 0;
             }
         }
@@ -230,9 +241,10 @@ class Swimmer {
             }
         }
 
+        this.handleTracking(time);
+
         for (let sphere of this.spheres) sphere.update(dt);
 
-        this.handleTracking(time);
 
 
         if (!this.hasDove && this.body.center.y < 0 && this.body.oldCenter.y >= 0) {

@@ -416,7 +416,7 @@ window.onload = function () {
       params.video.show = !params.video.show;
     }
     else if (e.which == 'O'.charCodeAt(0)) {
-      params.visualizations.showSpheres = false;
+      params.swimmers.showSpheres = false;
       params.simulation.poolSize.x = 25;
       params.simulation.poolSize.y = 2;
       params.simulation.poolSize.z = 50;
@@ -551,7 +551,7 @@ window.onload = function () {
     renderer.sphereRadius = radius;
     renderer.renderCube(water);
     renderer.renderWater(water, cubemap, swimmers, raceTime, params.visualizations.shadow);
-    if (params.visualizations.showSpheres) renderer.renderSpheres(water);
+    if (params.swimmers.showSpheres) renderer.renderSpheres(water);
     // Swimmer.attributes.draw();
     video.render(raceTime);
     gl.disable(gl.DEPTH_TEST);

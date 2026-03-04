@@ -21,6 +21,7 @@ class Sphere {
         this.invMass = 1 / this.mass;
         this.radiusSquared = radius * radius;
         this.mesh = GL.Mesh.sphere({ detail: 10 });
+        this.followTarget = false;
     }
 
     /**
@@ -50,7 +51,7 @@ class Sphere {
         }
         else {
             this.velocity = new GL.Vector(0, 0, 0);
-            if (!this.targetPos) return;
+            if (!this.targetPos || !this.followTarget) return;
             let alpha = dt / this.targetTime;
             alpha = Math.min(Math.max(alpha, 0), 1);
             this.center = this.center.multiply(1 - alpha).add(this.targetPos.multiply(alpha));
