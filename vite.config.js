@@ -3,6 +3,10 @@ import { viteStaticCopy } from 'vite-plugin-static-copy';
 import { resolve } from 'path'
 import glsl from 'vite-plugin-glsl';
 
+const copies = [];
+
+for (let i = 1; i <= 8; i++) copies.push({ src: "swimming/assets/race-data/" + i + ".csv", dest: "assets/race-data/" });
+
 export default defineConfig({
     base: "/demo/",
     clearScreen: false,
@@ -44,7 +48,7 @@ export default defineConfig({
                 { src: 'node_modules/three/examples/jsm/libs/draco/gltf/draco_decoder.wasm', dest: 'jsm/libs/draco/gltf/' },
                 { src: 'node_modules/three/examples/jsm/libs/draco/gltf/draco_encoder.js', dest: 'jsm/libs/draco/gltf/' },
                 { src: 'node_modules/three/examples/jsm/libs/draco/gltf/draco_wasm_wrapper.js', dest: 'jsm/libs/draco/gltf/' }
-            ]
+            ].push(copies)
         }),
         glsl()
     ]
