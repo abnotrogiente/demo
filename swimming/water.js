@@ -286,7 +286,7 @@ Water.prototype.addSphere = function (sphere) {
 };
 
 Water.prototype.updateSpheres = function (dt) {
-  const speed = 2.4;
+  const speed = 2.155;
   this.prev_WR_position = this.WR_position;
   this.WR_position = params.getRaceTime() * speed;
   if (this.WR_position > params.simulation.poolSize.z) this.WR_position = 2 * params.simulation.poolSize.z - this.WR_position;
