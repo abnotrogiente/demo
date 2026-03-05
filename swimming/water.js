@@ -160,6 +160,13 @@ function Water(gl, resolution = null) {
       return;
     }
 
+    fragColor = info;
+
+    // vec2 diff = oldCenter.xz - newCenter.xz;
+    // float distSq = dot(diff, diff);
+    // float eps = poolSize.x * .5;
+    if (abs(newCenter.z) > 2.*poolSize.z) return;
+
     // /* add the old volume */
     info.r += volumeInSphere(oldCenter);
 
@@ -192,22 +199,7 @@ function Water(gl, resolution = null) {
     `);
 }
 
-Water.prototype.reset = function (resolution = null) {
-  this.WR_position = 100000;
-  this.prev_WR_position = 0;
-  if (resolution !== null) {
-    console.log("resolution.y : " + resolution.y);
-    this.W = Math.round(resolution.x);
-    this.H = Math.round(resolution.y);
-    console.log("Using custom resolution:", this.W, this.H);
-  } else {
-    this.W = 256;
-    this.H = 256;
-  }
-  Swimmer.reset(new GL.Vector(this.W, this.H));
-  //Swimmer.attributes.createRenderingTexture(this.W, this.H);
-  this.plane = GL.Mesh.plane({ detail: 255, width: params.simulation.poolSize.x, height: params.simulation.poolSize.z });
-  this.delta = new GL.Vector(1 / this.W, 1 / this.H);
+Water.prototype.resetTextures = function () {
   /**@type {WebGLRenderingContext} */
   const g = this.gl;
   if (this.textureA) g.deleteTexture(this.textureA.id);
@@ -226,6 +218,25 @@ Water.prototype.reset = function (resolution = null) {
     this.textureA = new GL.Texture(this.W, this.H, { type: this.gl.FLOAT, filter: filter });
     this.textureB = new GL.Texture(this.W, this.H, { type: this.gl.FLOAT, filter: filter });
   }
+}
+
+Water.prototype.reset = function (resolution = null) {
+  this.WR_position = 100000;
+  this.prev_WR_position = 0;
+  if (resolution !== null) {
+    console.log("resolution.y : " + resolution.y);
+    this.W = Math.round(resolution.x);
+    this.H = Math.round(resolution.y);
+    console.log("Using custom resolution:", this.W, this.H);
+  } else {
+    this.W = 256;
+    this.H = 256;
+  }
+  Swimmer.reset(new GL.Vector(this.W, this.H));
+  //Swimmer.attributes.createRenderingTexture(this.W, this.H);
+  this.plane = GL.Mesh.plane({ detail: 255, width: params.simulation.poolSize.x, height: params.simulation.poolSize.z });
+  this.delta = new GL.Vector(1 / this.W, 1 / this.H);
+  this.resetTextures();
 };
 
 Water.prototype.addDrop = function (x, y, radius, strength) {

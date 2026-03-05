@@ -485,7 +485,7 @@ window.onload = function () {
       console.log("Olympic mode enabled.");
     }
     else if (e.which == 'W'.charCodeAt(0)) {
-      water.reset(resolution);
+      water.resetTextures();
       if (Swimmer.raceHasStarted) {
         stopRace();
         return;
