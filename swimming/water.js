@@ -14,6 +14,7 @@ import { params } from './params.js';
 
 // The data in the texture is (position.y, velocity.y, normal.x, normal.z)
 function Water(gl, resolution = null) {
+  /**@type {WebGLRenderingContext} */
   this.gl = gl;
   this.visualizationWavesEnabled = true;
   this.sqrt_2_PI = Math.sqrt(2 * Math.PI);
@@ -249,7 +250,7 @@ Water.prototype.addDrop = function (x, y, radius, strength) {
  * @returns 
  */
 Water.prototype.addOrRemoveVisualizationWaves = function (add, swimmers) {
-  if (!this.visualizationWavesEnabled) return;
+  if (!this.visualizationWavesEnabled || !Swimmer.raceHasStarted) return;
   var this_ = this;
 
   this.textureB.drawTo(function () {
