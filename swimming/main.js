@@ -54,12 +54,13 @@ let translateY = 0;
 var zoomDistance = 4.0;
 
 // const videoStartTime = 17;
-const videoStartTime = 16.5;
-let videoTime = 0;
-let raceTime = 0;
 var paused = false;
 var flagCenter;
 var flagSize;
+
+// make video accessible to slider handler
+var video;
+
 Swimmer.initAttributes(gl);
 let resolution = new GL.Vector(256, 256);
 function updateResolutionWarning() {
@@ -102,6 +103,24 @@ function reset() {
   }
 }
 
+// handler called when time slider value changes
+function onTimeSliderChange(event) {
+  const t = parseFloat(event.target.value);
+  if (isNaN(t)) return;
+
+  // update parameters and video playback
+  params.setRaceTime(t);
+  if (video && video.video) {
+    // if copyVideo is true the code elsewhere will update currentTime as needed
+    video.video.currentTime = params.time;
+  }
+  swimmers.forEach(swimmer => swimmer.setCurrentDataIndex());
+
+  // optionally pause simulation while dragging
+  // paused = true;
+}
+
+
 
 
 window.onload = function () {
@@ -130,8 +149,14 @@ window.onload = function () {
   flagCenter = new GL.Vector(0., -params.simulation.poolSize.z / 2. + 1.);
   flagSize = 0.7;
   water = new Water(gl);
-  const video = new Video(gl, "./video.mp4");  // Empty path - use drag-and-drop instead
+  video = new Video(gl, "./video.mp4");  // Empty path - use drag-and-drop instead
   // video.video.src = "./video.mp4";
+
+  // attach slider listener
+  const slider = document.getElementById('time-slider');
+  if (slider) {
+    slider.addEventListener('input', onTimeSliderChange);
+  }
 
   // Drop zone for MP4 files
   const dropZone = document.getElementById('drop-zone');
@@ -209,7 +234,7 @@ window.onload = function () {
   function animate() {
     var nextTime = new Date().getTime();
     if (!paused) {
-      update((nextTime - prevTime) / 1000, nextTime / 1000);
+      update((nextTime - prevTime) / 1000);
       draw(nextTime);
     }
     prevTime = nextTime;
@@ -368,8 +393,8 @@ window.onload = function () {
   function startRace() {
     Swimmer.useGravity = true;
     water.WR_position = 0;
-    videoTime = videoStartTime;
-    if (video.copyVideo) video.video.currentTime = videoTime;
+    params.setStartRaceTime();
+    if (video.copyVideo) video.video.currentTime = params.time;
     Swimmer.raceHasStarted = true;
     for (let swimmer of swimmers) swimmer.startRace();
   }
@@ -379,8 +404,13 @@ window.onload = function () {
     for (let swimmer of swimmers) swimmer.swim(false);
   }
 
+  function pause() {
+    paused = !paused;
+    video.video.currentTime = params.time;
+  }
+
   const onkeydown = function (e) {
-    if (e.which == ' '.charCodeAt(0)) paused = !paused;
+    if (e.which == ' '.charCodeAt(0)) pause();
     else if (e.which == 'G'.charCodeAt(0)) {
       Swimmer.useGravity = !Swimmer.useGravity;
       for (let swimmer of swimmers) swimmer.body.cinematic = Swimmer.useGravity;
@@ -435,8 +465,8 @@ window.onload = function () {
         }
       }
 
-      videoTime = 0;
-      if (video.copyVideo) video.video.currentTime = videoTime;
+      params.time = 0;
+      if (video.copyVideo) video.video.currentTime = params.time;
 
       reset();
 
@@ -493,14 +523,9 @@ window.onload = function () {
 
   gl.canvas.addEventListener("keydown", onkeydown);
 
-
-  function getArmOffset(time, phase) {
-    return new GL.Vector(0., Math.cos(armPulsation * time + phase), Math.sin(armPulsation * time + phase)).multiply(armAmplitude);
-  }
-
   var frame = 0;
 
-  function update(dt, time) {
+  function update(dt) {
     if (dt > 1) return;
     frame += dt * 2;
 
@@ -508,29 +533,29 @@ window.onload = function () {
       // Start from rest when the player releases the mouse after moving the sphere
       for (let swimmer of swimmers) swimmer.body.velocity = new GL.Vector(0, 0, 0);
     }
-    raceTime = videoTime - videoStartTime;
 
     // Update the water simulation and graphics
-    for (let swimmer of swimmers) swimmer.update(dt, raceTime);
+    for (let swimmer of swimmers) swimmer.update(dt);
     water.updateSpheres(dt);
     for (let i = 0; i < params.numSteps; i++) {
       water.stepSimulation();
     }
 
     renderer.updateCaustics(water);
-    videoTime += dt;
+    if (Swimmer.raceHasStarted) params.time += dt;
+    slider.value = params.getRaceTime();
     updateFrameRateHTML(dt);
 
   }
 
-  function draw(time) {
+  function draw() {
     // Change the light direction to the camera look vector when the L key is pressed
     if (GL.keys.L) {
       renderer.lightDir = GL.Vector.fromAngles((90 - angleY) * Math.PI / 180, -angleX * Math.PI / 180);
       if (paused) renderer.updateCaustics(water);
     }
     if (params.isOneVisualizationEnabled()) Swimmer.updateAttributesTexture(swimmers);
-    water.addOrRemoveVisualizationWaves(true, swimmers, raceTime);
+    water.addOrRemoveVisualizationWaves(true, swimmers);
     water.updateNormals();
 
     /**@type {WebGLRenderingContext} */
@@ -549,11 +574,11 @@ window.onload = function () {
     renderer.sphereCenter = swimmers[0].body.center;
     renderer.sphereRadius = radius;
     renderer.renderCube(water);
-    renderer.renderWater(water, cubemap, swimmers, raceTime, params.visualizations.shadow);
+    renderer.renderWater(water, cubemap, swimmers, params.visualizations.shadow);
     if (params.swimmers.showSpheres) renderer.renderSpheres(water);
     // Swimmer.attributes.draw();
-    video.render(raceTime);
+    video.render();
     gl.disable(gl.DEPTH_TEST);
-    water.addOrRemoveVisualizationWaves(false, swimmers, raceTime);
+    water.addOrRemoveVisualizationWaves(false, swimmers);
   }
 };

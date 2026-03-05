@@ -248,7 +248,7 @@ Water.prototype.addDrop = function (x, y, radius, strength) {
  * @param {Swimmer[]} swimmers 
  * @returns 
  */
-Water.prototype.addOrRemoveVisualizationWaves = function (add, swimmers, raceTime) {
+Water.prototype.addOrRemoveVisualizationWaves = function (add, swimmers) {
   if (!this.visualizationWavesEnabled) return;
   var this_ = this;
 
@@ -266,7 +266,7 @@ Water.prototype.addOrRemoveVisualizationWaves = function (add, swimmers, raceTim
       sqrt_2_PI: this_.sqrt_2_PI,
       add: add,
       swimmersNumber: swimmers.length,
-      time: raceTime
+      time: params.getRaceTime(),
     }).draw(this_.plane);
   });
   this.textureB.swapWith(this.textureA);
@@ -288,7 +288,8 @@ Water.prototype.addSphere = function (sphere) {
 Water.prototype.updateSpheres = function (dt) {
   const speed = 2.4;
   this.prev_WR_position = this.WR_position;
-  this.WR_position += dt * speed;
+  this.WR_position = params.getRaceTime() * speed;
+  if (this.WR_position > params.simulation.poolSize.z) this.WR_position = 2 * params.simulation.poolSize.z - this.WR_position;
   if (params.simulation.optimized) {
     Swimmer.attributes.draw();
 

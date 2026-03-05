@@ -337,7 +337,7 @@ class Video {
 
     }
 
-    render(time) {
+    render() {
         const sparksParams = params.visualizations.sparks;
         const poolSize = params.simulation.poolSize;
         if (!params.video.show) return;
@@ -360,7 +360,7 @@ class Video {
         this.shader.uniforms({
             uSampler: 0,
             swimmersHelperFunctions: 1,
-            iTime: time,
+            iTime: params.getRaceTime(),
             poolSize: [poolSize.x, poolSize.y, poolSize.z],
             iResolution: [this.gl.canvas.width, this.gl.canvas.height],
             sparksEnabled: sparksParams.enabled,

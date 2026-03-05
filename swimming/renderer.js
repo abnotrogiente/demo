@@ -566,7 +566,7 @@ Renderer.prototype.updateCaustics = function (water) {
  * @param {*} sky 
  * @param {Swimmer[]} swimmers 
  */
-Renderer.prototype.renderWater = function (water, sky, swimmers, raceTime, shadowParams) {
+Renderer.prototype.renderWater = function (water, sky, swimmers, shadowParams) {
   var tracer = new GL.Raytracer();
   water.textureA.bind(0);
   this.tileTexture.bind(1);
@@ -610,7 +610,7 @@ Renderer.prototype.renderWater = function (water, sky, swimmers, raceTime, shado
       showWR: params.visualizations.showWR,
       showSpeed: params.visualizations.showSpeed,
       showDivingDistance: params.visualizations.showDivingDistance,
-      time: raceTime,
+      time: params.getRaceTime(),
       shadowEnabled: shadowParams.enabled,
       shadowRadius: shadowParams.shadowRadius,
       shadowPower: shadowParams.shadowPower,

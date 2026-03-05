@@ -1,7 +1,11 @@
 import GL from "./lightgl";
 
+const videoStartTime = 16.5;
+
 let params = {
     numSteps: 2, focal: 45,
+    time: 0, getRaceTime: () => params.time - videoStartTime, setStartRaceTime: () => params.time = videoStartTime,
+    setRaceTime: (time) => params.time = videoStartTime + time,
     visualizations: {
         enabled: true, showFlags: true, showRanks: true, showWR: true, showSpeed: true, showDivingDistance: true,
         showNeighboursLines: "only medals", neighboursLinesModesDict: { "none": 0, "only medals": 1, "all": 2 },

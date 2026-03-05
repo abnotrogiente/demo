@@ -160,6 +160,12 @@ class Swimmer {
         return new GL.Vector(0., Math.cos(omega * time + phase), Math.sin(omega * time + phase)).multiply(armAmplitude);
     }
 
+    setCurrentDataIndex() {
+        this.currendDataIndex = 0;
+        if (!this.data) return;
+        while (this.data[this.currendDataIndex] && this.data[this.currendDataIndex][TIME_KEY] < params.getRaceTime()) this.currendDataIndex++;
+    }
+
     handleTracking(time) {
         if (this.hasReacted && this.useTracking && this.currendDataIndex < this.data.length && this.data[this.currendDataIndex][TIME_KEY] < time) {
             let nextDistanceTarget = 0;
@@ -214,10 +220,11 @@ class Swimmer {
         this.leftFoot.move(this.body.center.add(new GL.Vector(-FOOT_DELTA_X, offset4.y * 0.5, dz)));
     }
 
-    update(dt, time) {
+    update(dt) {
+        const raceTime = params.getRaceTime();
         if (!Swimmer.raceHasStarted) this.useTracking = params.swimmers.useTracking && this.data;
         if (!this.hasReacted && Swimmer.raceHasStarted) {
-            if (this.useTracking || time > this.reactionTime) {
+            if (this.useTracking || raceTime > this.reactionTime) {
                 this.swim(true);
                 this.jump();
                 if (this.useTracking) {
@@ -237,11 +244,11 @@ class Swimmer {
         if (this.isSwimming) {
             this.body.addForce(this.force);
             if (this.body.center.y > -this.body.radius) {
-                this.moveSpheres(time);
+                this.moveSpheres(raceTime);
             }
         }
 
-        this.handleTracking(time);
+        this.handleTracking(raceTime);
 
         for (let sphere of this.spheres) sphere.update(dt);
 
@@ -249,14 +256,14 @@ class Swimmer {
 
         if (!this.hasDove && this.body.center.y < 0 && this.body.oldCenter.y >= 0) {
             this.divingDistance = this.body.center.z + params.simulation.poolSize.z / 2;
-            this.divingTime = time;
+            this.divingTime = raceTime;
             this.hasDove = true;
         }
 
         const radius = this.body.radius;
         if (!this.hasBrokeOut && this.body.center.y > -radius && this.body.oldCenter.y <= -radius) {
             this.breakoutDistance = this.body.center.z + params.simulation.poolSize.z / 2;
-            this.breakoutTime = time;
+            this.breakoutTime = raceTime;
             this.hasBrokeOut = true;
             console.log("BREAKOUT : " + this.breakoutDistance);
         }
