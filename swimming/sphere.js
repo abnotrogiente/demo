@@ -1,5 +1,5 @@
 import GL from './lightgl.js';
-import { params } from './params.js';
+import { config } from './params.js';
 
 const GRAVITY = new GL.Vector(0, -4, 0);
 
@@ -44,7 +44,7 @@ class Sphere {
             this.center = this.center.add(this.velocity.multiply(dt));
 
             // Bounce off the bottom
-            if (this.center.y < this.radius - params.simulation.poolSize.y) {
+            if (this.center.y < this.radius - config.params.simulation.poolSize.y) {
                 this.center.y = this.radius - 1;
                 this.velocity.y = Math.abs(this.velocity.y) * 0.7;
             }

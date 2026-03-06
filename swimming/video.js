@@ -1,5 +1,5 @@
 import GL from "./lightgl.js";
-import { params } from "./params.js";
+import { config } from "./params.js";
 import { Swimmer } from "./swimmer.js";
 import { swimmersHelperFunctions } from "./swimmer.js";
 
@@ -338,9 +338,9 @@ class Video {
     }
 
     render() {
-        const sparksParams = params.visualizations.sparks;
-        const poolSize = params.simulation.poolSize;
-        if (!params.video.show) return;
+        const sparksParams = config.params.visualizations.sparks;
+        const poolSize = config.params.simulation.poolSize;
+        if (!config.params.video.show) return;
         if (this.copyVideo) {
             this.updateTexture();
         }
@@ -360,7 +360,7 @@ class Video {
         this.shader.uniforms({
             uSampler: 0,
             swimmersHelperFunctions: 1,
-            iTime: params.getRaceTime(),
+            iTime: config.getRaceTime(),
             poolSize: [poolSize.x, poolSize.y, poolSize.z],
             iResolution: [this.gl.canvas.width, this.gl.canvas.height],
             sparksEnabled: sparksParams.enabled,
@@ -371,8 +371,8 @@ class Video {
             sparksLengthFactor: sparksParams.lengthFactor,
             sparksSizeFactor: sparksParams.sizeFactor,
             fov: sparksParams.fov,
-            thresholdBlending: params.video.thresholdBlending,
-            blendingThreshold: params.video.blendingThreshold
+            thresholdBlending: config.params.video.thresholdBlending,
+            blendingThreshold: config.params.video.blendingThreshold
         }).draw(this.mesh);
         this.gl.disable(this.gl.BLEND);
     }

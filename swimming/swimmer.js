@@ -1,5 +1,5 @@
 import GL from "./lightgl";
-import { params } from "./params";
+import { config } from "./params";
 import { Sphere } from "./sphere";
 import { SwimmersAttributes } from "./swimmersAttributes";
 import { ARM_DELTA_X, FOOT_DELTA_X, FOOT_DELTA_Z, MAX_NUM_SWIMMER, NUM_VEC_ATTRIBUTES } from "./swimmersConstants";
@@ -123,7 +123,7 @@ class Swimmer {
 
     getDistanceTraveled() {
         const speed = this.body.velocity.z;
-        const D = params.simulation.poolSize.z;
+        const D = config.params.simulation.poolSize.z;
         const z = this.body.center.z + D / 2;
         return speed >= 0. ? z : 2 * D - z;
     }
@@ -137,7 +137,7 @@ class Swimmer {
     jump(velocity = 4.5) {
         this.body.cinematic = false;
         this.body.velocity = new GL.Vector(0, 0, velocity + gaussianRandom(0, 1));
-        this.body.center = new GL.Vector(this.startingPoint.x, 1, -params.simulation.poolSize.z / 2.);
+        this.body.center = new GL.Vector(this.startingPoint.x, 1, -config.params.simulation.poolSize.z / 2.);
     }
 
     swim(start) {
@@ -147,7 +147,7 @@ class Swimmer {
         if (start) {
             this.body.cinematic = false;
             this.useGravity = true;
-            this.body.center = new GL.Vector(this.startingPoint.x, 0, -params.simulation.poolSize.z / 2.);
+            this.body.center = new GL.Vector(this.startingPoint.x, 0, -config.params.simulation.poolSize.z / 2.);
         }
         else {
             this.body.velocity = new GL.Vector(0, 0, 0);
@@ -163,7 +163,7 @@ class Swimmer {
     setCurrentDataIndex() {
         this.currendDataIndex = 0;
         if (!this.data) return;
-        while (this.data[this.currendDataIndex] && this.data[this.currendDataIndex][TIME_KEY] < params.getRaceTime()) this.currendDataIndex++;
+        while (this.data[this.currendDataIndex] && this.data[this.currendDataIndex][TIME_KEY] < config.getRaceTime()) this.currendDataIndex++;
     }
 
     handleTracking(time) {
@@ -175,7 +175,7 @@ class Swimmer {
                 nextDistanceTarget = parseFloat(nextData[DISTANCE_KEY]);
                 nextEventTime = parseFloat(nextData[TIME_KEY]);
             }
-            const D = params.simulation.poolSize.z;
+            const D = config.params.simulation.poolSize.z;
             let y = 0;
             const currentEvent = this.data[this.currendDataIndex][EVENT_KEY];
             if (currentEvent == "enter" || currentEvent == "turn" && nextData[EVENT_KEY] != "under") {
@@ -192,7 +192,7 @@ class Swimmer {
             if (nextData && nextData[EVENT_KEY] == "under") y = -1.5;
 
             if (nextDistanceTarget > D) nextDistanceTarget = 2 * D - nextDistanceTarget;
-            nextDistanceTarget -= params.simulation.poolSize.z / 2;
+            nextDistanceTarget -= config.params.simulation.poolSize.z / 2;
             const targetPos = new GL.Vector(this.startingPoint.x, y, nextDistanceTarget);
             this.body.setTarget(targetPos, nextEventTime - time);
 
@@ -221,8 +221,8 @@ class Swimmer {
     }
 
     update(dt) {
-        const raceTime = params.getRaceTime();
-        if (!Swimmer.raceHasStarted) this.useTracking = params.swimmers.useTracking && this.data;
+        const raceTime = config.getRaceTime();
+        if (!Swimmer.raceHasStarted) this.useTracking = config.params.swimmers.useTracking && this.data;
         if (!this.hasReacted && Swimmer.raceHasStarted) {
             if (this.useTracking || raceTime > this.reactionTime) {
                 this.swim(true);
@@ -231,7 +231,7 @@ class Swimmer {
                     this.body.cinematic = true;
                     this.body.followTarget = true;
                     this.body.setTarget(null);
-                } else if (params.swimmers.useTracking) {
+                } else if (config.params.swimmers.useTracking) {
                     this.swim(false);
                     this.body.move(AWAY);
                 }
@@ -255,14 +255,14 @@ class Swimmer {
 
 
         if (!this.hasDove && this.body.center.y < 0 && this.body.oldCenter.y >= 0) {
-            this.divingDistance = this.body.center.z + params.simulation.poolSize.z / 2;
+            this.divingDistance = this.body.center.z + config.params.simulation.poolSize.z / 2;
             this.divingTime = raceTime;
             this.hasDove = true;
         }
 
         const radius = this.body.radius;
         if (!this.hasBrokeOut && this.body.center.y > -radius && this.body.oldCenter.y <= -radius) {
-            this.breakoutDistance = this.body.center.z + params.simulation.poolSize.z / 2;
+            this.breakoutDistance = this.body.center.z + config.params.simulation.poolSize.z / 2;
             this.breakoutTime = raceTime;
             this.hasBrokeOut = true;
             console.log("BREAKOUT : " + this.breakoutDistance);

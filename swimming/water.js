@@ -10,7 +10,7 @@ import GL from './lightgl.js';
 import { Sphere } from './sphere.js';
 import { Swimmer } from './swimmer.js';
 import { swimmersHelperFunctions } from './swimmer.js';
-import { params } from './params.js';
+import { config } from './params.js';
 
 // The data in the texture is (position.y, velocity.y, normal.x, normal.z)
 function Water(gl, resolution = null) {
@@ -210,7 +210,7 @@ Water.prototype.resetTextures = function () {
   this.showAreaConservedGrid = false;
   this.showProjectionGrid = false;
 
-  this.invPoolSize = new GL.Vector(1 / params.simulation.poolSize.x, 1 / params.simulation.poolSize.y, 1 / params.simulation.poolSize.z);
+  this.invPoolSize = new GL.Vector(1 / config.params.simulation.poolSize.x, 1 / config.params.simulation.poolSize.y, 1 / config.params.simulation.poolSize.z);
   var filter = GL.Texture.canUseFloatingPointLinearFiltering() ? this.gl.LINEAR : this.gl.NEAREST;
   if ((!this.textureA.canDrawTo() || !this.textureB.canDrawTo()) && GL.Texture.canUseHalfFloatingPointTextures()) {
     console.log("No draw");
@@ -234,7 +234,7 @@ Water.prototype.reset = function (resolution = null) {
   }
   Swimmer.reset(new GL.Vector(this.W, this.H));
   //Swimmer.attributes.createRenderingTexture(this.W, this.H);
-  this.plane = GL.Mesh.plane({ detail: 255, width: params.simulation.poolSize.x, height: params.simulation.poolSize.z });
+  this.plane = GL.Mesh.plane({ detail: 255, width: config.params.simulation.poolSize.x, height: config.params.simulation.poolSize.z });
   this.delta = new GL.Vector(1 / this.W, 1 / this.H);
   this.resetTextures();
 };
@@ -248,7 +248,7 @@ Water.prototype.addDrop = function (x, y, radius, strength) {
       center: [x, y],
       radius: radius,
       strength: strength,
-      poolSize: [params.simulation.poolSize.x, params.simulation.poolSize.y, params.simulation.poolSize.z]
+      poolSize: [config.params.simulation.poolSize.x, config.params.simulation.poolSize.y, config.params.simulation.poolSize.z]
     }).draw(this_.plane);
   });
   this.textureB.swapWith(this.textureA);
@@ -270,15 +270,15 @@ Water.prototype.addOrRemoveVisualizationWaves = function (add, swimmers) {
     if (swimmersAttributesTexture) swimmersAttributesTexture.bind(1);
     this_.visualizationWavesShader.uniforms({
       swimmersAttributesTexture: 1,
-      showDivingDistance: params.visualizations.showDivingDistance,
-      showWR: params.visualizations.showWR,
+      showDivingDistance: config.params.visualizations.showDivingDistance,
+      showWR: config.params.visualizations.showWR,
       invPoolSizeVertex: [this_.invPoolSize.x, this_.invPoolSize.z],
-      poolSize: [params.simulation.poolSize.x, params.simulation.poolSize.y, params.simulation.poolSize.z],
+      poolSize: [config.params.simulation.poolSize.x, config.params.simulation.poolSize.y, config.params.simulation.poolSize.z],
       wr: this_.WR_position,
       sqrt_2_PI: this_.sqrt_2_PI,
       add: add,
       swimmersNumber: swimmers.length,
-      time: params.getRaceTime(),
+      time: config.getRaceTime(),
     }).draw(this_.plane);
   });
   this.textureB.swapWith(this.textureA);
@@ -300,9 +300,9 @@ Water.prototype.addSphere = function (sphere) {
 Water.prototype.updateSpheres = function (dt) {
   const speed = 2.155;
   this.prev_WR_position = this.WR_position;
-  this.WR_position = params.getRaceTime() * speed;
-  if (this.WR_position > params.simulation.poolSize.z) this.WR_position = 2 * params.simulation.poolSize.z - this.WR_position;
-  if (params.simulation.optimized) {
+  this.WR_position = config.getRaceTime() * speed;
+  if (this.WR_position > config.params.simulation.poolSize.z) this.WR_position = 2 * config.params.simulation.poolSize.z - this.WR_position;
+  if (config.params.simulation.optimized) {
     Swimmer.attributes.draw();
 
     this.textureB.drawTo(() => {
@@ -313,7 +313,7 @@ Water.prototype.updateSpheres = function (dt) {
         oldDisplacementTexture: 2,
         displacementTexture: 1,
         invPoolSizeVertex: [this.invPoolSize.x, this.invPoolSize.z],
-        poolSize: [params.simulation.poolSize.x, params.simulation.poolSize.y, params.simulation.poolSize.z],
+        poolSize: [config.params.simulation.poolSize.x, config.params.simulation.poolSize.y, config.params.simulation.poolSize.z],
         optimized: true
       }).draw(this.plane);
       this.textureB.swapWith(this.textureA);
@@ -340,7 +340,7 @@ Water.prototype.moveSphere = function (oldCenter, newCenter, radius) {
       oldCenter: oldCenter,
       newCenter: newCenter,
       radius: radius,
-      poolSize: [params.simulation.poolSize.x, params.simulation.poolSize.y, params.simulation.poolSize.z],
+      poolSize: [config.params.simulation.poolSize.x, config.params.simulation.poolSize.y, config.params.simulation.poolSize.z],
       optimized: false
     }).draw(this_.plane);
   });
@@ -356,9 +356,9 @@ Water.prototype.stepSimulation = function () {
       delta: [this_.delta.x, this_.delta.y],
       wr: this_.WR_position,
       prev_wr: this_.prev_WR_position,
-      poolSize: [params.simulation.poolSize.x, params.simulation.poolSize.y, params.simulation.poolSize.z],
+      poolSize: [config.params.simulation.poolSize.x, config.params.simulation.poolSize.y, config.params.simulation.poolSize.z],
       sqrt_2_PI: this_.sqrt_2_PI,
-      damping: params.simulation.waterDamping
+      damping: config.params.simulation.waterDamping
     }).draw(this_.plane);
   });
   this.textureB.swapWith(this.textureA);
@@ -382,7 +382,7 @@ Water.prototype.updateNormals = function () {
 
 Water.prototype.updateAreaConservation = function () {
 
-  if (!params.visualizations.areaConservationEnabled) {
+  if (!config.params.visualizations.areaConservationEnabled) {
     return;
   }
   var this_ = this;
@@ -433,8 +433,8 @@ Water.prototype.updateAreaConservation = function () {
     writeBuf[i * 4 + 1] = 1.0;
   }
   // Example: modify and write back (only for float)
-  const dx_proj = params.simulation.poolSize.x / this.W;
-  const dz_proj = params.simulation.poolSize.z / this.H;
+  const dx_proj = config.params.simulation.poolSize.x / this.W;
+  const dz_proj = config.params.simulation.poolSize.z / this.H;
   const dx_proj_sq = dx_proj * dx_proj;
   const dz_proj_sq = dz_proj * dz_proj;
   if (this.textureA.type === this.gl.FLOAT) {

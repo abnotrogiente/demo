@@ -1,5 +1,5 @@
 import GL from "./lightgl";
-import { params } from "./params";
+import { config } from "./params";
 import { Sphere } from "./sphere";
 import { Swimmer } from "./swimmer";
 import { ARM_DELTA_X, FOOT_DELTA_X, FOOT_DELTA_Z, MAX_NUM_SWIMMER, NUM_VEC_ATTRIBUTES } from "./swimmersConstants";
@@ -345,7 +345,7 @@ class SwimmersAttributes {
         const vertexLocation = this.gl.getAttribLocation(this.programVolume, "iVertex");
 
         const poolSizeLocation = this.gl.getUniformLocation(this.programVolume, "poolSize");
-        this.gl.uniform2f(poolSizeLocation, params.simulation.poolSize.x, params.simulation.poolSize.z);
+        this.gl.uniform2f(poolSizeLocation, config.params.simulation.poolSize.x, config.params.simulation.poolSize.z);
 
         const horizontalLocation = this.gl.getUniformLocation(this.programVolume, "horizontal");
         this.gl.uniform1i(horizontalLocation, true);
@@ -431,7 +431,7 @@ class SwimmersAttributes {
         const data3Location = this.gl.getAttribLocation(this.programPoints, 'iData3');
 
         const invPoolSizeLocation = this.gl.getUniformLocation(this.programPoints, "invPoolSize");
-        this.gl.uniform2f(invPoolSizeLocation, 1. / params.simulation.poolSize.x, 1. / params.simulation.poolSize.z);
+        this.gl.uniform2f(invPoolSizeLocation, 1. / config.params.simulation.poolSize.x, 1. / config.params.simulation.poolSize.z);
 
 
 
