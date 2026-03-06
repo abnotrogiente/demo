@@ -34,5 +34,14 @@
             "showFlags": true,
             "showSpeed": false
         }
+    },
+    {
+        "distance": 100,
+        "rankSwimmerToggle": 1,
+        "params": {
+            "showFinishTimes": true,
+            "showMedals": "lanes",
+            "showRanksIfFinished": true
+        }
     }
 ]
