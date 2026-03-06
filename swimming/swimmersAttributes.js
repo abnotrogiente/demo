@@ -203,7 +203,13 @@ class SwimmersAttributes {
         const compareSwimmers = function (swimmer1, swimmer2) {
             return swimmer2.getDistanceTraveled() - swimmer1.getDistanceTraveled();
         }
-        return swimmers.sort(compareSwimmers);
+        let sortFrom = 0;
+        swimmers.forEach(s => {
+            if (s.finishTime > .1) sortFrom++;
+        })
+        const rankedSwimmers = swimmers.slice(0, sortFrom).concat(swimmers.slice(sortFrom).sort(compareSwimmers));
+        for (let i = 0; i < swimmers.length; i++) swimmers[i] = rankedSwimmers[i];
+        return swimmers
     }
 
     /**
@@ -236,6 +242,7 @@ class SwimmersAttributes {
 
         this.swimmersAttributes[this.numVecAttributes * 4 * index + 8] = swimmer.breakoutDistance;
         this.swimmersAttributes[this.numVecAttributes * 4 * index + 9] = swimmer.breakoutTime;
+        this.swimmersAttributes[this.numVecAttributes * 4 * index + 10] = swimmer.finishTime;
     }
 
     update() {

@@ -57,6 +57,7 @@ class Sphere {
             this.center = this.center.multiply(1 - alpha).add(this.targetPos.multiply(alpha));
             this.velocity = this.center.subtract(this.oldCenter).multiply(1 / dt);
             this.targetTime -= dt;
+            if (this.targetTime < 0) this.targetPos = null;
         }
     }
 

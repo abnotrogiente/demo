@@ -162,8 +162,10 @@ function Renderer(gl, water, flagCenter, flagSize) {
       out vec4 fragColor;
       uniform bool showFlags;
       uniform bool showRanks;
+      uniform bool showRanksIfFinished;
       uniform bool showWR;
       uniform bool showSpeed;
+      uniform bool showFinishTimes;
       uniform bool showDivingDistance;
       uniform samplerCube sky;
       uniform bool showProjectionGrid;
@@ -190,6 +192,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
       #define MEDALS_NONE 0
       #define MEDALS_STARS 1
       #define MEDALS_BRIGHT 2
+      #define MEDALS_LANES 3
       
       // Color declarations
       #define RED     vec3( 1,.3,.4)
@@ -202,7 +205,8 @@ function Renderer(gl, water, flagCenter, flagSize) {
       
       
       ` + swimmersHelperFunctions + textHelperFunctions + `
-      makeStrF(printFrame) _num_ __ _k _m _DIV _h _endNum
+      makeStrF(printSpeed) _num_ __ _k _m _DIV _h _endNum
+      makeStrF(printTime) _num_ __ _s _endNum
 
       makeStr(printStar) _STAR _end
       
@@ -231,10 +235,10 @@ function Renderer(gl, water, flagCenter, flagSize) {
       
       }
 
-      void drawFlags(in vec2 position, in vec2 swimmerPos, in float nationality, float speed, out vec3 color) {
+      void drawFlags(in vec2 position, in vec2 swimmerPos, in float nationality, bool rightSide, out vec3 color) {
         float swimmer_x = swimmerPos.x;
         float swimmer_z = swimmerPos.y;
-        float dz = speed >= 0. ? -2.5 : 2.5;
+        float dz = rightSide ? -2.5 : 2.5;
         vec2 flagCenterNew = vec2(swimmer_x, swimmer_z + dz);
         // TODO nettoyer
         vec2 flagCorner = flagCenterNew - flagSize / 2.;
@@ -265,23 +269,44 @@ function Renderer(gl, water, flagCenter, flagSize) {
         return position / (20. * textSize);
       }
 
-      void drawSpeed(in vec2 position, in vec2 swimmerPosition, in float speed, out vec3 color) {
+      void drawNumbers(in vec2 position, in vec2 swimmerPosition, in int index, in bool rightSide, out vec3 color) {
+        float speed = getSwimmerSpeed(index);
+        float finishTime = getSwimmerFinishTime(index);
         float visSize = flagSize.x / 2.;
         float delta = showFlags? 5. : 2.;
-        float dz = speed >= 0.? delta : -delta - 9. * visSize * .75 ;
+        float dz = rightSide? delta : -delta - 9. * visSize * .75 ;
         vec2 visPosition = swimmerPosition - position - vec2(0., dz);
         vec2 visCoord = toTextCoord(visPosition, visSize);
         
 
-        vec3 visColor = GREEN/.4 * printFrame(visCoord, abs(speed), 2);
-        if (max(visColor.r, max(visColor.g, visColor.b)) > .3) color = visColor;
+        if (showSpeed) {
+          vec3 visColor = GREEN/.4 * printSpeed(visCoord, abs(speed), 2);
+          if (max(visColor.r, max(visColor.g, visColor.b)) > .3) color = visColor;
+        }
+        if (showFinishTimes && finishTime > .1) {
+          vec3 visColor = GREEN/.4 * printTime(visCoord, finishTime, 2);
+          if (max(visColor.r, max(visColor.g, visColor.b)) > .3) color = visColor;
+        }
       }
 
-      void drawRanks(in vec2 position, in vec2 swimmerPosition, in int rank, in float speed, out vec3 color) {
+      void drawFinishTime(in vec2 position, in vec2 swimmerPosition, in float finishTime, out vec3 color) {
+      }
+
+      void drawRanks(in vec2 position, in vec2 swimmerPosition, in int rank, in bool rightSide, out vec3 color) {
         int showMode = int(showMedalsMode);
         if (showMode == MEDALS_NONE) return;
+        if (showRanksIfFinished && getSwimmerFinishTime(rank) < .1) return;
+
+        vec3 medalColor = vec3(0);
+        if (rank == 0) medalColor = GOLD;
+        else if (rank == 1) medalColor = SILVER;
+        else if (rank == 2) medalColor = BRONZE;
+        else return;
+        if (showMode == MEDALS_LANES) {
+          if (abs(position.x - swimmerPosition.x) <= poolSize.x/20.) color = medalColor; 
+        }
         float visSize = flagSize.x / 2.;
-        float dz = speed >= 0.? 2. : -2.;
+        float dz = rightSide? 2. : -2.;
         vec2 visPosition = swimmerPosition - position + vec2(0., dz);
         vec2 visCoord = toTextCoord(visPosition, visSize);
 
@@ -290,11 +315,8 @@ function Renderer(gl, water, flagCenter, flagSize) {
         vec3 visColor = vec3(1., 1., 1.)*printStar(visCoord);
         //if (max(visColor.r, max(visColor.g, visColor.b)) <= .3) return;
         // visColor *= pow(length(visPosition), 1.0);
-        vec3 medalColor = vec3(0);
-        if (rank == 0) medalColor = GOLD;
-        else if (rank == 1) medalColor = SILVER;
-        else if (rank == 2) medalColor = BRONZE;
-        else return;
+        
+        
         if (showMode == MEDALS_STARS && max(visColor.r, max(visColor.g, visColor.b)) > .3) color = visColor * medalColor;
         else if (showMode == MEDALS_BRIGHT) color += 0.2/pow(length(visPosition), 1.) * medalColor;
       }
@@ -348,6 +370,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
       void drawVisualizations(in vec2 position, out vec3 color) {
         vec2 projectedPosition = position;
         vec2 coord = position / poolSize.xz + .5;
+        bool hasFirstFinished = getSwimmerFinishTime(0) > 0.1;
         if (showDivingDistance) drawDivingRipples(coord, color);
         for (int i = 0; i < 10; i++) {
           float i_float = float(i);
@@ -361,11 +384,12 @@ function Renderer(gl, water, flagCenter, flagSize) {
           }
 
           float speed = getSwimmerSpeed(i);
-          drawFlags(position, swimmerPos, getSwimmerNationality(i), speed, color);
+          bool rightSide = hasFirstFinished ? false : speed >= 0.;
           drawSwimmerLines(projectedPosition, swimmerPos, i, color);
-
-          if (showSpeed) drawSpeed(position, swimmerPos, speed, color);
-          if (showRanks) drawRanks(projectedPosition, swimmerPos, i, speed, color);
+          
+          if (showRanks) drawRanks(projectedPosition, swimmerPos, i, rightSide, color);
+          drawFlags(position, swimmerPos, getSwimmerNationality(i), rightSide, color);
+          if (showSpeed || showFinishTimes) drawNumbers(position, swimmerPos, i, rightSide, color);
           if (shadowEnabled) drawShadows(projectedPosition, swimmerPos, getSwimmerAltitude(i), color);
         }
       
@@ -607,9 +631,11 @@ Renderer.prototype.renderWater = function (water, sky, shadowParams) {
       swimmersNumber: config.swimmers.length,
       showFlags: config.params.visualizations.showFlags,
       showRanks: config.params.visualizations.showRanks,
+      showRanksIfFinished: config.params.visualizations.showRanksIfFinished,
       showWR: config.params.visualizations.showWR,
       showSpeed: config.params.visualizations.showSpeed,
       showDivingDistance: config.params.visualizations.showDivingDistance,
+      showFinishTimes: config.params.visualizations.showFinishTimes,
       time: config.getRaceTime(),
       shadowEnabled: shadowParams.enabled,
       shadowRadius: shadowParams.shadowRadius,

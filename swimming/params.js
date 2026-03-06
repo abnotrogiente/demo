@@ -8,10 +8,12 @@ class Config {
         this.params = {
             numSteps: 2, focal: 45,
             visualizations: {
-                enabled: true, showFlags: true, showRanks: true, showWR: true, showSpeed: true, showDivingDistance: true,
+                enabled: true, showFlags: true, showRanks: true, showRanksIfFinished: false, showWR: true, showSpeed: true, showDivingDistance: true,
+                showFinishTimes: false,
                 showNeighboursLines: "only medals", neighboursLinesModesDict: { "none": 0, "only medals": 1, "all": 2 },
-                showMedals: "none", medalsModesDict: { "none": 0, "stars": 1, "bright": 2 },
+                showMedals: "none", medalsModesDict: { "none": 0, "stars": 1, "bright": 2, "lanes": 3 },
                 areaConservationEnabled: true,
+
                 shadow: { enabled: true, shadowRadius: .5, shadowPower: .5, showCircle: true, circleRadius: .6, circleStroke: .15 },
                 sparks: { enabled: false, glow: 5., glowOffset: .5, lengthFactor: 1., stroke: .01, num: 40, sizeFactor: 50, fov: Math.PI / 4 }
             },
@@ -58,9 +60,10 @@ class Config {
         if (!this.events || !this.useConfigFile) return;
         const event = this.events[this.currentEventIndex];
         if (!event) return;
-        if (event.distance && this.swimmers[0].getDistanceTraveled() >= event.distance || event.time !== undefined && this.getRaceTime() >= event.time) {
-            console.log("event distance : " + event.distance);
-            console.log("swimmer distance : " + this.swimmers[0].getDistanceTraveled());
+        let rankSwimmerToggle = event.rankSwimmerToggle;
+        if (!rankSwimmerToggle) rankSwimmerToggle = 1;
+        if (event.distance && this.swimmers[rankSwimmerToggle - 1].getDistanceTraveled() >= event.distance || event.time !== undefined && this.getRaceTime() >= event.time) {
+
             this.currentEventIndex++;
             Object.entries(event.params).forEach((pair) => {
                 const key = pair[0];
@@ -69,8 +72,8 @@ class Config {
                 // console.log("key : " + key);
                 // console.log("value : " + value);
                 // console.log("value or false : " + (value || false));
-                // console.log("show flags : " + this.params.visualizations.showFlags);
-                console.log("\n\n\n")
+                // console.log("show finish time : " + this.params.visualizations.showFinishTimes);
+                // console.log("\n\n\n")
             });
         }
     }

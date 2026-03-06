@@ -91,6 +91,8 @@ class Swimmer {
         this.currendDataIndex = 0;
 
         this.useTracking = false;
+
+        this.finishTime = 0;
     }
 
     async parseData(source) {
@@ -164,11 +166,15 @@ class Swimmer {
         this.currendDataIndex = 0;
         if (!this.data) return;
         while (this.data[this.currendDataIndex] && this.data[this.currendDataIndex][TIME_KEY] < config.getRaceTime()) this.currendDataIndex++;
+        if (this.currendDataIndex + 1 < this.data.length) {
+            this.body.followTarget = true;
+            this.finishTime = 0.;
+        }
     }
 
     handleTracking(time) {
         if (this.hasReacted && this.useTracking && this.currendDataIndex < this.data.length && this.data[this.currendDataIndex][TIME_KEY] < time) {
-            let nextDistanceTarget = 0;
+            let nextDistanceTarget = null;
             let nextEventTime = time;
             const nextData = this.data[this.currendDataIndex + 1];
             if (this.currendDataIndex + 1 < this.data.length) {
@@ -194,7 +200,17 @@ class Swimmer {
             if (nextDistanceTarget > D) nextDistanceTarget = 2 * D - nextDistanceTarget;
             nextDistanceTarget -= config.params.simulation.poolSize.z / 2;
             const targetPos = new GL.Vector(this.startingPoint.x, y, nextDistanceTarget);
-            this.body.setTarget(targetPos, nextEventTime - time);
+            if (this.currendDataIndex + 1 < this.data.length) {
+                this.body.setTarget(targetPos, nextEventTime - time);
+            }
+            else this.body.setTarget(null);
+
+            if (currentEvent == "finish") {
+                this.finishTime = this.data[this.currendDataIndex][TIME_KEY];
+                this.body.followTarget = false;
+                this.isSwimming = false;
+
+            }
 
             this.currendDataIndex++;
         }
@@ -227,7 +243,6 @@ class Swimmer {
             if (this.useTracking || raceTime > this.reactionTime && !config.params.swimmers.useTracking) {
                 this.swim(true);
                 this.jump();
-                console.log("START SWIMMING + " + config.getRaceTime() + "\n\n");
                 if (this.useTracking) {
                     this.body.cinematic = true;
                     this.body.followTarget = true;
@@ -239,7 +254,6 @@ class Swimmer {
                 this.body.move(AWAY);
             }
             this.currendDataIndex = 0;
-            console.log("first dist : " + this.getDistanceTraveled());
         }
 
         this.moveSpheresAway();
@@ -308,6 +322,13 @@ const swimmersHelperFunctions = `
         vec2 pixel = vec2(2., i_float);
         vec4 attributes = texture(swimmersAttributesTexture, (pixel + .5) / TEXTURE_SIZE);
         return attributes.rg;
+    }
+
+    float getSwimmerFinishTime(int i) {
+        float i_float = float(i);
+        vec2 pixel = vec2(2., i_float);
+        vec4 attributes = texture(swimmersAttributesTexture, (pixel + .5) / TEXTURE_SIZE);
+        return attributes.b;
     }
 
     float getSwimmerReactionTime(int i ) {

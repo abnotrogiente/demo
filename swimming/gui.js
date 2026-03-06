@@ -22,9 +22,11 @@ const createGUI = function (gl, reset) {
     visualizationsFolder.add(config.params.visualizations, "showFlags").name('show flags').listen();
     visualizationsFolder.add(config.params.visualizations, "showWR").name('show world record').listen();
     visualizationsFolder.add(config.params.visualizations, "showNeighboursLines", ["none", "only medals", "all"]).name('show neighbours lines').listen();
-    visualizationsFolder.add(config.params.visualizations, "showMedals", ["none", "stars", "bright"]).name('show potential medals').listen();
+    visualizationsFolder.add(config.params.visualizations, "showMedals", ["none", "stars", "bright", "lanes"]).name('show potential medals').listen();
     visualizationsFolder.add(config.params.visualizations, "showSpeed").name('show speed').listen();
     visualizationsFolder.add(config.params.visualizations, "showRanks").name('show ranks').listen();
+    const ranksFolder = visualizationsFolder.addFolder("ranks");
+    ranksFolder.add(config.params.visualizations, "showRanksIfFinished").name("show ranks if finished").listen();
     visualizationsFolder.add(config.params.visualizations, "showDivingDistance").name('show diving distance').listen();
     visualizationsFolder.add(config.params.visualizations.shadow, "enabled").name("show shadow");
     visualizationsFolder.add(config.params.visualizations, 'areaConservationEnabled', 'areaConservationEnabled').name('area conservation').listen();
@@ -56,7 +58,7 @@ const createGUI = function (gl, reset) {
 
     const simulationFolder = gui.addFolder("Simulation");
     simulationFolder.close();
-    simulationFolder.add(config.params.simulation, "optimized").name("optimized");
+    simulationFolder.add(config.params.simulation, "optimized").name("optimized").listen();
     simulationFolder.add(config.params.simulation.poolSize, 'x', 1, 25).name('pool width').onChange(function (value) { reset(); }).listen();
     simulationFolder.add(config.params.simulation.poolSize, 'z', 1, 50).name('pool height').onChange(function (value) { reset(); }).listen();
     simulationFolder.add(config.params.simulation.poolSize, 'y', 1, 3).name('pool depth').onChange(function (value) { reset(); }).listen();
