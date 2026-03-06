@@ -43,8 +43,6 @@ var water;
 var cubemap;
 /**@type {Renderer} */
 var renderer;
-/**@type {Swimmer[]} */
-const swimmers = [];
 const numSwimmers = 10;
 var angleX = -25;
 var angleY = -200.5;
@@ -94,7 +92,7 @@ function reset() {
   const dx = config.params.simulation.poolSize.x / numSwimmers;
   let x = config.params.simulation.poolSize.x / 2 - dx / 2;
   let i = 0;
-  for (let swimmer of swimmers) {
+  for (let swimmer of config.swimmers) {
     swimmer.body.center.x = x;
     swimmer.startingPoint.x = x;
     swimmer.parseData("./assets/race-data/" + i + ".csv");
@@ -114,7 +112,7 @@ function onTimeSliderChange(event) {
     // if copyVideo is true the code elsewhere will update currentTime as needed
     video.video.currentTime = config.time;
   }
-  swimmers.forEach(swimmer => swimmer.setCurrentDataIndex());
+  config.swimmers.forEach(swimmer => swimmer.setCurrentDataIndex());
 
   // optionally pause simulation while dragging
   // paused = true;
@@ -213,9 +211,9 @@ window.onload = function () {
   const center2 = new GL.Vector(0.4, -0.75, 0.2);
   const s = new Swimmer(center);
   const s2 = new Swimmer(center2)
-  for (let i = 0; i < 1; i++) swimmers.push(new Swimmer(center));
+  for (let i = 0; i < 1; i++) config.swimmers.push(new Swimmer(center));
   const radius = s.body.radius;
-  for (let swimmer of swimmers) water.addSwimmer(swimmer);
+  for (let swimmer of config.swimmers) water.addSwimmer(swimmer);
   reset();
 
   for (var i = 0; i < 20; i++) {
@@ -262,7 +260,7 @@ window.onload = function () {
       var tracer = new GL.Raytracer();
       var ray = tracer.getRayForPixel(x * ratio, y * ratio);
       var pointOnPlane = tracer.eye.add(ray.multiply(-tracer.eye.y / ray.y));
-      for (let swimmer of swimmers) {
+      for (let swimmer of config.swimmers) {
         var sphereHitTest = GL.Raytracer.hitTestSphere(tracer.eye, ray, swimmer.body.center, swimmer.body.radius);
         if (sphereHitTest) {
           mode = MODE_MOVE_SPHERE;
@@ -396,12 +394,12 @@ window.onload = function () {
     config.setTimeBeginRace();
     if (video.copyVideo) video.video.currentTime = config.time;
     Swimmer.raceHasStarted = true;
-    for (let swimmer of swimmers) swimmer.startRace();
+    for (let swimmer of config.swimmers) swimmer.startRace();
   }
 
   function stopRace() {
     Swimmer.raceHasStarted = false;
-    for (let swimmer of swimmers) swimmer.swim(false);
+    for (let swimmer of config.swimmers) swimmer.swim(false);
   }
 
   function pause() {
@@ -413,11 +411,11 @@ window.onload = function () {
     if (e.which == ' '.charCodeAt(0)) pause();
     else if (e.which == 'G'.charCodeAt(0)) {
       Swimmer.useGravity = !Swimmer.useGravity;
-      for (let swimmer of swimmers) swimmer.body.cinematic = Swimmer.useGravity;
+      for (let swimmer of config.swimmers) swimmer.body.cinematic = Swimmer.useGravity;
     }
     else if (e.which == 'L'.charCodeAt(0) && paused) draw();
     else if (e.which == 'J'.charCodeAt(0)) {
-      swimmers.forEach(swimmer => swimmer.jump(2));
+      config.swimmers.forEach(swimmer => swimmer.jump(2));
     }
     else if (e.which == 'C'.charCodeAt(0)) {
       config.params.visualizations.areaConservationEnabled = !config.params.visualizations.areaConservationEnabled;
@@ -435,7 +433,7 @@ window.onload = function () {
     else if (e.which == 'S'.charCodeAt(0)) {
       Swimmer.swimming = !Swimmer.swimming;
       if (Swimmer.swimming) {
-        for (let swimmer of swimmers) swimmer.swim(true);
+        for (let swimmer of config.swimmers) swimmer.swim(true);
       }
       else {
         stopRace();
@@ -446,6 +444,7 @@ window.onload = function () {
       config.params.video.show = !config.params.video.show;
     }
     else if (e.which == 'O'.charCodeAt(0)) {
+      config.params.simulation.optimized = true;
       config.params.simulation.poolSize.x = 25;
       config.params.simulation.poolSize.y = 2;
       config.params.simulation.poolSize.z = 50;
@@ -457,10 +456,10 @@ window.onload = function () {
 
       config.params.simulation.waterDamping = 0.1;
 
-      if (swimmers.length != numSwimmers) {
-        for (let i = swimmers.length; i < numSwimmers; i++) {
+      if (config.swimmers.length != numSwimmers) {
+        for (let i = config.swimmers.length; i < numSwimmers; i++) {
           const s = new Swimmer(center);
-          swimmers.push(s);
+          config.swimmers.push(s);
           water.addSwimmer(s);
         }
       }
@@ -532,11 +531,11 @@ window.onload = function () {
 
     if (mode == MODE_MOVE_SPHERE) {
       // Start from rest when the player releases the mouse after moving the sphere
-      for (let swimmer of swimmers) swimmer.body.velocity = new GL.Vector(0, 0, 0);
+      for (let swimmer of config.swimmers) swimmer.body.velocity = new GL.Vector(0, 0, 0);
     }
 
     // Update the water simulation and graphics
-    for (let swimmer of swimmers) swimmer.update(dt);
+    for (let swimmer of config.swimmers) swimmer.update(dt);
     water.updateSpheres(dt);
     for (let i = 0; i < config.params.numSteps; i++) {
       water.stepSimulation();
@@ -544,7 +543,7 @@ window.onload = function () {
 
     renderer.updateCaustics(water);
     if (Swimmer.raceHasStarted) config.time += dt;
-    console.log("time : " + config.time);
+    config.updateParams();
     slider.value = config.getRaceTime();
     updateFrameRateHTML(dt);
 
@@ -556,8 +555,8 @@ window.onload = function () {
       renderer.lightDir = GL.Vector.fromAngles((90 - angleY) * Math.PI / 180, -angleX * Math.PI / 180);
       if (paused) renderer.updateCaustics(water);
     }
-    if (config.isOneVisualizationEnabled()) Swimmer.updateAttributesTexture(swimmers);
-    water.addOrRemoveVisualizationWaves(true, swimmers);
+    if (config.isOneVisualizationEnabled()) Swimmer.updateAttributesTexture();
+    water.addOrRemoveVisualizationWaves(true);
     water.updateNormals();
 
     /**@type {WebGLRenderingContext} */
@@ -573,14 +572,14 @@ window.onload = function () {
 
 
     gl.enable(gl.DEPTH_TEST);
-    renderer.sphereCenter = swimmers[0].body.center;
+    renderer.sphereCenter = config.swimmers[0].body.center;
     renderer.sphereRadius = radius;
     renderer.renderCube(water);
-    renderer.renderWater(water, cubemap, swimmers, config.params.visualizations.shadow);
+    renderer.renderWater(water, cubemap, config.params.visualizations.shadow);
     if (config.params.swimmers.showSpheres) renderer.renderSpheres(water);
     // Swimmer.attributes.draw();
     video.render();
     gl.disable(gl.DEPTH_TEST);
-    water.addOrRemoveVisualizationWaves(false, swimmers);
+    water.addOrRemoveVisualizationWaves(false);
   }
 };

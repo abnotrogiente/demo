@@ -238,22 +238,18 @@ class SwimmersAttributes {
         this.swimmersAttributes[this.numVecAttributes * 4 * index + 9] = swimmer.breakoutTime;
     }
 
-    /**
-     *
-     * @param {Swimmer[]} swimmers
-     */
-    update(swimmers) {
-        this.numSwimmers = swimmers.length;
+    update() {
+        this.numSwimmers = config.swimmers.length;
         const numSpheres = 5;
         this.swimmersAttributes = new Float32Array(this.numVecAttributes * 4 * this.maxNumSwimmer * numSpheres);
-        const rankedSwimmers = this.#rankSwimmers(swimmers);
-        for (let i = 0; i < swimmers.length; i++) {
+        const rankedSwimmers = this.#rankSwimmers(config.swimmers);
+        for (let i = 0; i < config.swimmers.length; i++) {
             const swimmer = rankedSwimmers[i];
             this.#addSwimmerInformation(i, swimmer);
-            this.#addSphereInformation(swimmers.length + i, swimmer.leftArm);
-            this.#addSphereInformation(2 * swimmers.length + i, swimmer.rightArm);
-            this.#addSphereInformation(3 * swimmers.length + i, swimmer.leftFoot);
-            this.#addSphereInformation(4 * swimmers.length + i, swimmer.rightFoot);
+            this.#addSphereInformation(config.swimmers.length + i, swimmer.leftArm);
+            this.#addSphereInformation(2 * config.swimmers.length + i, swimmer.rightArm);
+            this.#addSphereInformation(3 * config.swimmers.length + i, swimmer.leftFoot);
+            this.#addSphereInformation(4 * config.swimmers.length + i, swimmer.rightFoot);
 
         }
         // Write back to textureA

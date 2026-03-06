@@ -34,8 +34,8 @@ class Swimmer {
         Swimmer.attributes = new SwimmersAttributes(gl);
     }
 
-    static updateAttributesTexture = (swimmers) => {
-        Swimmer.attributes.update(swimmers);
+    static updateAttributesTexture = () => {
+        Swimmer.attributes.update();
     }
 
     static getAttributesTexture = () => {
@@ -224,25 +224,28 @@ class Swimmer {
         const raceTime = config.getRaceTime();
         if (!Swimmer.raceHasStarted) this.useTracking = config.params.swimmers.useTracking && this.data;
         if (!this.hasReacted && Swimmer.raceHasStarted) {
-            if (this.useTracking || raceTime > this.reactionTime) {
+            if (this.useTracking || raceTime > this.reactionTime && !config.params.swimmers.useTracking) {
                 this.swim(true);
                 this.jump();
+                console.log("START SWIMMING + " + config.getRaceTime() + "\n\n");
                 if (this.useTracking) {
                     this.body.cinematic = true;
                     this.body.followTarget = true;
                     this.body.setTarget(null);
-                } else if (config.params.swimmers.useTracking) {
-                    this.swim(false);
-                    this.body.move(AWAY);
                 }
-                this.currendDataIndex = 0;
+            } else {
+                this.swim(false);
+                this.body.cinematic = true;
+                this.body.move(AWAY);
             }
+            this.currendDataIndex = 0;
+            console.log("first dist : " + this.getDistanceTraveled());
         }
 
         this.moveSpheresAway();
 
         if (this.isSwimming) {
-            this.body.addForce(this.force);
+            if (!this.useTracking) this.body.addForce(this.force);
             if (this.body.center.y > -this.body.radius) {
                 this.moveSpheres(raceTime);
             }
@@ -265,7 +268,6 @@ class Swimmer {
             this.breakoutDistance = this.body.center.z + config.params.simulation.poolSize.z / 2;
             this.breakoutTime = raceTime;
             this.hasBrokeOut = true;
-            console.log("BREAKOUT : " + this.breakoutDistance);
         }
     }
 }

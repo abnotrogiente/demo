@@ -1,0 +1,38 @@
+[
+    {
+        "time": 0,
+        "params": {
+            "showFlags": true,
+            "showSpeed": false
+        }
+    },
+    {
+        "distance": 20,
+        "params": {
+            "showFlags": false,
+            "showSpeed": true
+        }
+    },
+    {
+        "distance": 40,
+        "params": {
+            "showFlags": true,
+            "showSpeed": false
+        }
+    },
+    {
+        "distance": 70,
+        "params": {
+            "showFlags": false,
+            "showSpeed": true,
+            "showMedals": "bright"
+        }
+    },
+    {
+        "distance": 90,
+        "params": {
+            "showFlags": true,
+            "showSpeed": false
+        }
+    }
+]

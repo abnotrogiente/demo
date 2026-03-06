@@ -267,7 +267,8 @@ function Renderer(gl, water, flagCenter, flagSize) {
 
       void drawSpeed(in vec2 position, in vec2 swimmerPosition, in float speed, out vec3 color) {
         float visSize = flagSize.x / 2.;
-        float dz = speed >= 0.? 5. : -5. - 9. * visSize * .75 ;
+        float delta = showFlags? 5. : 2.;
+        float dz = speed >= 0.? delta : -delta - 9. * visSize * .75 ;
         vec2 visPosition = swimmerPosition - position - vec2(0., dz);
         vec2 visCoord = toTextCoord(visPosition, visSize);
         
@@ -564,9 +565,8 @@ Renderer.prototype.updateCaustics = function (water) {
  * 
  * @param {Water} water 
  * @param {*} sky 
- * @param {Swimmer[]} swimmers 
  */
-Renderer.prototype.renderWater = function (water, sky, swimmers, shadowParams) {
+Renderer.prototype.renderWater = function (water, sky, shadowParams) {
   var tracer = new GL.Raytracer();
   water.textureA.bind(0);
   this.tileTexture.bind(1);
@@ -604,7 +604,7 @@ Renderer.prototype.renderWater = function (water, sky, swimmers, shadowParams) {
       showProjectionGrid: water.showProjectionGrid,
       showAreaConservedGrid: water.showAreaConservedGrid,
       wr: water.WR_position,
-      swimmersNumber: swimmers.length,
+      swimmersNumber: config.swimmers.length,
       showFlags: config.params.visualizations.showFlags,
       showRanks: config.params.visualizations.showRanks,
       showWR: config.params.visualizations.showWR,

@@ -12,6 +12,8 @@ const copies = [
     { src: 'node_modules/three/examples/jsm/libs/draco/gltf/draco_wasm_wrapper.js', dest: 'jsm/libs/draco/gltf/' }
 ];
 
+copies.push({ src: "swimming/assets/vis-config.json", dest: "swimming/assets" });
+
 for (let i = 1; i <= 8; i++) copies.push({ src: "swimming/assets/race-data/" + i + ".csv", dest: "swimming/assets/race-data/" });
 
 export default defineConfig({
