@@ -348,6 +348,11 @@ window.onload = function () {
     return element === help || element.parentNode && isHelpElement(element.parentNode);
   }
 
+  function isEditorElement(element) {
+    // return true if the node is inside the event-editor panel
+    return element && (element.id === 'event-editor' || (element.parentNode && isEditorElement(element.parentNode)));
+  }
+
   function zoom(delta) {
     zoomDistance *= 1 - delta * 0.0002;
     zoomDistance = Math.max(2, Math.min(1000, zoomDistance));
@@ -355,6 +360,8 @@ window.onload = function () {
   };
 
   addEventListener('wheel', function (e) {
+    // disable zoom when hovering over editor panel so the slider/timeline can scroll
+    if (isEditorElement(e.target)) return;
     var delta = e.deltaY;
     zoom(-delta);
   });

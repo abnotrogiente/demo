@@ -8,6 +8,84 @@ function createEventEditor(containerId, config) {
         return;
     }
 
+    // parameter definitions for quick editing UI
+    const paramDefs = [
+        { name: 'showFlags', type: 'boolean' },
+        { name: 'showWR', type: 'boolean' },
+        { name: 'showSpeed', type: 'boolean' },
+        { name: 'showRanks', type: 'boolean' },
+        { name: 'showRanksIfFinished', type: 'boolean' },
+        { name: 'showDivingDistance', type: 'boolean' },
+        { name: 'showFinishTimes', type: 'boolean' },
+        { name: 'showNeighboursLines', type: 'select', options: ['none', 'only medals', 'all'] },
+        { name: 'showMedals', type: 'select', options: ['none', 'stars', 'bright', 'lanes'] },
+        { name: 'rankSwimmerToggle', type: 'number', min: 1, max: 10 }
+    ];
+
+    function createParamsPanel(event, textarea) {
+        const panel = document.createElement('div');
+        panel.style.display = 'flex';
+        panel.style.flexWrap = 'wrap';
+        panel.style.margin = '4px 0';
+        panel.style.background = '#333';
+        panel.style.padding = '4px';
+
+        function updateTextarea() {
+            textarea.value = JSON.stringify(event.params);
+            syncEvents();
+        }
+
+        paramDefs.forEach(def => {
+            const wrapper = document.createElement('div');
+            wrapper.style.marginRight = '8px';
+            wrapper.style.marginBottom = '4px';
+            const label = document.createElement('label');
+            label.style.whiteSpace = 'nowrap';
+            label.textContent = def.name + ':';
+            wrapper.appendChild(label);
+            let input;
+            if (def.type === 'boolean') {
+                input = document.createElement('input');
+                input.type = 'checkbox';
+                input.checked = !!event.params[def.name];
+                input.addEventListener('change', () => {
+                    event.params[def.name] = input.checked;
+                    updateTextarea();
+                });
+            } else if (def.type === 'select') {
+                input = document.createElement('select');
+                def.options.forEach(opt => {
+                    const o = document.createElement('option');
+                    o.value = opt;
+                    o.textContent = opt;
+                    input.appendChild(o);
+                });
+                input.value = event.params[def.name] || def.options[0];
+                input.addEventListener('change', () => {
+                    event.params[def.name] = input.value;
+                    updateTextarea();
+                });
+            } else if (def.type === 'number') {
+                input = document.createElement('input');
+                input.type = 'number';
+                if (def.min !== undefined) input.min = def.min;
+                if (def.max !== undefined) input.max = def.max;
+                input.value = event.params[def.name] || def.min || 0;
+                input.style.width = '50px';
+                input.addEventListener('change', () => {
+                    const v = parseFloat(input.value);
+                    if (!isNaN(v)) {
+                        event.params[def.name] = v;
+                        updateTextarea();
+                    }
+                });
+            }
+            if (input) wrapper.appendChild(input);
+            panel.appendChild(wrapper);
+        });
+        return panel;
+    }
+
     // generate the editor UI whenever the config changes
     function render() {
         container.innerHTML = "";
@@ -59,8 +137,12 @@ function createEventEditor(containerId, config) {
         events.forEach((event, idx) => {
             const row = document.createElement('div');
             row.style.display = 'flex';
-            row.style.alignItems = 'center';
-            row.style.marginBottom = '2px';
+            row.style.flexDirection = 'column';
+            row.style.marginBottom = '4px';
+
+            const rowTop = document.createElement('div');
+            rowTop.style.display = 'flex';
+            rowTop.style.alignItems = 'center';
 
             // value input (distance or time)
             const valueInput = document.createElement('input');
@@ -77,21 +159,26 @@ function createEventEditor(containerId, config) {
                 }
                 syncEvents();
             });
-            row.appendChild(valueInput);
+            rowTop.appendChild(valueInput);
 
-            const paramsInput = document.createElement('textarea');
-            paramsInput.style.flex = '1';
-            paramsInput.rows = 1;
-            paramsInput.value = JSON.stringify(event.params);
-            paramsInput.addEventListener('change', () => {
+            const textarea = document.createElement('textarea');
+            textarea.style.flex = '1';
+            textarea.rows = 1;
+            textarea.value = JSON.stringify(event.params);
+            textarea.addEventListener('change', () => {
                 try {
-                    event.params = JSON.parse(paramsInput.value);
+                    event.params = JSON.parse(textarea.value);
                     syncEvents();
                 } catch (e) {
                     alert('invalid JSON');
                 }
             });
-            row.appendChild(paramsInput);
+            rowTop.appendChild(textarea);
+
+            const editBtn = document.createElement('button');
+            editBtn.textContent = '⚙';
+            editBtn.style.marginLeft = '4px';
+            rowTop.appendChild(editBtn);
 
             const removeBtn = document.createElement('button');
             removeBtn.textContent = '✖';
@@ -103,7 +190,21 @@ function createEventEditor(containerId, config) {
                     render();
                 }
             });
-            row.appendChild(removeBtn);
+            rowTop.appendChild(removeBtn);
+
+            row.appendChild(rowTop);
+
+            // placeholder for params panel
+            let panel;
+            editBtn.addEventListener('click', () => {
+                if (panel) {
+                    panel.remove();
+                    panel = null;
+                } else {
+                    panel = createParamsPanel(event, textarea);
+                    row.appendChild(panel);
+                }
+            });
 
             container.appendChild(row);
         });
@@ -114,6 +215,15 @@ function createEventEditor(containerId, config) {
             const newEvent = { distance: 0, params: {} };
             config.events.push(newEvent);
             render();
+            // automatically open params panel on newly added event
+            setTimeout(() => {
+                const rows = container.querySelectorAll('div');
+                const lastRow = rows[rows.length - 2]; // row just before buttons
+                if (lastRow) {
+                    const btn = lastRow.querySelector('button');
+                    if (btn) btn.click();
+                }
+            }, 0);
         });
         container.appendChild(addBtn);
 
