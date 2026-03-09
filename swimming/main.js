@@ -16,6 +16,7 @@ import { Swimmer } from './swimmer.js';
 import { config } from './params.js';
 import { MAX_SPARKS } from './video.js';
 import { createGUI } from './gui.js';
+import { createEventEditor } from './eventEditor.js';
 
 
 function text2html(text) {
@@ -191,6 +192,11 @@ window.onload = function () {
   });
 
   createGUI(gl, reset);
+  // render the event timeline/editor once configuration has been loaded
+  // config.parseConfigFile is asynchronous; give it a small delay or hook
+  setTimeout(() => {
+    createEventEditor('event-editor', config);
+  }, 50);
   // folder.add(config.params, 'numSteps', 1, 10).step(1).name("number of simulation steps");
   renderer = new Renderer(gl, water, flagCenter, flagSize);
   cubemap = new Cubemap({

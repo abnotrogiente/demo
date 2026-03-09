@@ -17,7 +17,7 @@ class Config {
                 shadow: { enabled: true, shadowRadius: .5, shadowPower: .5, showCircle: true, circleRadius: .6, circleStroke: .15 },
                 sparks: { enabled: false, glow: 5., glowOffset: .5, lengthFactor: 1., stroke: .01, num: 40, sizeFactor: 50, fov: Math.PI / 4 }
             },
-            swimmers: { showSpheres: true, useTracking: false },
+            swimmers: { showSpheres: true, useTracking: true },
             video: { thresholdBlending: true, blendingThreshold: .41, show: false },
             simulation: { optimized: false, waterDamping: .02, poolSize: new GL.Vector(2.0, 1.0, 2.0) }
         };
@@ -52,8 +52,10 @@ class Config {
             .then(text => {
                 this.events = JSON.parse(text);
                 this.currentEventIndex = 0;
-                console.log("events : " + JSON.stringify(events));
-                console.log("event 0" + JSON.stringify(events[0]));
+                // refresh editor if one exists
+                if (this._renderTimeline) this._renderTimeline();
+                console.log("events : " + JSON.stringify(this.events));
+                console.log("event 0" + JSON.stringify(this.events[0]));
             });
     }
     updateParams() {

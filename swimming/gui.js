@@ -19,6 +19,12 @@ const createGUI = function (gl, reset) {
     //     params.visualizations.show
     // });
     visualizationsFolder.add(config, "useConfigFile").name('use configuration file');
+    // toggle event editor (timeline) visibility
+    const timelineToggle = { showTimeline: true };
+    visualizationsFolder.add(timelineToggle, "showTimeline").name('show event timeline').onChange((v) => {
+        const el = document.getElementById('event-editor');
+        if (el) el.style.display = v ? 'block' : 'none';
+    });
     visualizationsFolder.add(config.params.visualizations, "showFlags").name('show flags').listen();
     visualizationsFolder.add(config.params.visualizations, "showWR").name('show world record').listen();
     visualizationsFolder.add(config.params.visualizations, "showNeighboursLines", ["none", "only medals", "all"]).name('show neighbours lines').listen();
