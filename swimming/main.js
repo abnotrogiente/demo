@@ -577,14 +577,14 @@ window.onload = function () {
     gl.rotate(-angleY, 0, 1, 0);
     gl.translate(0, 0.5, 0);
 
-    console.log(translateX);
-    console.log(translateY);
-    console.log(zoomDistance);
-    console.log(angleX);
-    console.log(angleY);
-    console.log(angleZ);
-    console.log(config.params.focal);
-    console.log("\n\n\n");
+    // console.log(translateX);
+    // console.log(translateY);
+    // console.log(zoomDistance);
+    // console.log(angleX);
+    // console.log(angleY);
+    // console.log(angleZ);
+    // console.log(config.params.focal);
+    // console.log("\n\n\n");
 
 
     gl.enable(gl.DEPTH_TEST);
