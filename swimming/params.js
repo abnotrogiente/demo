@@ -8,9 +8,9 @@ class Config {
         this.params = {
             numSteps: 2, focal: 45,
             visualizations: {
-                enabled: true, showFlags: true, showRanks: true, showRanksIfFinished: false, showWR: true, showSpeed: true, showDivingDistance: true,
+                enabled: true, showFlags: false, showRanks: false, showRanksIfFinished: false, showWR: false, showSpeed: false, showDivingDistance: true,
                 showFinishTimes: false,
-                showNeighboursLines: "only medals", neighboursLinesModesDict: { "none": 0, "only medals": 1, "all": 2 },
+                showNeighboursLines: "none", neighboursLinesModesDict: { "none": 0, "only medals": 1, "all": 2 },
                 showMedals: "none", medalsModesDict: { "none": 0, "stars": 1, "bright": 2, "lanes": 3 },
                 areaConservationEnabled: true,
 

@@ -49,24 +49,55 @@ function createEventEditor(containerId, config) {
             wrapper.appendChild(label);
             let input;
             if (def.type === 'boolean') {
-                input = document.createElement('input');
-                input.type = 'checkbox';
-                input.checked = !!event.params[def.name];
+                input = document.createElement('select');
+                const opts = [
+                    { value: '', label: '—' },
+                    { value: 'true', label: 'ON' },
+                    { value: 'false', label: 'OFF' }
+                ];
+                opts.forEach(opt => {
+                    const o = document.createElement('option');
+                    o.value = opt.value;
+                    o.textContent = opt.label;
+                    input.appendChild(o);
+                });
+                const currentValue = event.params[def.name];
+                if (currentValue === undefined) {
+                    input.value = '';
+                } else if (currentValue === true) {
+                    input.value = 'true';
+                } else if (currentValue === false) {
+                    input.value = 'false';
+                }
                 input.addEventListener('change', () => {
-                    event.params[def.name] = input.checked;
+                    if (input.value === '') {
+                        delete event.params[def.name];
+                    } else if (input.value === 'true') {
+                        event.params[def.name] = true;
+                    } else if (input.value === 'false') {
+                        event.params[def.name] = false;
+                    }
                     updateTextarea();
                 });
             } else if (def.type === 'select') {
                 input = document.createElement('select');
+                const emptyOpt = document.createElement('option');
+                emptyOpt.value = '';
+                emptyOpt.textContent = '—';
+                input.appendChild(emptyOpt);
                 def.options.forEach(opt => {
                     const o = document.createElement('option');
                     o.value = opt;
                     o.textContent = opt;
                     input.appendChild(o);
                 });
-                input.value = event.params[def.name] || def.options[0];
+                input.value = event.params[def.name] || '';
                 input.addEventListener('change', () => {
-                    event.params[def.name] = input.value;
+                    if (input.value === '') {
+                        delete event.params[def.name];
+                    } else {
+                        event.params[def.name] = input.value;
+                    }
                     updateTextarea();
                 });
             } else if (def.type === 'number') {
@@ -74,14 +105,19 @@ function createEventEditor(containerId, config) {
                 input.type = 'number';
                 if (def.min !== undefined) input.min = def.min;
                 if (def.max !== undefined) input.max = def.max;
-                input.value = event.params[def.name] || def.min || 0;
+                input.placeholder = '—';
                 input.style.width = '50px';
+                input.value = event.params[def.name] !== undefined ? event.params[def.name] : '';
                 input.addEventListener('change', () => {
-                    const v = parseFloat(input.value);
-                    if (!isNaN(v)) {
-                        event.params[def.name] = v;
-                        updateTextarea();
+                    if (input.value === '') {
+                        delete event.params[def.name];
+                    } else {
+                        const v = parseFloat(input.value);
+                        if (!isNaN(v)) {
+                            event.params[def.name] = v;
+                        }
                     }
+                    updateTextarea();
                 });
             }
             if (input) wrapper.appendChild(input);
@@ -106,7 +142,7 @@ function createEventEditor(containerId, config) {
         const distanceInput = document.createElement('input');
         distanceInput.type = 'number';
         distanceInput.placeholder = 'Distance';
-        distanceInput.style.width = '60px';
+        distanceInput.style.width = 'auto';
         distanceInput.style.marginRight = '8px';
         panel.appendChild(distanceInput);
 
@@ -116,7 +152,7 @@ function createEventEditor(containerId, config) {
         panel.appendChild(paramPanel);
 
         const validateBtn = document.createElement('button');
-        validateBtn.textContent = 'Add Event';
+        validateBtn.textContent = 'OK';
         validateBtn.addEventListener('click', () => {
             const distance = parseFloat(distanceInput.value);
             if (isNaN(distance)) {
