@@ -356,6 +356,12 @@ class Video {
         // this.gl.blendFunc(this.gl.ONE, this.gl.ONE);
         this.gl.activeTexture(this.gl.TEXTURE0);
         this.gl.bindTexture(this.gl.TEXTURE_2D, this.texture);
+
+        const H = this.gl.canvas.height;
+        const W = 16 * H / 9;
+        const x = (this.gl.canvas.width - W) / 2;
+        this.gl.viewport(x, 0, W, H);
+
         if (Swimmer.swimmersAttributesTexture) Swimmer.swimmersAttributesTexture.bind(1);
         this.shader.uniforms({
             uSampler: 0,
@@ -375,6 +381,7 @@ class Video {
             blendingThreshold: config.params.video.blendingThreshold
         }).draw(this.mesh);
         this.gl.disable(this.gl.BLEND);
+        this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
     }
 
 
