@@ -8,6 +8,8 @@ function createEventEditor(containerId, config) {
         return;
     }
 
+    let addPanel; // for toggling add event panel
+
     // parameter definitions for quick editing UI
     const paramDefs = [
         { name: 'showFlags', type: 'boolean' },
@@ -31,8 +33,10 @@ function createEventEditor(containerId, config) {
         panel.style.padding = '4px';
 
         function updateTextarea() {
-            textarea.value = JSON.stringify(event.params);
-            syncEvents();
+            if (textarea) {
+                textarea.value = JSON.stringify(event.params);
+                syncEvents();
+            }
         }
 
         paramDefs.forEach(def => {
@@ -83,6 +87,51 @@ function createEventEditor(containerId, config) {
             if (input) wrapper.appendChild(input);
             panel.appendChild(wrapper);
         });
+        return panel;
+    }
+
+    function createAddPanel() {
+        const panel = document.createElement('div');
+        panel.style.marginTop = '8px';
+        panel.style.padding = '8px';
+        panel.style.background = '#555';
+        panel.style.border = '1px solid #777';
+
+        const title = document.createElement('div');
+        title.textContent = 'Add New Event';
+        title.style.fontWeight = 'bold';
+        title.style.marginBottom = '4px';
+        panel.appendChild(title);
+
+        const distanceInput = document.createElement('input');
+        distanceInput.type = 'number';
+        distanceInput.placeholder = 'Distance';
+        distanceInput.style.width = '60px';
+        distanceInput.style.marginRight = '8px';
+        panel.appendChild(distanceInput);
+
+        const params = {}; // temporary params object
+        const paramPanel = createParamsPanel({ params }, null); // pass dummy event, no textarea
+        paramPanel.style.margin = '4px 0';
+        panel.appendChild(paramPanel);
+
+        const validateBtn = document.createElement('button');
+        validateBtn.textContent = 'Add Event';
+        validateBtn.addEventListener('click', () => {
+            const distance = parseFloat(distanceInput.value);
+            if (isNaN(distance)) {
+                alert('Please enter a valid distance');
+                return;
+            }
+            const newEvent = { distance, params: { ...params } };
+            config.events.push(newEvent);
+            syncEvents();
+            // close panel
+            addPanel.remove();
+            addPanel = null;
+        });
+        panel.appendChild(validateBtn);
+
         return panel;
     }
 
@@ -212,18 +261,16 @@ function createEventEditor(containerId, config) {
         const addBtn = document.createElement('button');
         addBtn.textContent = '+ add event';
         addBtn.addEventListener('click', () => {
-            const newEvent = { distance: 0, params: {} };
-            config.events.push(newEvent);
-            render();
-            // automatically open params panel on newly added event
-            setTimeout(() => {
-                const rows = container.querySelectorAll('div');
-                const lastRow = rows[rows.length - 2]; // row just before buttons
-                if (lastRow) {
-                    const btn = lastRow.querySelector('button');
-                    if (btn) btn.click();
-                }
-            }, 0);
+            // toggle add panel
+            if (addPanel) {
+                addPanel.remove();
+                addPanel = null;
+            } else {
+                addPanel = createAddPanel();
+                container.appendChild(addPanel);
+                // scroll to make the panel visible
+                container.scrollTop = container.scrollHeight;
+            }
         });
         container.appendChild(addBtn);
 
