@@ -158,6 +158,10 @@ class Swimmer {
         }
     }
 
+    hasFinished() {
+        return this.finishTime > .1;
+    }
+
     getArmOffset(time, phase) {
         const omega = this.body.velocity.z >= 0 ? armPulsation : -armPulsation;
         return new GL.Vector(0., Math.cos(omega * time + phase), Math.sin(omega * time + phase)).multiply(armAmplitude);

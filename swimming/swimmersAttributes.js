@@ -205,7 +205,7 @@ class SwimmersAttributes {
         }
         let sortFrom = 0;
         swimmers.forEach(s => {
-            if (s.finishTime > .1) sortFrom++;
+            if (s.hasFinished() > .1) sortFrom++;
         })
         const rankedSwimmers = swimmers.slice(0, sortFrom).concat(swimmers.slice(sortFrom).sort(compareSwimmers));
         for (let i = 0; i < swimmers.length; i++) swimmers[i] = rankedSwimmers[i];
