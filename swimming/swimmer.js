@@ -145,6 +145,7 @@ class Swimmer {
     swim(start) {
         this.hasReacted = start;
         this.isSwimming = start;
+        this.finishTime = 0;
         if (!start) this.body.followTarget = false;
         if (start) {
             this.body.cinematic = false;
