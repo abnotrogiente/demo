@@ -14,8 +14,8 @@ function gaussianRandom(mean = 0, stdev = 1) {
 
 const AWAY = new GL.Vector(1000, 0, -1000);
 const armAmplitude = 0.5;
-const armFrequency = 1;
-const armPulsation = 2 * Math.PI * armFrequency;
+const armFrequency = 2;
+
 
 const TIME_KEY = "Temps (s)";
 const EVENT_KEY = "event";
@@ -92,6 +92,9 @@ class Swimmer {
 
         this.useTracking = false;
 
+        this.armPulsation = 2 * Math.PI * armFrequency;
+        this.cycleTime = 0.;
+        this.cyclePhase = 0.;
         this.finishTime = 0;
     }
 
@@ -116,6 +119,7 @@ class Swimmer {
                     );
                 }
                 );
+                this.armPulsation = 0.;
                 //console.log("data parsed");
                 //console.log("data : " + JSON.stringify(this.data, null, 2));
                 //console.log("time0 : " + this.data[0]["Temps (s)"]);
@@ -163,7 +167,8 @@ class Swimmer {
     }
 
     getArmOffset(time, phase) {
-        const omega = this.body.velocity.z >= 0 ? armPulsation : -armPulsation;
+        phase += this.cyclePhase;
+        const omega = this.body.velocity.z >= 0 ? this.armPulsation : -this.armPulsation;
         return new GL.Vector(0., Math.cos(omega * time + phase), Math.sin(omega * time + phase)).multiply(armAmplitude);
     }
 
@@ -175,6 +180,14 @@ class Swimmer {
             this.body.followTarget = true;
             this.finishTime = 0.;
         }
+    }
+
+    findNextCycle() {
+        let nextCycleIndex = this.currendDataIndex + 1;
+        if (!this.data) return null;
+        while (this.data[nextCycleIndex] && this.data[nextCycleIndex][EVENT_KEY] != "cycle") nextCycleIndex++;
+        if (!this.data[nextCycleIndex]) return null;
+        return parseFloat(this.data[nextCycleIndex][TIME_KEY]);
     }
 
     handleTracking(time) {
@@ -210,7 +223,21 @@ class Swimmer {
             }
             else this.body.setTarget(null);
 
-            if (currentEvent == "finish") {
+            if (currentEvent == "cycle") {
+                const currentCycleTime = parseFloat(this.data[this.currendDataIndex][TIME_KEY]);
+                const nextCyleTime = this.findNextCycle();
+                if (nextCyleTime) {
+                    const period = nextCyleTime - currentCycleTime;
+                    const frequency = 1. / period;
+                    this.armPulsation = 2 * Math.PI * frequency;
+
+                    this.cycleTime = 0;
+                    if (this.cyclePhase == 0.) this.cyclePhase = Math.PI;
+                    else this.cyclePhase = 0.;
+                }
+            }
+
+            else if (currentEvent == "finish") {
                 this.finishTime = this.data[this.currendDataIndex][TIME_KEY];
                 this.body.followTarget = false;
                 this.isSwimming = false;
@@ -228,12 +255,12 @@ class Swimmer {
         this.leftFoot.move(AWAY);
     }
 
-    moveSpheres(time) {
-        this.cyclePhase = armPulsation * time % 2 * Math.PI;
-        const offset1 = this.getArmOffset(time, 0);
-        const offset2 = this.getArmOffset(time, Math.PI);
-        const offset3 = this.getArmOffset(time * 2, 0);
-        const offset4 = this.getArmOffset(time * 2, Math.PI);
+    moveSpheres(dt) {
+        this.cycleTime += dt;
+        const offset1 = this.getArmOffset(.5 * this.cycleTime, 0);
+        const offset2 = this.getArmOffset(.5 * this.cycleTime, Math.PI);
+        const offset3 = this.getArmOffset(.5 * this.cycleTime * 2, 0);
+        const offset4 = this.getArmOffset(.5 * this.cycleTime * 2, Math.PI);
         this.rightArm.move(this.body.center.add(offset1).add(new GL.Vector(ARM_DELTA_X, 0, 0)));
         this.leftArm.move(this.body.center.add(offset2).add(new GL.Vector(-ARM_DELTA_X, 0, 0)));
         const dz = this.body.velocity.z >= 0 ? -FOOT_DELTA_Z : FOOT_DELTA_Z;
@@ -266,7 +293,7 @@ class Swimmer {
         if (this.isSwimming) {
             if (!this.useTracking) this.body.addForce(this.force);
             if (this.body.center.y > -this.body.radius) {
-                this.moveSpheres(raceTime);
+                this.moveSpheres(dt);
             }
         }
 
