@@ -343,7 +343,7 @@ window.onload = function () {
   }
 
   function zoom(delta) {
-    zoomDistance *= 1 - delta * 0.0004;
+    zoomDistance *= 1 - delta * 0.0002;
     zoomDistance = Math.max(2, Math.min(1000, zoomDistance));
     if (paused) draw();
   };
@@ -469,18 +469,25 @@ window.onload = function () {
 
       reset();
 
-      config.params.focal = 31.75;
+      config.params.focal = 39.98; // 31.75
       config.params.visualizations.sparks.fov = config.params.focal * 2 * Math.PI / 360;
       gl.matrixMode(gl.PROJECTION);
       gl.loadIdentity();
       gl.perspective(config.params.focal, gl.canvas.width / gl.canvas.height, 0.01, 100);
       gl.matrixMode(gl.MODELVIEW);
-      translateX = -0.42;
-      translateY = 1.18;
-      zoomDistance = 52.5;
-      angleX = -24;
-      angleY = -261.5;
-      angleZ = -4;
+      // translateX = -0.42;
+      // translateY = 1.18;
+      // zoomDistance = 52.5;
+      // angleX = -24;
+      // angleY = -261.5;
+      // angleZ = -4;
+
+      translateX = -0.53;
+      translateY = 1.25;
+      zoomDistance = 47.86;
+      angleX = -29;
+      angleY = -260.5;
+      angleZ = -5;
       console.log("Olympic mode enabled.");
     }
     else if (e.which == 'W'.charCodeAt(0)) {
@@ -569,6 +576,15 @@ window.onload = function () {
     gl.rotate(-angleX, 1, 0, 0);
     gl.rotate(-angleY, 0, 1, 0);
     gl.translate(0, 0.5, 0);
+
+    console.log(translateX);
+    console.log(translateY);
+    console.log(zoomDistance);
+    console.log(angleX);
+    console.log(angleY);
+    console.log(angleZ);
+    console.log(config.params.focal);
+    console.log("\n\n\n");
 
 
     gl.enable(gl.DEPTH_TEST);
