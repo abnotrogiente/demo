@@ -273,10 +273,7 @@ function createEventEditor(containerId, config) {
         });
 
         // compute maximum value for scale
-        const maxVal = events.reduce((m, e) => {
-            const v = e.distance !== undefined ? e.distance : e.time !== undefined ? e.time : 0;
-            return Math.max(m, v);
-        }, 0);
+        const maxVal = 100;
 
         // build segments for each parameter to show enabled intervals
         // only include parameters that are actually modified by some event
@@ -552,15 +549,37 @@ function createEventEditor(containerId, config) {
         exportBtn.style.marginLeft = '8px';
         exportBtn.addEventListener('click', () => {
             const text = JSON.stringify(config.events, null, 2);
-            const win = window.open('', '_blank');
-            if (win) {
-                win.document.write('<pre>' + text.replace(/</g, '&lt;') + '</pre>');
-                win.document.title = 'vis-config.json';
-            } else {
-                console.log(text);
-            }
+            const blob = new Blob([text], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'vis-config.json';
+            a.click();
+            URL.revokeObjectURL(url);
         });
         container.appendChild(exportBtn);
+
+        const importInput = document.createElement('input');
+        importInput.type = 'file';
+        importInput.accept = '.json';
+        importInput.style.marginLeft = '8px';
+        importInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const events = JSON.parse(event.target.result);
+                        config.events = events;
+                        syncEvents();
+                    } catch (err) {
+                        alert('Invalid JSON: ' + err.message);
+                    }
+                };
+                reader.readAsText(file);
+            }
+        });
+        container.appendChild(importInput);
     }
 
     function openEditor(idx) {
