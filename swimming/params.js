@@ -23,6 +23,8 @@ class Config {
             simulation: { optimized: false, waterDamping: .02, poolSize: new GL.Vector(2.0, 1.0, 2.0) }
         };
         this.originalVisParams = JSON.parse(JSON.stringify(this.params.visualizations));
+        delete this.originalVisParams.shadow;
+        delete this.originalVisParams.sparks;
         this.useConfigFile = true;
         this.time = 0;
         /**@type {Swimmer[]} */
@@ -44,7 +46,12 @@ class Config {
         return this.time - videoStartTime;
     }
     resetParams() {
-        this.params.visualizations = JSON.parse(JSON.stringify(this.originalVisParams));
+        // this.params.visualizations = JSON.parse(JSON.stringify(this.originalVisParams));
+        Object.entries(this.originalVisParams).forEach(pair => {
+            const key = pair[0];
+            const value = pair[1];
+            this.params.visualizations[key] = value;
+        })
         this.params.visualizations.areaConservationEnabled = false;
     }
     updateEventIndex() {
