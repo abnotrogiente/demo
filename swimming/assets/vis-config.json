@@ -2,8 +2,7 @@
     {
         "time": 0,
         "params": {
-            "showFlags": true,
-            "showSpeed": false
+            "showFlags": true
         }
     },
     {
@@ -17,7 +16,8 @@
         "distance": 40,
         "params": {
             "showFlags": true,
-            "showSpeed": false
+            "showSpeed": false,
+            "showNeighboursLines": "only medals"
         }
     },
     {
