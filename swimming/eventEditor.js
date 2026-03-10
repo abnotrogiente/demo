@@ -270,20 +270,23 @@ function createEventEditor(containerId, config) {
         const currentVals = {};
         paramNames.forEach(n => { currentVals[n] = false; lastChange[n] = 0; });
         const segments = [];
-        const getVal = (e, n) => !!e.params && !!e.params[n];
 
         events.forEach(e => {
             const v = e.distance !== undefined ? e.distance : e.time !== undefined ? e.time : 0;
-            paramNames.forEach(name => {
-                const newVal = getVal(e, name);
-                if (newVal !== currentVals[name]) {
-                    if (currentVals[name]) {
-                        segments.push({ name, start: lastChange[name], end: v });
+            if (e.params) {
+                Object.keys(e.params).forEach(name => {
+                    if (paramNames.includes(name)) {
+                        const newVal = !!e.params[name];
+                        if (newVal !== currentVals[name]) {
+                            if (currentVals[name]) {
+                                segments.push({ name, start: lastChange[name], end: v });
+                            }
+                            currentVals[name] = newVal;
+                            lastChange[name] = v;
+                        }
                     }
-                    currentVals[name] = newVal;
-                    lastChange[name] = v;
-                }
-            });
+                });
+            }
         });
         paramNames.forEach(name => {
             if (currentVals[name]) {
