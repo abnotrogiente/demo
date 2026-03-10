@@ -2,7 +2,9 @@
     {
         "time": 0,
         "params": {
-            "showFlags": true
+            "showFlags": true,
+            "showWR": true,
+            "medalsModeAfterFinish": "lanes"
         }
     },
     {
@@ -25,7 +27,7 @@
         "params": {
             "showFlags": false,
             "showSpeed": true,
-            "showMedals": "bright"
+            "medalsModeBeforeFinish": "bright"
         }
     },
     {
@@ -39,9 +41,7 @@
         "distance": 100,
         "rankSwimmerToggle": 1,
         "params": {
-            "showFinishTimes": true,
-            "showMedals": "lanes",
-            "showRanksIfFinished": true
+            "showFinishTimes": true
         }
     }
 ]
