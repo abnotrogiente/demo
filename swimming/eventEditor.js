@@ -338,6 +338,19 @@ function createEventEditor(containerId, config) {
                 segDiv.style.width = widthPct + '%';
                 segDiv.style.background = paramColors[seg.name] || '#4caf50';
                 segDiv.title = `${seg.name}: ${seg.start} → ${seg.end}`;
+                // add visible text
+                const textSpan = document.createElement('span');
+                textSpan.textContent = `${seg.name}: ${seg.start} → ${seg.end}`;
+                textSpan.style.position = 'absolute';
+                textSpan.style.top = '0';
+                textSpan.style.left = '2px';
+                textSpan.style.fontSize = '10px';
+                textSpan.style.color = 'white';
+                textSpan.style.pointerEvents = 'none';
+                textSpan.style.whiteSpace = 'nowrap';
+                textSpan.style.overflow = 'hidden';
+                textSpan.style.textOverflow = 'ellipsis';
+                segDiv.appendChild(textSpan);
                 trackArea.appendChild(segDiv);
             });
 
