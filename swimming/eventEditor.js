@@ -3,10 +3,13 @@
 
 function createEventEditor(containerId, config) {
     const container = document.getElementById(containerId);
+    container.style.position = container.style.position || 'relative';
     if (!container) {
         console.warn(`event editor container "${containerId}" not found`);
         return;
     }
+    // panel handle creation moved into render to survive container reset
+
 
     let addPanel; // for toggling add event panel
 
@@ -203,6 +206,38 @@ function createEventEditor(containerId, config) {
     // generate the editor UI whenever the config changes
     function render() {
         container.innerHTML = "";
+        // recreate top handle each time
+        const panelHandle = document.createElement('div');
+        panelHandle.style.position = 'absolute';
+        panelHandle.style.top = '0px';
+        panelHandle.style.left = '50%';
+        panelHandle.style.transform = 'translateX(-50%)';
+        panelHandle.style.width = '80px';
+        panelHandle.style.height = '15px';
+        panelHandle.style.background = 'grey';
+        panelHandle.style.border = '1px solid black';
+        panelHandle.style.cursor = 'ns-resize';
+        panelHandle.style.zIndex = '100000';
+        panelHandle.style.lineHeight = '16px';
+        panelHandle.style.textAlign = 'center';
+        panelHandle.textContent = 'drag';
+        container.appendChild(panelHandle);
+        // drag behavior
+        panelHandle.addEventListener('mousedown', e => {
+            e.preventDefault();
+            const startY = e.clientY;
+            const startH = container.offsetHeight;
+            function onMove(ev) {
+                const newH = startH - (ev.clientY - startY);
+                if (newH > 20) container.style.height = newH + 'px';
+            }
+            function onUp() {
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+            }
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+        });
         if (!config.events) {
             container.textContent = "no events defined";
             return;
@@ -265,6 +300,7 @@ function createEventEditor(containerId, config) {
             paramsTimeline.style.height = (paramNames.length * trackHeight) + 'px';
             paramsTimeline.style.background = '#222';
             paramsTimeline.style.marginBottom = '4px';
+            paramsTimeline.style.marginTop = '10px';
 
             // labels go directly on paramsTimeline
             paramNames.forEach((name, idx) => {
@@ -322,6 +358,8 @@ function createEventEditor(containerId, config) {
         timelineTrack.style.right = '0';
         timelineTrack.style.bottom = '0';
         timeline.appendChild(timelineTrack);
+
+
 
         events.forEach((event, idx) => {
             const val = event.distance !== undefined ? event.distance : event.time !== undefined ? event.time : 0;
