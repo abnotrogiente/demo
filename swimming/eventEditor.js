@@ -12,6 +12,7 @@ function createEventEditor(containerId, config) {
 
 
     let addPanel; // for toggling add event panel
+    let isMinimized = false;
 
     // parameter definitions for quick editing UI
     const paramDefs = [
@@ -206,6 +207,27 @@ function createEventEditor(containerId, config) {
     // generate the editor UI whenever the config changes
     function render() {
         container.innerHTML = "";
+        // minimize button
+        const minimizeBtn = document.createElement('button');
+        minimizeBtn.textContent = isMinimized ? '□' : '—';
+        minimizeBtn.style.position = 'absolute';
+        minimizeBtn.style.top = '0';
+        minimizeBtn.style.right = '0';
+        minimizeBtn.style.width = '20px';
+        minimizeBtn.style.height = '20px';
+        minimizeBtn.style.zIndex = '100001';
+        minimizeBtn.addEventListener('click', () => {
+            isMinimized = !isMinimized;
+            render();
+        });
+        container.appendChild(minimizeBtn);
+
+        if (isMinimized) {
+            container.style.height = '20px';
+            return;
+        }
+        container.style.height = '300px'; // reset height
+
         // recreate top handle each time
         const panelHandle = document.createElement('div');
         panelHandle.style.position = 'absolute';
