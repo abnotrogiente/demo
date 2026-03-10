@@ -119,7 +119,7 @@ class Swimmer {
                     );
                 }
                 );
-                this.armPulsation = 0.;
+                if (config.params.swimmers.useTracking) this.armPulsation = 0.;
                 //console.log("data parsed");
                 //console.log("data : " + JSON.stringify(this.data, null, 2));
                 //console.log("time0 : " + this.data[0]["Temps (s)"]);
