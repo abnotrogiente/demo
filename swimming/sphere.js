@@ -50,7 +50,7 @@ class Sphere {
             }
         }
         else {
-            this.velocity = new GL.Vector(0, 0, 0);
+            if (!this.followTarget) this.velocity = new GL.Vector(0, 0, 0);
             if (!this.targetPos || !this.followTarget) return;
             let alpha = dt / this.targetTime;
             alpha = Math.min(Math.max(alpha, 0), 1);

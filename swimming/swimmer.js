@@ -177,6 +177,19 @@ class Swimmer {
         if (!this.data) return;
         while (this.data[this.currendDataIndex] && this.data[this.currendDataIndex][TIME_KEY] < config.getRaceTime()) this.currendDataIndex++;
         if (this.currendDataIndex + 1 < this.data.length) {
+            if (this.currendDataIndex - 1 >= 0) {
+                const dist = parseFloat(this.data[this.currendDataIndex][DISTANCE_KEY]);
+                let z = dist;
+                const D = config.params.simulation.poolSize.z;
+                if (dist > D) z = 2 * D - z;
+                z -= D / 2;
+                const pos = this.body.center;
+                this.body.move(new GL.Vector(pos.x, pos.y, z));
+                const vz = Math.sign(50 - dist) * .1;
+                this.body.velocity = new GL.Vector(0, 0, vz);
+                console.log("vz : " + vz);
+            }
+            this.body.setTarget(null);
             this.body.followTarget = true;
             this.finishTime = 0.;
         }
