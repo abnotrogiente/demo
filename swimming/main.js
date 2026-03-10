@@ -562,7 +562,7 @@ window.onload = function () {
     }
 
     renderer.updateCaustics(water);
-    if (Swimmer.raceHasStarted) config.time += dt;
+    if (Swimmer.raceHasStarted) config.updateTime(dt);
     config.updateParams();
     slider.value = config.getRaceTime();
     updateFrameRateHTML(dt);

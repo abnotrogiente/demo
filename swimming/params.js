@@ -36,6 +36,10 @@ class Config {
             this.params.visualizations.showSpeed ||
             this.params.visualizations.showDivingDistance;
     }
+    updateTime(dt) {
+        this.time += dt;
+        if (this._updateDistanceMarker) this._updateDistanceMarker();
+    }
     getRaceTime() {
         return this.time - videoStartTime;
     }

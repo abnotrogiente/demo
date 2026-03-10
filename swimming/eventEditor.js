@@ -1,7 +1,13 @@
 // simple timeline-style editor for configuration events
 // shows events ordered by distance/time and allows editing
 
-function createEventEditor(containerId, config) {
+import { config } from "./params";
+
+const labelWidth = 150; // reserve left column for names
+// compute maximum value for scale
+const maxVal = 100;
+
+function createEventEditor(containerId) {
     const container = document.getElementById(containerId);
     container.style.position = container.style.position || 'relative';
     if (!container) {
@@ -203,6 +209,36 @@ function createEventEditor(containerId, config) {
         return panel;
     }
 
+    function createMarker(val, maxVal, { title = '', id = null, color = '#e74c3c' }) {
+        const pct = maxVal > 0 ? (val / maxVal) * 100 : 0;
+        const marker = document.createElement('div');
+        marker.style.position = 'absolute';
+        marker.style.left = pct + '%';
+        marker.style.transform = 'translateX(-50%)';
+        marker.style.width = '4px';
+        marker.style.height = '100%';
+        marker.style.background = color;
+        marker.style.cursor = 'pointer';
+        marker.title = title;
+        if (id) marker.id = id;
+        marker.addEventListener('click', () => {
+            openEditor(idx);
+        });
+        return marker;
+    }
+
+    function updateTimeLineDistanceMarker() {
+        let marker = document.getElementById("distance-marker");
+        const currentDist = config.swimmers[0].getDistanceTraveled();
+        if (!marker) {
+            const timelineTrack = document.getElementById("timeline-track");
+            marker = createMarker(currentDist, maxVal, { color: "blue", id: "distance-marker" });
+            timelineTrack.appendChild(marker);
+        }
+        marker.style.left = currentDist + '%';
+
+    }
+
     // generate the editor UI whenever the config changes
     function render() {
         container.innerHTML = "";
@@ -271,8 +307,6 @@ function createEventEditor(containerId, config) {
             return va - vb;
         });
 
-        // compute maximum value for scale
-        const maxVal = 100;
 
         // build segments for each parameter to show enabled intervals
         // only include parameters that are actually modified by some event
@@ -317,7 +351,6 @@ function createEventEditor(containerId, config) {
             const paramsTimeline = document.createElement('div');
             paramsTimeline.style.position = 'relative';
             const trackHeight = 20;
-            const labelWidth = 80; // reserve left column for names
             paramsTimeline.style.height = (paramNames.length * trackHeight) + 'px';
             paramsTimeline.style.background = '#222';
             paramsTimeline.style.marginBottom = '4px';
@@ -428,13 +461,15 @@ function createEventEditor(containerId, config) {
         const timeline = document.createElement('div');
         timeline.style.position = 'relative';
         timeline.style.height = '40px';
-        timeline.style.background = '#444';
+        timeline.style.background = '#222';
         timeline.style.marginBottom = '4px';
         // mirror label padding on main timeline
         timeline.style.paddingLeft = '80px';
         const timelineTrack = document.createElement('div');
+        timelineTrack.id = "timeline-track";
         timelineTrack.style.position = 'absolute';
-        timelineTrack.style.left = '80px';
+        timelineTrack.style.background = '#444'
+        timelineTrack.style.left = labelWidth + 'px';
         timelineTrack.style.top = '0';
         timelineTrack.style.right = '0';
         timelineTrack.style.bottom = '0';
@@ -444,19 +479,8 @@ function createEventEditor(containerId, config) {
 
         events.forEach((event, idx) => {
             const val = event.distance !== undefined ? event.distance : event.time !== undefined ? event.time : 0;
-            const pct = maxVal > 0 ? (val / maxVal) * 100 : 0;
-            const marker = document.createElement('div');
-            marker.style.position = 'absolute';
-            marker.style.left = pct + '%';
-            marker.style.transform = 'translateX(-50%)';
-            marker.style.width = '4px';
-            marker.style.height = '100%';
-            marker.style.background = '#e74c3c';
-            marker.style.cursor = 'pointer';
-            marker.title = `event ${idx}: ${JSON.stringify(event.params)}`;
-            marker.addEventListener('click', () => {
-                openEditor(idx);
-            });
+            const title = `event ${idx}: ${JSON.stringify(event.params)}`;
+            const marker = createMarker(val, maxVal, { title: title });
             timelineTrack.appendChild(marker);
         });
 
@@ -601,6 +625,7 @@ function createEventEditor(containerId, config) {
     // initial render and expose for external calls
     render();
     config._renderTimeline = render; // a small helper if other code wants to refresh
+    config._updateDistanceMarker = updateTimeLineDistanceMarker;
 }
 
 export { createEventEditor };
