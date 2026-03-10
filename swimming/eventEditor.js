@@ -19,12 +19,11 @@ function createEventEditor(containerId, config) {
         { name: 'showFlags', type: 'boolean' },
         { name: 'showWR', type: 'boolean' },
         { name: 'showSpeed', type: 'boolean' },
-        { name: 'showRanks', type: 'boolean' },
-        { name: 'showRanksIfFinished', type: 'boolean' },
         { name: 'showDivingDistance', type: 'boolean' },
         { name: 'showFinishTimes', type: 'boolean' },
         { name: 'showNeighboursLines', type: 'select', options: ['none', 'only medals', 'all'] },
-        { name: 'showMedals', type: 'select', options: ['none', 'stars', 'bright', 'lanes'] },
+        { name: 'medalsModeBeforeFinish', type: 'select', options: ['none', 'stars', 'bright', 'lanes'] },
+        { name: 'medalsModeAfterFinish', type: 'select', options: ['none', 'stars', 'bright', 'lanes'] },
         { name: 'rankSwimmerToggle', type: 'number', min: 1, max: 10 }
     ];
 

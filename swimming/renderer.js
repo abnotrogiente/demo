@@ -161,8 +161,6 @@ function Renderer(gl, water, flagCenter, flagSize) {
       in vec3 position;
       out vec4 fragColor;
       uniform bool showFlags;
-      uniform bool showRanks;
-      uniform bool showRanksIfFinished;
       uniform bool showWR;
       uniform bool showSpeed;
       uniform bool showFinishTimes;
@@ -181,7 +179,8 @@ function Renderer(gl, water, flagCenter, flagSize) {
       uniform float shadowCircleRadius;
       uniform float shadowCircleStroke;
       uniform float showNeighboursLinesMode;
-      uniform float showMedalsMode;
+      uniform float medalsModeBeforeFinish;
+      uniform float medalsModeAfterFinish;
 
       // Show neighbours lines modes
       #define LINES_NONE 0
@@ -293,9 +292,9 @@ function Renderer(gl, water, flagCenter, flagSize) {
       }
 
       void drawRanks(in vec2 position, in vec2 swimmerPosition, in int rank, in bool rightSide, inout vec3 color) {
-        int showMode = int(showMedalsMode);
+        int showMode = int(medalsModeBeforeFinish);
+        if (getSwimmerFinishTime(rank) > .1) showMode = int(medalsModeAfterFinish);
         if (showMode == MEDALS_NONE) return;
-        if (showRanksIfFinished && getSwimmerFinishTime(rank) < .1) return;
 
         vec3 medalColor = vec3(0);
         if (rank == 0) medalColor = GOLD;
@@ -387,7 +386,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
           bool rightSide = hasFirstFinished ? false : speed >= 0.;
           drawSwimmerLines(projectedPosition, swimmerPos, i, color);
           
-          if (showRanks) drawRanks(projectedPosition, swimmerPos, i, rightSide, color);
+          drawRanks(projectedPosition, swimmerPos, i, rightSide, color);
           drawFlags(position, swimmerPos, getSwimmerNationality(i), rightSide, color);
           if (showSpeed || showFinishTimes) drawNumbers(position, swimmerPos, i, rightSide, color);
           if (shadowEnabled) drawShadows(projectedPosition, swimmerPos, getSwimmerAltitude(i), color);
@@ -417,7 +416,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
         }
         if (ray.y < 0.0) {
           color *= waterColor;
-          if (showFlags || showWR || showRanks || showSpeed || showDivingDistance) drawVisualizations(origin.xz, color);
+          if (showFlags || showWR || int(medalsModeAfterFinish) != MEDALS_NONE || int(medalsModeBeforeFinish) != MEDALS_NONE || showSpeed || showDivingDistance) drawVisualizations(origin.xz, color);
           
           
         }
@@ -630,8 +629,6 @@ Renderer.prototype.renderWater = function (water, sky, shadowParams) {
       wr: water.WR_position,
       swimmersNumber: config.swimmers.length,
       showFlags: config.params.visualizations.showFlags,
-      showRanks: config.params.visualizations.showRanks,
-      showRanksIfFinished: config.params.visualizations.showRanksIfFinished,
       showWR: config.params.visualizations.showWR,
       showSpeed: config.params.visualizations.showSpeed,
       showDivingDistance: config.params.visualizations.showDivingDistance,
@@ -644,7 +641,8 @@ Renderer.prototype.renderWater = function (water, sky, shadowParams) {
       shadowCircleRadius: shadowParams.circleRadius,
       shadowCircleStroke: shadowParams.circleStroke,
       showNeighboursLinesMode: Math.round(config.params.visualizations.neighboursLinesModesDict[config.params.visualizations.showNeighboursLines]),
-      showMedalsMode: Math.round(config.params.visualizations.medalsModesDict[config.params.visualizations.showMedals])
+      medalsModeBeforeFinish: Math.round(config.params.visualizations.medalsModesDict[config.params.visualizations.medalsModeBeforeFinish]),
+      medalsModeAfterFinish: Math.round(config.params.visualizations.medalsModesDict[config.params.visualizations.medalsModeAfterFinish])
     }).draw(water.plane);
   }
   this.gl.disable(this.gl.CULL_FACE);

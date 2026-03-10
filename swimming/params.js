@@ -8,10 +8,11 @@ class Config {
         this.params = {
             numSteps: 2, focal: 45,
             visualizations: {
-                enabled: true, showFlags: false, showRanks: true, showRanksIfFinished: false, showWR: false, showSpeed: false, showDivingDistance: true,
+                enabled: true, showFlags: false, showWR: false, showSpeed: false, showDivingDistance: true,
                 showFinishTimes: false,
                 showNeighboursLines: "none", neighboursLinesModesDict: { "none": 0, "only medals": 1, "all": 2 },
-                showMedals: "none", medalsModesDict: { "none": 0, "stars": 1, "bright": 2, "lanes": 3 },
+                medalsModeBeforeFinish: "none", medalsModesDict: { "none": 0, "stars": 1, "bright": 2, "lanes": 3 },
+                medalsModeAfterFinish: "none",
                 areaConservationEnabled: true,
 
                 shadow: { enabled: true, shadowRadius: .5, shadowPower: .5, showCircle: true, circleRadius: .6, circleStroke: .15 },
@@ -29,7 +30,8 @@ class Config {
     }
     isOneVisualizationEnabled() {
         return this.params.visualizations.showFlags ||
-            this.params.visualizations.showRanks ||
+            this.params.visualizations.medalsModeBeforeFinish != "none" ||
+            this.params.visualizations.medalsModeAfterFinish != "none" ||
             this.params.visualizations.showWR ||
             this.params.visualizations.showSpeed ||
             this.params.visualizations.showDivingDistance;
