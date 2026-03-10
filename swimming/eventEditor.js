@@ -337,10 +337,10 @@ function createEventEditor(containerId, config) {
                 segDiv.style.height = (trackHeight - 4) + 'px';
                 segDiv.style.width = widthPct + '%';
                 segDiv.style.background = paramColors[seg.name] || '#4caf50';
-                segDiv.title = `${seg.name}: ${seg.start} → ${seg.end}`;
+                segDiv.title = `${seg.name}: ${seg.start.toFixed(2)} → ${seg.end.toFixed(2)}`;
                 // add visible text
                 const textSpan = document.createElement('span');
-                textSpan.textContent = `${seg.name}: ${seg.start} → ${seg.end}`;
+                textSpan.textContent = `${seg.name}: ${seg.start.toFixed(2)} → ${seg.end.toFixed(2)}`;
                 textSpan.style.position = 'absolute';
                 textSpan.style.top = '0';
                 textSpan.style.left = '2px';
@@ -351,6 +351,53 @@ function createEventEditor(containerId, config) {
                 textSpan.style.overflow = 'hidden';
                 textSpan.style.textOverflow = 'ellipsis';
                 segDiv.appendChild(textSpan);
+
+                // add resize handle if not the last segment
+                if (seg.end < maxVal) {
+                    const handle = document.createElement('div');
+                    handle.style.position = 'absolute';
+                    handle.style.right = '0';
+                    handle.style.top = '0';
+                    handle.style.width = '5px';
+                    handle.style.height = '100%';
+                    handle.style.background = 'rgba(255,255,255,0.5)';
+                    handle.style.cursor = 'ew-resize';
+                    segDiv.appendChild(handle);
+
+                    handle.addEventListener('mousedown', e => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const startX = e.clientX;
+                        const startWidth = segDiv.offsetWidth;
+                        function onMove(ev) {
+                            const deltaX = ev.clientX - startX;
+                            const newWidthPx = Math.max(1, startWidth + deltaX);
+                            const newWidthPct = (newWidthPx / trackArea.offsetWidth) * 100;
+                            segDiv.style.width = newWidthPct + '%';
+                            const newEnd = seg.start + (newWidthPx / trackArea.offsetWidth) * maxVal;
+                            textSpan.textContent = `${seg.name}: ${seg.start.toFixed(2)} → ${newEnd.toFixed(2)}`;
+                        }
+                        function onUp() {
+                            document.removeEventListener('mousemove', onMove);
+                            document.removeEventListener('mouseup', onUp);
+                            const newWidthPx = segDiv.offsetWidth;
+                            const newEnd = seg.start + (newWidthPx / trackArea.offsetWidth) * maxVal;
+                            // find and update event
+                            const event = events.find(e => (e.distance !== undefined ? e.distance : e.time !== undefined ? e.time : 0) === seg.end);
+                            if (event) {
+                                if (event.distance !== undefined) {
+                                    event.distance = newEnd;
+                                } else if (event.time !== undefined) {
+                                    event.time = newEnd;
+                                }
+                            }
+                            syncEvents();
+                        }
+                        document.addEventListener('mousemove', onMove);
+                        document.addEventListener('mouseup', onUp);
+                    });
+                }
+
                 trackArea.appendChild(segDiv);
             });
 
