@@ -24,7 +24,36 @@ function createEventEditor(containerId, config) {
         { name: 'rankSwimmerToggle', type: 'number', min: 1, max: 10 }
     ];
 
-    function createParamsPanel(event, textarea) {
+    function createParamsDisplay(event) {
+        const display = document.createElement('div');
+        display.style.flex = '1';
+        display.style.padding = '4px';
+        display.style.background = '#222';
+        display.style.border = '1px solid #555';
+        display.style.borderRadius = '4px';
+        display.style.fontFamily = 'monospace';
+        display.style.fontSize = '12px';
+        display.style.whiteSpace = 'pre-wrap';
+        display.style.overflow = 'auto';
+        display.style.maxHeight = '100px';
+
+        function updateDisplay() {
+            const params = event.params;
+            if (Object.keys(params).length === 0) {
+                display.textContent = '(no params)';
+                return;
+            }
+            const lines = Object.entries(params).map(([key, value]) => {
+                return `${key}: ${JSON.stringify(value)}`;
+            });
+            display.textContent = lines.join('\n');
+        }
+
+        updateDisplay();
+        return { element: display, update: updateDisplay };
+    }
+
+    function createParamsPanel(event, updateDisplay) {
         const panel = document.createElement('div');
         panel.style.display = 'flex';
         panel.style.flexWrap = 'wrap';
@@ -32,9 +61,9 @@ function createEventEditor(containerId, config) {
         panel.style.background = '#333';
         panel.style.padding = '4px';
 
-        function updateTextarea() {
-            if (textarea) {
-                textarea.value = JSON.stringify(event.params);
+        function update() {
+            if (updateDisplay) {
+                updateDisplay();
                 syncEvents();
             }
         }
@@ -77,7 +106,7 @@ function createEventEditor(containerId, config) {
                     } else if (input.value === 'false') {
                         event.params[def.name] = false;
                     }
-                    updateTextarea();
+                    update();
                 });
             } else if (def.type === 'select') {
                 input = document.createElement('select');
@@ -98,7 +127,7 @@ function createEventEditor(containerId, config) {
                     } else {
                         event.params[def.name] = input.value;
                     }
-                    updateTextarea();
+                    update();
                 });
             } else if (def.type === 'number') {
                 input = document.createElement('input');
@@ -117,7 +146,7 @@ function createEventEditor(containerId, config) {
                             event.params[def.name] = v;
                         }
                     }
-                    updateTextarea();
+                    update();
                 });
             }
             if (input) wrapper.appendChild(input);
@@ -246,19 +275,8 @@ function createEventEditor(containerId, config) {
             });
             rowTop.appendChild(valueInput);
 
-            const textarea = document.createElement('textarea');
-            textarea.style.flex = '1';
-            textarea.rows = 1;
-            textarea.value = JSON.stringify(event.params);
-            textarea.addEventListener('change', () => {
-                try {
-                    event.params = JSON.parse(textarea.value);
-                    syncEvents();
-                } catch (e) {
-                    alert('invalid JSON');
-                }
-            });
-            rowTop.appendChild(textarea);
+            const paramsDisplay = createParamsDisplay(event);
+            rowTop.appendChild(paramsDisplay.element);
 
             const editBtn = document.createElement('button');
             editBtn.textContent = '⚙';
@@ -286,7 +304,7 @@ function createEventEditor(containerId, config) {
                     panel.remove();
                     panel = null;
                 } else {
-                    panel = createParamsPanel(event, textarea);
+                    panel = createParamsPanel(event, paramsDisplay.update);
                     row.appendChild(panel);
                 }
             });

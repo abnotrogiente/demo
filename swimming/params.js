@@ -8,7 +8,7 @@ class Config {
         this.params = {
             numSteps: 2, focal: 45,
             visualizations: {
-                enabled: true, showFlags: false, showRanks: false, showRanksIfFinished: false, showWR: false, showSpeed: false, showDivingDistance: true,
+                enabled: true, showFlags: false, showRanks: true, showRanksIfFinished: false, showWR: false, showSpeed: false, showDivingDistance: true,
                 showFinishTimes: false,
                 showNeighboursLines: "none", neighboursLinesModesDict: { "none": 0, "only medals": 1, "all": 2 },
                 showMedals: "none", medalsModesDict: { "none": 0, "stars": 1, "bright": 2, "lanes": 3 },
@@ -36,12 +36,15 @@ class Config {
     getRaceTime() {
         return this.time - videoStartTime;
     }
-    setRaceTime(t) {
-        this.time = videoStartTime + t;
-        if (!this.events) return;
+    updateEventIndex() {
         this.currentEventIndex = 0;
         while (this.events[this.currentEventIndex] && this.events[this.currentEventIndex].time < this.getRaceTime()) this.currentEventIndex++;
         if (this.currentEventIndex > 0) this.currentEventIndex--;
+    }
+    setRaceTime(t) {
+        this.time = videoStartTime + t;
+        if (!this.events) return;
+        this.updateEventIndex();
     }
     setTimeBeginRace() {
         this.setRaceTime(0);
@@ -54,8 +57,6 @@ class Config {
                 this.currentEventIndex = 0;
                 // refresh editor if one exists
                 if (this._renderTimeline) this._renderTimeline();
-                console.log("events : " + JSON.stringify(this.events));
-                console.log("event 0" + JSON.stringify(this.events[0]));
             });
     }
     updateParams() {
