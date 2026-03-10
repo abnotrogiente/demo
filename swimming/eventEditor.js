@@ -222,10 +222,15 @@ function createEventEditor(containerId, config) {
         }, 0);
 
         // build segments for each parameter to show enabled intervals
-        const paramNames = paramDefs.map(d => d.name);
+        // only include parameters that are actually modified by some event
+        const usedParams = new Set();
+        events.forEach(e => {
+            if (e.params) Object.keys(e.params).forEach(k => usedParams.add(k));
+        });
+        let paramNames = paramDefs.map(d => d.name).filter(n => usedParams.has(n));
         const colors = ['#4caf50', '#2196f3', '#ff9800', '#9c27b0', '#f44336', '#009688', '#e91e63', '#3f51b5'];
         const paramColors = {};
-        paramNames.forEach((n,i)=>{ paramColors[n] = colors[i % colors.length]; });
+        paramNames.forEach((n, i) => { paramColors[n] = colors[i % colors.length]; });
         const lastChange = {};
         const currentVals = {};
         paramNames.forEach(n => { currentVals[n] = false; lastChange[n] = 0; });
@@ -251,49 +256,72 @@ function createEventEditor(containerId, config) {
             }
         });
 
-        // render parameter interval tracks before main timeline
-        const paramsTimeline = document.createElement('div');
-        paramsTimeline.style.position = 'relative';
-        const trackHeight = 20;
-        paramsTimeline.style.height = (paramNames.length * trackHeight) + 'px';
-        paramsTimeline.style.background = '#222';
-        paramsTimeline.style.marginBottom = '4px';
+        // render parameter interval tracks before main timeline if there are any
+        if (paramNames.length > 0) {
+            const paramsTimeline = document.createElement('div');
+            paramsTimeline.style.position = 'relative';
+            const trackHeight = 20;
+            const labelWidth = 80; // reserve left column for names
+            paramsTimeline.style.height = (paramNames.length * trackHeight) + 'px';
+            paramsTimeline.style.background = '#222';
+            paramsTimeline.style.marginBottom = '4px';
 
-        // add labels for each track
-        paramNames.forEach((name, idx) => {
-            const lbl = document.createElement('div');
-            lbl.textContent = name;
-            lbl.style.position = 'absolute';
-            lbl.style.left = '2px';
-            lbl.style.top = (idx * trackHeight + 2) + 'px';
-            lbl.style.color = '#aaa';
-            lbl.style.fontSize = '10px';
-            lbl.style.pointerEvents = 'none';
-            paramsTimeline.appendChild(lbl);
-        });
+            // labels go directly on paramsTimeline
+            paramNames.forEach((name, idx) => {
+                const lbl = document.createElement('div');
+                lbl.textContent = name;
+                lbl.style.position = 'absolute';
+                lbl.style.left = '0';
+                lbl.style.top = (idx * trackHeight + 2) + 'px';
+                lbl.style.width = labelWidth + 'px';
+                lbl.style.color = '#aaa';
+                lbl.style.fontSize = '10px';
+                lbl.style.pointerEvents = 'none';
+                paramsTimeline.appendChild(lbl);
+            });
 
-        // add segments
-        segments.forEach(seg => {
-            const segDiv = document.createElement('div');
-            const startPct = maxVal > 0 ? (seg.start / maxVal) * 100 : 0;
-            const widthPct = maxVal > 0 ? ((seg.end - seg.start) / maxVal) * 100 : 0;
-            segDiv.style.position = 'absolute';
-            segDiv.style.left = startPct + '%';
-            segDiv.style.top = (paramNames.indexOf(seg.name) * trackHeight + 2) + 'px';
-            segDiv.style.height = (trackHeight - 4) + 'px';
-            segDiv.style.width = widthPct + '%';
-            segDiv.style.background = paramColors[seg.name] || '#4caf50';
-            segDiv.title = `${seg.name}: ${seg.start} → ${seg.end}`;
-            paramsTimeline.appendChild(segDiv);
-        });
+            // create track area where bars and markers sit
+            const trackArea = document.createElement('div');
+            trackArea.style.position = 'absolute';
+            trackArea.style.left = labelWidth + 'px';
+            trackArea.style.top = '0';
+            trackArea.style.right = '0';
+            trackArea.style.bottom = '0';
+            trackArea.style.overflow = 'hidden';
+            paramsTimeline.appendChild(trackArea);
 
-        container.appendChild(paramsTimeline);
+            // add segments inside trackArea using percents relative to it
+            segments.forEach(seg => {
+                const segDiv = document.createElement('div');
+                const startPct = maxVal > 0 ? (seg.start / maxVal) * 100 : 0;
+                const widthPct = maxVal > 0 ? ((seg.end - seg.start) / maxVal) * 100 : 0;
+                segDiv.style.position = 'absolute';
+                segDiv.style.left = startPct + '%';
+                segDiv.style.top = (paramNames.indexOf(seg.name) * trackHeight + 2) + 'px';
+                segDiv.style.height = (trackHeight - 4) + 'px';
+                segDiv.style.width = widthPct + '%';
+                segDiv.style.background = paramColors[seg.name] || '#4caf50';
+                segDiv.title = `${seg.name}: ${seg.start} → ${seg.end}`;
+                trackArea.appendChild(segDiv);
+            });
+
+            container.appendChild(paramsTimeline);
+        }
 
         const timeline = document.createElement('div');
         timeline.style.position = 'relative';
         timeline.style.height = '40px';
         timeline.style.background = '#444';
         timeline.style.marginBottom = '4px';
+        // mirror label padding on main timeline
+        timeline.style.paddingLeft = '80px';
+        const timelineTrack = document.createElement('div');
+        timelineTrack.style.position = 'absolute';
+        timelineTrack.style.left = '80px';
+        timelineTrack.style.top = '0';
+        timelineTrack.style.right = '0';
+        timelineTrack.style.bottom = '0';
+        timeline.appendChild(timelineTrack);
 
         events.forEach((event, idx) => {
             const val = event.distance !== undefined ? event.distance : event.time !== undefined ? event.time : 0;
@@ -310,7 +338,7 @@ function createEventEditor(containerId, config) {
             marker.addEventListener('click', () => {
                 openEditor(idx);
             });
-            timeline.appendChild(marker);
+            timelineTrack.appendChild(marker);
         });
 
         container.appendChild(timeline);
