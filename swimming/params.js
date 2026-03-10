@@ -21,6 +21,7 @@ class Config {
             video: { thresholdBlending: true, blendingThreshold: .41, show: false },
             simulation: { optimized: false, waterDamping: .02, poolSize: new GL.Vector(2.0, 1.0, 2.0) }
         };
+        this.originalVisParams = JSON.parse(JSON.stringify(this.params.visualizations));
         this.useConfigFile = true;
         this.time = 0;
         /**@type {Swimmer[]} */
@@ -36,6 +37,10 @@ class Config {
     getRaceTime() {
         return this.time - videoStartTime;
     }
+    resetParams() {
+        this.params.visualizations = JSON.parse(JSON.stringify(this.originalVisParams));
+        this.params.visualizations.areaConservationEnabled = false;
+    }
     updateEventIndex() {
         this.currentEventIndex = 0;
         while (this.events[this.currentEventIndex] && this.events[this.currentEventIndex].time < this.getRaceTime()) this.currentEventIndex++;
@@ -45,6 +50,7 @@ class Config {
         this.time = videoStartTime + t;
         if (!this.events) return;
         this.updateEventIndex();
+        this.resetParams();
     }
     setTimeBeginRace() {
         this.setRaceTime(0);
