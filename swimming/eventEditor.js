@@ -8,7 +8,22 @@ const labelWidth = 150; // reserve left column for names
 const maxVal = 100;
 
 function createEventEditor(containerId) {
-    const container = document.getElementById(containerId);
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    console.log("container created !!");
+    container.id = "event-editor";
+    container.style.position = "fixed";
+    container.display = "block";
+    container.style.bottom = "60px";
+    container.style.left = "10px";
+    container.style.right = "10px";
+    container.style.height = "120px";
+    container.style.zIndex = "4";
+    container.style.background = "#222";
+    container.style.color = "#fff";
+    container.style.overflow = "auto";
+    container.style.padding = "4px";
+    container.style.fontSize = "12px";
     container.style.position = container.style.position || 'relative';
     if (!container) {
         console.warn(`event editor container "${containerId}" not found`);
@@ -267,7 +282,7 @@ function createEventEditor(containerId) {
 
         // recreate top handle each time
         const panelHandle = document.createElement('div');
-        panelHandle.style.position = 'absolute';
+        panelHandle.style.position = 'relative';
         panelHandle.style.top = '0px';
         panelHandle.style.left = '50%';
         panelHandle.style.transform = 'translateX(-50%)';
@@ -301,6 +316,24 @@ function createEventEditor(containerId) {
             container.textContent = "no events defined";
             return;
         }
+
+        const videoSelectionWrapper = document.createElement('div');
+        container.appendChild(videoSelectionWrapper);
+        videoSelectionWrapper.style.marginRight = '8px';
+        videoSelectionWrapper.style.marginBottom = '4px';
+        const label = document.createElement('label');
+        label.style.whiteSpace = 'nowrap';
+        label.textContent = 'select video';
+        label.style.margin = "30px"
+        videoSelectionWrapper.appendChild(label);
+        const videoSelector = document.createElement('select');
+        videoSelector.style.width = "auto";
+        const option = document.createElement('option');
+        option.textContent = "video1";
+        videoSelector.appendChild(option);
+        videoSelectionWrapper.appendChild(videoSelector);
+
+
 
         // copy and sort events by distance (fallback to time)
         const events = config.events.slice().sort((a, b) => {

@@ -61,6 +61,7 @@ Released under the MIT license
 
     canvas {
       position: absolute;
+      display: block;
       top: 0;
       left: 0;
     }
@@ -184,16 +185,16 @@ Released under the MIT license
     <div id="fps"></div>
   </div>
 
-  <div hidden="true" id="time-slider-container">
+  <div id="time-slider-container">
     <input type="range" id="time-slider" min="0" max="51">
     <label for="time-slider">time</label>
   </div>
 
   <!-- event timeline editor -->
-  <div id="event-editor"
-    style="position:fixed;bottom:60px;left:10px;right:10px;height:120px;z-index:4;background:#222;color:#fff;overflow:auto;padding:4px;font-size:12px;">
-    <!-- populated by eventEditor.js -->
-  </div>
+  <!-- <div id="event-editor"
+    style="position:relative;bottom:60px;left:10px;right:10px;height:120px;z-index:4;background:#222;color:#fff;overflow:auto;padding:4px;font-size:12px;">
+    populated by eventEditor.js -->
+  <!-- </div> -->
 
 
 
