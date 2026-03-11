@@ -27,7 +27,8 @@ function createEventEditor(containerId) {
         { name: 'showSpeed', type: 'boolean' },
         { name: 'showDivingDistance', type: 'boolean' },
         { name: 'showFinishTimes', type: 'boolean' },
-        { name: 'showNeighboursLines', type: 'select', options: ['none', 'only medals', 'all'] },
+        { name: 'showSwimmersLines', type: 'select', options: config.params.visualizations.swimmersLinesList },
+        { name: 'swimmersLinesMode', type: 'select', options: config.params.visualizations.swimmersLinesModeList },
         { name: 'medalsModeBeforeFinish', type: 'select', options: ['none', 'stars', 'bright', 'lanes'] },
         { name: 'medalsModeAfterFinish', type: 'select', options: ['none', 'stars', 'bright', 'lanes'] },
         { name: 'rankSwimmerToggle', type: 'number', min: 1, max: 10 }

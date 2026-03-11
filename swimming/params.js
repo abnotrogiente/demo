@@ -3,6 +3,17 @@ import { Swimmer } from "./swimmer";
 
 const videoStartTime = 16.5;
 
+function listToDict(L) {
+    const dict = {};
+    for (let i = 0; i < L.length; i++) {
+        dict[L[i]] = i;
+    }
+    return dict;
+}
+
+const swimmersLinesList = ["none", "only medals", "all"];
+const swimmersLinesModeList = ["neighbours", "per swimmer"];
+
 class Config {
     constructor() {
         this.params = {
@@ -10,7 +21,8 @@ class Config {
             visualizations: {
                 enabled: true, showFlags: false, showWR: false, showSpeed: false, showDivingDistance: true,
                 showFinishTimes: false,
-                showNeighboursLines: "none", neighboursLinesModesDict: { "none": 0, "only medals": 1, "all": 2 },
+                showSwimmersLines: "none", swimmersLinesList: swimmersLinesList, showSwimmersLinesDict: listToDict(swimmersLinesList),
+                swimmersLinesMode: "neighbours", swimmersLinesModeList: swimmersLinesModeList, swimmersLinesModeDict: listToDict(swimmersLinesModeList),
                 medalsModeBeforeFinish: "none", medalsModesDict: { "none": 0, "stars": 1, "bright": 2, "lanes": 3 },
                 medalsModeAfterFinish: "none",
                 areaConservationEnabled: true,

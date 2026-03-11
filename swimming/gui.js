@@ -27,9 +27,10 @@ const createGUI = function (gl, reset) {
     });
     visualizationsFolder.add(config.params.visualizations, "showFlags").name('show flags').listen();
     visualizationsFolder.add(config.params.visualizations, "showWR").name('show world record').listen();
-    visualizationsFolder.add(config.params.visualizations, "showNeighboursLines", ["none", "only medals", "all"]).name('show neighbours lines').listen();
+    visualizationsFolder.add(config.params.visualizations, "showSwimmersLines", config.params.visualizations.swimmersLinesList).name('show neighbours lines').listen();
+    visualizationsFolder.add(config.params.visualizations, "swimmersLinesMode", config.params.visualizations.swimmersLinesModeList).name('show neighbours lines').listen();
     visualizationsFolder.add(config.params.visualizations, "medalsModeBeforeFinish", ["none", "stars", "bright", "lanes"]).name('show potential medals').listen();
-    visualizationsFolder.add(config.params.visualizations, "medalsModeAfterFinish", ["none", "stars", "bright", "lanes"]).name('show potential medals').listen();
+    visualizationsFolder.add(config.params.visualizations, "medalsModeAfterFinish", ["none", "stars", "bright", "lanes"]).name('show potential medals after finish').listen();
     visualizationsFolder.add(config.params.visualizations, "showSpeed").name('show speed').listen();
     const ranksFolder = visualizationsFolder.addFolder("ranks");
     visualizationsFolder.add(config.params.visualizations, "showDivingDistance").name('show diving distance').listen();
