@@ -402,6 +402,7 @@ window.onload = function () {
   };
 
   function startRace() {
+    video.video.play();
     Swimmer.useGravity = true;
     water.WR_position = 0;
     config.setTimeBeginRace();
@@ -413,10 +414,13 @@ window.onload = function () {
   function stopRace() {
     Swimmer.raceHasStarted = false;
     for (let swimmer of config.swimmers) swimmer.swim(false);
+    video.video.pause();
   }
 
   function pause() {
     paused = !paused;
+    if (paused) video.video.pause();
+    else if (Swimmer.raceHasStarted) video.video.play();
     video.video.currentTime = config.time;
   }
 

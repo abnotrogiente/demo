@@ -438,6 +438,12 @@ class Video {
         );
     }
 
+    #pauseFirstTime() {
+        if (this.hasPausedFirstTime) return;
+        this.hasPausedFirstTime = true;
+        this.video.pause();
+    }
+
     setupVideo(url) {
         const video = document.createElement("video");
 
@@ -446,7 +452,7 @@ class Video {
 
         video.playsInline = true;
         video.muted = true;
-        video.loop = true;
+        video.loop = false;
 
         // Waiting for these 2 events ensures
         // there is data in the video
@@ -471,10 +477,13 @@ class Video {
 
         video.src = url;
         video.play();
+        // video.pause();
         const this_ = this;
         const checkReady = () => {
             if (playing && timeupdate) {
                 this_.copyVideo = true;
+                if (!video.paused)
+                    this.#pauseFirstTime();
             }
         }
 
