@@ -232,6 +232,7 @@ function createEventEditor(containerId) {
         let marker = document.getElementById("distance-marker");
         const currentDist = config.swimmers[0].getDistanceTraveled();
         if (!marker) {
+            if (isMinimized) return;
             const timelineTrack = document.getElementById("timeline-track");
             marker = createMarker(currentDist, maxVal, { color: "blue", id: "distance-marker" });
             timelineTrack.appendChild(marker);
