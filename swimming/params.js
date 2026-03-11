@@ -31,7 +31,7 @@ class Config {
                 sparks: { enabled: false, glow: 5., glowOffset: .5, lengthFactor: 1., stroke: .01, num: 40, sizeFactor: 50, fov: Math.PI / 4 }
             },
             swimmers: { showSpheres: true, useTracking: false },
-            video: { thresholdBlending: true, blendingThreshold: .41, show: false },
+            video: { thresholdBlending: false, blendingThreshold: .41, show: false },
             simulation: { optimized: false, waterDamping: .02, poolSize: new GL.Vector(2.0, 1.0, 2.0) }
         };
         this.originalVisParams = JSON.parse(JSON.stringify(this.params.visualizations));
@@ -41,6 +41,13 @@ class Config {
         this.time = 0;
         /**@type {Swimmer[]} */
         this.swimmers = [];
+
+        this.translateX = 0.;
+        this.translateY = 0.;
+        this.zoomDistance = 4.;
+        this.angleX = -25;
+        this.angleY = -200.5;
+        this.angleZ = 0.;
     }
     isOneVisualizationEnabled() {
         return this.params.visualizations.showFlags ||
@@ -110,6 +117,48 @@ class Config {
                 // console.log("\n\n\n")
             });
         }
+    }
+
+    /**
+     * 
+     * @param {WebGLRenderingContext} gl 
+     */
+    setRaceCalibration(gl) {
+        this.params.focal = 39.98; // 31.75
+        this.params.visualizations.sparks.fov = this.params.focal * 2 * Math.PI / 360;
+        gl.matrixMode(gl.PROJECTION);
+        gl.loadIdentity();
+        gl.perspective(this.params.focal, gl.canvas.width / gl.canvas.height, 0.01, 100);
+        gl.matrixMode(gl.MODELVIEW);
+
+
+        this.translateX = -0.53;
+        this.translateY = 1.25;
+        this.zoomDistance = 47.86;
+        this.angleX = -29;
+        this.angleY = -260.5;
+        this.angleZ = -5;
+    }
+
+    /**
+     * 
+     * @param {WebGLRenderingContext} gl 
+     */
+    setSynchroCalibration(gl) {
+        this.params.focal = 42.8; // 31.75
+        this.params.visualizations.sparks.fov = this.params.focal * 2 * Math.PI / 360;
+        gl.matrixMode(gl.PROJECTION);
+        gl.loadIdentity();
+        gl.perspective(this.params.focal, gl.canvas.width / gl.canvas.height, 0.01, 100);
+        gl.matrixMode(gl.MODELVIEW);
+
+
+        this.translateX = -1.32;
+        this.translateY = 0.40;
+        this.zoomDistance = 32.41;
+        this.angleX = -18;
+        this.angleY = -291.5;
+        this.angleZ = 1;
     }
 }
 

@@ -45,12 +45,6 @@ var cubemap;
 /**@type {Renderer} */
 var renderer;
 const numSwimmers = 10;
-var angleX = -25;
-var angleY = -200.5;
-var angleZ = 0;
-let translateX = 0;
-let translateY = 0;
-var zoomDistance = 4.0;
 
 // const videoStartTime = 17;
 var paused = false;
@@ -148,7 +142,7 @@ window.onload = function () {
   flagCenter = new GL.Vector(0., -config.params.simulation.poolSize.z / 2. + 1.);
   flagSize = 0.7;
   water = new Water(gl);
-  video = new Video(gl, "./video.mp4");  // Empty path - use drag-and-drop instead
+  video = new Video(gl, "./natation-synchro.mp4");  // Empty path - use drag-and-drop instead
   // video.video.src = "./video.mp4";
 
   // attach slider listener
@@ -319,19 +313,19 @@ window.onload = function () {
       }
       case MODE_ORBIT_CAMERA: {
         if (e && e.shiftKey) {
-          angleZ -= x - oldX;
-          angleZ = Math.max(-89.999, Math.min(89.999, angleZ));
+          config.angleZ -= x - oldX;
+          config.angleZ = Math.max(-89.999, Math.min(89.999, config.angleZ));
           break;
         }
-        angleY -= x - oldX;
-        angleX -= y - oldY;
-        angleX = Math.max(-89.999, Math.min(89.999, angleX));
+        config.angleY -= x - oldX;
+        config.angleX -= y - oldY;
+        config.angleX = Math.max(-89.999, Math.min(89.999, config.angleX));
         break;
       }
       case MODE_TRANSLATE_CAMERA: {
-        const factor = .001 * zoomDistance;
-        translateX += factor * (x - oldX);
-        translateY -= factor * (y - oldY);
+        const factor = .001 * config.zoomDistance;
+        config.translateX += factor * (x - oldX);
+        config.translateY -= factor * (y - oldY);
       }
     }
     oldX = x;
@@ -354,8 +348,8 @@ window.onload = function () {
   }
 
   function zoom(delta) {
-    zoomDistance *= 1 - delta * 0.0002;
-    zoomDistance = Math.max(2, Math.min(1000, zoomDistance));
+    config.zoomDistance *= 1 - delta * 0.0002;
+    config.zoomDistance = Math.max(2, Math.min(1000, config.zoomDistance));
     if (paused) draw();
   };
 
@@ -460,7 +454,7 @@ window.onload = function () {
       config.params.simulation.optimized = true;
       config.params.simulation.poolSize.x = 25;
       config.params.simulation.poolSize.y = 2;
-      config.params.simulation.poolSize.z = 50;
+      config.params.simulation.poolSize.z = 30;
       // resolution = new GL.Vector(2048, 4096);
       resolution.x = 1024;
       resolution.y = 2048;
@@ -482,25 +476,7 @@ window.onload = function () {
 
       reset();
 
-      config.params.focal = 39.98; // 31.75
-      config.params.visualizations.sparks.fov = config.params.focal * 2 * Math.PI / 360;
-      gl.matrixMode(gl.PROJECTION);
-      gl.loadIdentity();
-      gl.perspective(config.params.focal, gl.canvas.width / gl.canvas.height, 0.01, 100);
-      gl.matrixMode(gl.MODELVIEW);
-      // translateX = -0.42;
-      // translateY = 1.18;
-      // zoomDistance = 52.5;
-      // angleX = -24;
-      // angleY = -261.5;
-      // angleZ = -4;
-
-      translateX = -0.53;
-      translateY = 1.25;
-      zoomDistance = 47.86;
-      angleX = -29;
-      angleY = -260.5;
-      angleZ = -5;
+      config.setSynchroCalibration(gl);
       console.log("Olympic mode enabled.");
     }
     else if (e.which == 'W'.charCodeAt(0)) {
@@ -572,7 +548,7 @@ window.onload = function () {
   function draw() {
     // Change the light direction to the camera look vector when the L key is pressed
     if (GL.keys.L) {
-      renderer.lightDir = GL.Vector.fromAngles((90 - angleY) * Math.PI / 180, -angleX * Math.PI / 180);
+      renderer.lightDir = GL.Vector.fromAngles((90 - config.angleY) * Math.PI / 180, -config.angleX * Math.PI / 180);
       if (paused) renderer.updateCaustics(water);
     }
     if (config.isOneVisualizationEnabled()) Swimmer.updateAttributesTexture();
@@ -584,18 +560,18 @@ window.onload = function () {
     // g.clearColor(1, 1, 1, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.loadIdentity();
-    gl.translate(translateX, translateY, -zoomDistance);
-    gl.rotate(-angleZ, 0, 0, 1);
-    gl.rotate(-angleX, 1, 0, 0);
-    gl.rotate(-angleY, 0, 1, 0);
+    gl.translate(config.translateX, config.translateY, -config.zoomDistance);
+    gl.rotate(-config.angleZ, 0, 0, 1);
+    gl.rotate(-config.angleX, 1, 0, 0);
+    gl.rotate(-config.angleY, 0, 1, 0);
     gl.translate(0, 0.5, 0);
 
-    // console.log(translateX);
-    // console.log(translateY);
-    // console.log(zoomDistance);
-    // console.log(angleX);
-    // console.log(angleY);
-    // console.log(angleZ);
+    // console.log(config.translateX);
+    // console.log(config.translateY);
+    // console.log(config.zoomDistance);
+    // console.log(config.angleX);
+    // console.log(config.angleY);
+    // console.log(config.angleZ);
     // console.log(config.params.focal);
     // console.log("\n\n\n");
 
