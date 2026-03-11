@@ -213,7 +213,7 @@ class Swimmer {
                 nextEventTime = parseFloat(nextData[TIME_KEY]);
             }
             const D = config.params.simulation.poolSize.z;
-            let y = 0;
+            let y = -this.body.radius / 2;
             const currentEvent = this.data[this.currendDataIndex][EVENT_KEY];
             if (currentEvent == "enter" || currentEvent == "turn" && nextData[EVENT_KEY] != "under") {
                 nextEventTime = (time + nextEventTime) / 2;
