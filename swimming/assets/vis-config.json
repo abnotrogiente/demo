@@ -15,11 +15,17 @@
         }
     },
     {
+        "distance": 25,
+        "params": {
+            "swimmersLinesMode": "per swimmer",
+            "showSwimmersLines": "only medals"
+        }
+    },
+    {
         "distance": 40,
         "params": {
             "showFlags": true,
-            "showSpeed": false,
-            "showNeighboursLines": "only medals"
+            "showSpeed": false
         }
     },
     {
@@ -28,6 +34,12 @@
             "showFlags": false,
             "showSpeed": true,
             "medalsModeBeforeFinish": "bright"
+        }
+    },
+    {
+        "distance": 80,
+        "params": {
+            "swimmersLinesMode": "neighbours"
         }
     },
     {
