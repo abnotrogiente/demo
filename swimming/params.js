@@ -90,6 +90,38 @@ class Config {
         this.currentScene = null;
         /**@type {Scene} */
         this.currentScene = null;
+
+        this.paused = false;
+
+        this.configPlayButton();
+    }
+
+    configStopButton() {
+        this.stopButton = document.getElementById("stop-button");
+        this.stopButton.addEventListener("click", () => {
+            if (this.paused) this.pause();
+            this.stopRace();
+            this.playButton.textContent = "play";
+            this.stopButton.hidden = true;
+        })
+    }
+
+    configPlayButton() {
+        this.configStopButton();
+        this.playButton = document.getElementById("play-button");
+        this.playButton.addEventListener("click", () => {
+            if (this.playButton.textContent == "pause") {
+                this.pause();
+                this.playButton.textContent = "play";
+                // this.stopButton.hidden = true;
+            }
+            else {
+                if (!Swimmer.raceHasStarted) this.startRace();
+                else this.pause();
+                this.playButton.textContent = "pause";
+                this.stopButton.hidden = false;
+            }
+        })
     }
 
     /**
@@ -188,6 +220,7 @@ class Config {
         Swimmer.raceHasStarted = true;
         Swimmer.useGravity = true;
         this.water.resetTextures();
+        this.water.WR_position = 0;
     }
     stopRace() {
         this.setRaceTime(0);
@@ -195,6 +228,11 @@ class Config {
         this.swimmers.forEach(swimmer => swimmer.swim(false));
         Swimmer.raceHasStarted = false;
         this.water.resetTextures();
+    }
+    pause() {
+        this.paused = !this.paused;
+        if (this.paused) this.pauseVideo();
+        else if (Swimmer.raceHasStarted) this.playVideo();
     }
     pauseVideo() {
         if (this.currentVideo) this.currentVideo.video.pause();

@@ -44,7 +44,6 @@ const numSwimmers = 10;
 const gl = config.gl;
 
 // const videoStartTime = 17;
-var paused = false;
 var flagCenter;
 var flagSize;
 
@@ -217,7 +216,7 @@ window.onload = function () {
   var prevTime = new Date().getTime();
   function animate() {
     var nextTime = new Date().getTime();
-    if (!paused) {
+    if (!config.paused) {
       update((nextTime - prevTime) / 1000);
       draw(nextTime);
     }
@@ -276,7 +275,7 @@ window.onload = function () {
         var ray = tracer.getRayForPixel(x * ratio, y * ratio);
         var pointOnPlane = tracer.eye.add(ray.multiply(-tracer.eye.y / ray.y));
         config.water.addDrop(pointOnPlane.x / config.params.simulation.poolSize.x * 2, pointOnPlane.z / config.params.simulation.poolSize.z * 2, 0.06, 0.03);
-        if (paused) {
+        if (config.paused) {
           config.water.updateNormals();
           renderer.updateCaustics(config.water);
         }
@@ -294,7 +293,7 @@ window.onload = function () {
         const z_sphere = Math.max(radius - config.params.simulation.poolSize.z / 2, Math.min(config.params.simulation.poolSize.z / 2 - radius, center.z));
         swimmerSelected.body.move(new GL.Vector(x_sphere, y_sphere, z_sphere));
         prevHit = nextHit;
-        if (paused) renderer.updateCaustics(config.water);
+        if (config.paused) renderer.updateCaustics(config.water);
         break;
       }
       case MODE_ORBIT_CAMERA: {
@@ -316,7 +315,7 @@ window.onload = function () {
     }
     oldX = x;
     oldY = y;
-    if (paused) draw();
+    if (config.paused) draw();
   }
 
   function stopDrag() {
@@ -336,7 +335,7 @@ window.onload = function () {
   function zoom(delta) {
     config.zoomDistance *= 1 - delta * 0.0002;
     config.zoomDistance = Math.max(2, Math.min(1000, config.zoomDistance));
-    if (paused) draw();
+    if (config.paused) draw();
   };
 
   addEventListener('wheel', function (e) {
@@ -383,7 +382,6 @@ window.onload = function () {
 
   function startRace() {
     config.startRace();
-    config.water.WR_position = 0;
   }
 
   function stopRace() {
@@ -391,8 +389,8 @@ window.onload = function () {
   }
 
   function pause() {
-    paused = !paused;
-    if (paused) config.pauseVideo();
+    config.paused = !config.paused;
+    if (config.paused) config.pauseVideo();
     else if (Swimmer.raceHasStarted) config.playVideo();
   }
 
@@ -402,7 +400,7 @@ window.onload = function () {
       Swimmer.useGravity = !Swimmer.useGravity;
       for (let swimmer of config.swimmers) swimmer.body.cinematic = Swimmer.useGravity;
     }
-    else if (e.which == 'L'.charCodeAt(0) && paused) draw();
+    else if (e.which == 'L'.charCodeAt(0) && config.paused) draw();
     else if (e.which == 'J'.charCodeAt(0)) {
       config.swimmers.forEach(swimmer => swimmer.jump(2));
     }
@@ -501,7 +499,7 @@ window.onload = function () {
     // Change the light direction to the camera look vector when the L key is pressed
     if (GL.keys.L) {
       renderer.lightDir = GL.Vector.fromAngles((90 - config.angleY) * Math.PI / 180, -config.angleX * Math.PI / 180);
-      if (paused) renderer.updateCaustics(config.water);
+      if (config.paused) renderer.updateCaustics(config.water);
     }
     if (config.isOneVisualizationEnabled()) Swimmer.updateAttributesTexture();
     config.water.addOrRemoveVisualizationWaves(true);
