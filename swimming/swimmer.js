@@ -30,8 +30,8 @@ class Swimmer {
     /**@type {SwimmersAttributes} */
     static attributes;
 
-    static initAttributes = (gl) => {
-        Swimmer.attributes = new SwimmersAttributes(gl);
+    static initAttributes = () => {
+        Swimmer.attributes = new SwimmersAttributes();
     }
 
     static updateAttributesTexture = () => {

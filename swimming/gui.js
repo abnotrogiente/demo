@@ -78,13 +78,13 @@ const createGUI = function (gl, reset) {
 
     const cameraFolder = gui.addFolder("camera");
     cameraFolder.close();
-    cameraFolder.add(config.params, 'focal', 28, 45).name('focal').listen().onChange(function (value) {
+    cameraFolder.add(config.params, 'fov', 28, 45).name('fov').listen().onChange(function (value) {
         config.params.visualizations.sparks.fov = value * 2 * Math.PI / 360;
         gl.matrixMode(gl.PROJECTION);
         gl.loadIdentity();
-        gl.perspective(config.params.focal, gl.canvas.width / gl.canvas.height, 0.01, 100);
+        gl.perspective(config.params.fov, gl.canvas.width / gl.canvas.height, 0.01, 100);
         gl.matrixMode(gl.MODELVIEW);
-        console.log("perspective : " + config.params.focal);
+        console.log("perspective : " + config.params.fov);
     });
 }
 

@@ -1,5 +1,6 @@
+import { Calibration } from "./calibration";
 import GL from "./lightgl";
-import { Scene } from "./Scene";
+import { Scene } from "./scene";
 import { Swimmer } from "./swimmer";
 import { Video } from "./video";
 
@@ -19,7 +20,7 @@ const swimmersLinesModeList = ["neighbours", "per swimmer"];
 class Config {
     constructor() {
         this.params = {
-            numSteps: 2, focal: 45,
+            numSteps: 2, fov: 45,
             visualizations: {
                 enabled: true, showFlags: false, showWR: false, showSpeed: false, showDivingDistance: true,
                 showFinishTimes: false,
@@ -36,6 +37,11 @@ class Config {
             video: { thresholdBlending: false, blendingThreshold: .41, show: false },
             simulation: { optimized: false, waterDamping: .02, poolSize: new GL.Vector(2.0, 1.0, 2.0) }
         };
+
+        /**@type {WebGLRenderingContext} */
+        this.gl = GL.create();
+        this.gl.canvas.tabIndex = 0;
+
         this.originalVisParams = JSON.parse(JSON.stringify(this.params.visualizations));
         delete this.originalVisParams.shadow;
         delete this.originalVisParams.sparks;
@@ -53,14 +59,30 @@ class Config {
 
         const sceneRace = new Scene("100m freestyle");
         console.log("scene title : " + sceneRace.title);
-        // sceneRace.addVideo(new Video("video.mp4"));
+        const calibration1 = new Calibration({ tx: -0.53, ty: 1.25, zoom: 47.86, ax: -29, ay: -260.5, az: -5, fov: 39.98 });
+        sceneRace.addVideo(new Video(this.gl, "video.mp4", calibration1));
 
         /**@type {Scene[]} */
         this.scenesList = [sceneRace, new Scene("test2")];
         this.scenes = {};
         this.scenesList.forEach(scene => this.scenes[scene.title] = scene);
+        this.currentScene = null;
         /**@type {Scene} */
         this.currentScene = null;
+    }
+
+    /**
+     * 
+     * @param {Calibration} calibration 
+     */
+    setCalibration(calibration) {
+        this.translateX = calibration.tx;
+        this.translateY = calibration.ty;
+        this.zoomDistance = calibration.zoom;
+        this.angleX = calibration.ax;
+        this.angleY = calibration.ay;
+        this.angleZ = calibration.az;
+        this.params.fov = calibration.fov;
     }
 
 
@@ -142,24 +164,25 @@ class Config {
      * 
      * @param {WebGLRenderingContext} gl 
      */
-    setRaceCalibration(gl) {
+    setRaceCalibration(gl, calibration) {
         this.params.simulation.poolSize.x = 25;
         this.params.simulation.poolSize.y = 2;
         this.params.simulation.poolSize.z = 50;
-        this.params.focal = 39.98; // 31.75
-        this.params.visualizations.sparks.fov = this.params.focal * 2 * Math.PI / 360;
+        this.setCalibration(calibration);
+        this.params.visualizations.sparks.fov = this.params.fov * 2 * Math.PI / 360;
         gl.matrixMode(gl.PROJECTION);
         gl.loadIdentity();
-        gl.perspective(this.params.focal, gl.canvas.width / gl.canvas.height, 0.01, 100);
+        gl.perspective(this.params.fov, gl.canvas.width / gl.canvas.height, 0.01, 100);
         gl.matrixMode(gl.MODELVIEW);
 
 
-        this.translateX = -0.53;
-        this.translateY = 1.25;
-        this.zoomDistance = 47.86;
-        this.angleX = -29;
-        this.angleY = -260.5;
-        this.angleZ = -5;
+
+        // this.translateX = -0.53;
+        // this.translateY = 1.25;
+        // this.zoomDistance = 47.86;
+        // this.angleX = -29;
+        // this.angleY = -260.5;
+        // this.angleZ = -5;
     }
 
     /**
@@ -170,11 +193,11 @@ class Config {
         this.params.simulation.poolSize.x = 25;
         this.params.simulation.poolSize.y = 2;
         this.params.simulation.poolSize.z = 30;
-        this.params.focal = 42.8; // 31.75
-        this.params.visualizations.sparks.fov = this.params.focal * 2 * Math.PI / 360;
+        this.params.fov = 42.8; // 31.75
+        this.params.visualizations.sparks.fov = this.params.fov * 2 * Math.PI / 360;
         gl.matrixMode(gl.PROJECTION);
         gl.loadIdentity();
-        gl.perspective(this.params.focal, gl.canvas.width / gl.canvas.height, 0.01, 100);
+        gl.perspective(this.params.fov, gl.canvas.width / gl.canvas.height, 0.01, 100);
         gl.matrixMode(gl.MODELVIEW);
 
 

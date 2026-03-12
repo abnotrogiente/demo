@@ -17,6 +17,7 @@ import { config } from './params.js';
 import { MAX_SPARKS } from './video.js';
 import { createGUI } from './gui.js';
 import { createEventEditor } from './eventEditor.js';
+import { Calibration } from './calibration.js';
 
 
 function text2html(text) {
@@ -36,15 +37,13 @@ function handleError(text) {
 }
 
 window.onerror = handleError
-/**@type {WebGLRenderingContext} */
-var gl = GL.create();
-gl.canvas.tabIndex = 0;
 /**@type {Water} */
 var water;
 var cubemap;
 /**@type {Renderer} */
 var renderer;
 const numSwimmers = 10;
+const gl = config.gl;
 
 // const videoStartTime = 17;
 var paused = false;
@@ -54,7 +53,7 @@ var flagSize;
 // make video accessible to slider handler
 var video;
 
-Swimmer.initAttributes(gl);
+Swimmer.initAttributes();
 let resolution = new GL.Vector(256, 256);
 function updateResolutionWarning() {
   document.getElementById('warning').hidden = !(resolution.x * resolution.y > 300000 && (water && config.params.visualizations.areaConservationEnabled));
@@ -130,7 +129,7 @@ window.onload = function () {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.matrixMode(gl.PROJECTION);
     gl.loadIdentity();
-    gl.perspective(config.params.focal, gl.canvas.width / gl.canvas.height, 0.01, 100);
+    gl.perspective(config.params.fov, gl.canvas.width / gl.canvas.height, 0.01, 100);
     gl.matrixMode(gl.MODELVIEW);
     draw();
   }
@@ -142,7 +141,14 @@ window.onload = function () {
   flagCenter = new GL.Vector(0., -config.params.simulation.poolSize.z / 2. + 1.);
   flagSize = 0.7;
   water = new Water(gl);
-  video = new Video(gl, "./video.mp4");  // Empty path - use drag-and-drop instead
+  // this.translateX = -0.53;
+  // this.translateY = 1.25;
+  // this.zoomDistance = 47.86;
+  // this.angleX = -29;
+  // this.angleY = -260.5;
+  // this.angleZ = -5;
+  const calibration = new Calibration({ tx: -0.53, ty: 1.25, zoom: 47.86, ax: -29, ay: -260.5, az: -5, fov: 39.98 });
+  video = new Video(gl, "./video.mp4", calibration);  // Empty path - use drag-and-drop instead
   // video.video.src = "./video.mp4";
 
   // attach slider listener
@@ -477,7 +483,7 @@ window.onload = function () {
       if (video.copyVideo) video.video.currentTime = config.time;
 
 
-      config.setRaceCalibration(gl);
+      config.setRaceCalibration(gl, video.calibration);
       reset();
       console.log("Olympic mode enabled.");
     }
@@ -574,7 +580,7 @@ window.onload = function () {
     // console.log(config.angleX);
     // console.log(config.angleY);
     // console.log(config.angleZ);
-    // console.log(config.params.focal);
+    // console.log(config.params.fov);
     // console.log("\n\n\n");
 
 

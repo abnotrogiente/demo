@@ -1,3 +1,4 @@
+import { Calibration } from "./calibration.js";
 import GL from "./lightgl.js";
 import { config } from "./params.js";
 import { Swimmer } from "./swimmer.js";
@@ -236,9 +237,18 @@ vec3 sparks(vec2 px, vec3 offset, float reactionTime) {
 // start here
 //
 class Video {
-    constructor(gl, src) {
+    /**
+     * 
+     * @param {WebGLRenderingContext} gl 
+     * @param {*} src 
+     * @param {Calibration} calibration 
+     * @returns 
+     */
+    constructor(gl, src, calibration) {
         /**@type {WebGLRenderingContext} */
-        this.gl = gl
+        this.gl = gl;
+        /**@type {Calibration} */
+        this.calibration = calibration;
         this.copyVideo = false;
         this.show = false;
         // Only continue if WebGL is available and working

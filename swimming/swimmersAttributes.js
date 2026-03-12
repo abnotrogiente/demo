@@ -165,16 +165,12 @@ const indices = new Uint16Array([
 ]);
 
 class SwimmersAttributes {
-    /**
-     *
-     * @param {WebGLRenderingContext} gl
-     */
-    constructor(gl) {
+    constructor() {
         this.numVecAttributes = NUM_VEC_ATTRIBUTES;
         this.maxNumSwimmer = MAX_NUM_SWIMMER;
-        this.gl = gl;
-        const filter = gl.NEAREST;
-        this.texture = new GL.Texture(this.numVecAttributes, this.maxNumSwimmer, { type: gl.FLOAT, filter: filter });
+        this.gl = config.gl;
+        const filter = this.gl.NEAREST;
+        this.texture = new GL.Texture(this.numVecAttributes, this.maxNumSwimmer, { type: this.gl.FLOAT, filter: filter });
 
         this.initPrograms();
 
