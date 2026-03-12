@@ -112,10 +112,7 @@ class Config {
     configStopButton() {
         this.stopButton = document.getElementById("stop-button");
         this.stopButton.addEventListener("click", () => {
-            if (this.paused) this.pause();
             this.stopRace();
-            this.playButton.textContent = "play";
-            this.stopButton.hidden = true;
         })
     }
 
@@ -125,14 +122,13 @@ class Config {
         this.playButton.addEventListener("click", () => {
             if (this.playButton.textContent == "pause") {
                 this.pause();
-                this.playButton.textContent = "play";
+
                 // this.stopButton.hidden = true;
             }
             else {
                 if (!Swimmer.raceHasStarted) this.startRace();
-                else this.pause();
-                this.playButton.textContent = "pause";
-                this.stopButton.hidden = false;
+                this.play();
+
             }
         })
     }
@@ -187,11 +183,11 @@ class Config {
                     this.swimmers = this.swimmers.slice(1);
                 }
             }
-            // const timeSliderContainer = document.getElementById("time-slider-container");
-            // this.params.video.show = this.currentVideo.video ? true : false;
-            // this.params.swimmers.useTracking = true;
-            // this.params.swimmers.showSpheres = this.currentVideo.video ? false : true;
-            // timeSliderContainer.hidden = this.currentVideo.video ? false : true;
+            const timeSliderContainer = document.getElementById("time-slider-container");
+            this.params.video.show = this.currentVideo.video ? true : false;
+            this.params.swimmers.useTracking = true;
+            this.params.swimmers.showSpheres = this.currentVideo.video ? false : true;
+            timeSliderContainer.hidden = this.currentVideo.video ? false : true;
             this.stopRace();
             this._reset();
 
@@ -242,18 +238,29 @@ class Config {
         Swimmer.useGravity = true;
         this.water.resetTextures();
         this.water.WR_position = 0;
+        this.stopButton.hidden = false;
     }
     stopRace() {
+        if (this.paused) this.play();
         this.setRaceTime(0);
         if (this.currentVideo.video) this.currentVideo.video.pause();
         this.swimmers.forEach(swimmer => swimmer.swim(false));
         Swimmer.raceHasStarted = false;
         this.water.resetTextures();
+
+        this.playButton.textContent = "play";
+        this.stopButton.hidden = true;
     }
     pause() {
-        this.paused = !this.paused;
-        if (this.paused) this.pauseVideo();
-        else if (Swimmer.raceHasStarted) this.playVideo();
+        this.paused = true;
+        this.pauseVideo();
+        this.playButton.textContent = "play";
+    }
+    play() {
+        this.paused = false;
+        if (!Swimmer.raceHasStarted) return;
+        this.playVideo();
+        this.playButton.textContent = "pause";
     }
     pauseVideo() {
         if (this.currentVideo.video) this.currentVideo.video.pause();

@@ -381,9 +381,8 @@ window.onload = function () {
 
 
   function pause() {
-    config.paused = !config.paused;
-    if (config.paused) config.pauseVideo();
-    else if (Swimmer.raceHasStarted) config.playVideo();
+    if (config.paused) config.play();
+    else config.pause();
   }
 
   const onkeydown = function (e) {
