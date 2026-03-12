@@ -187,11 +187,11 @@ class Config {
                     this.swimmers = this.swimmers.slice(1);
                 }
             }
-            const timeSliderContainer = document.getElementById("time-slider-container");
-            this.params.video.show = this.currentVideo.video ? true : false;
-            this.params.swimmers.useTracking = true;
-            this.params.swimmers.showSpheres = this.currentVideo.video ? false : true;
-            timeSliderContainer.hidden = this.currentVideo.video ? false : true;
+            // const timeSliderContainer = document.getElementById("time-slider-container");
+            // this.params.video.show = this.currentVideo.video ? true : false;
+            // this.params.swimmers.useTracking = true;
+            // this.params.swimmers.showSpheres = this.currentVideo.video ? false : true;
+            // timeSliderContainer.hidden = this.currentVideo.video ? false : true;
             if (sceneName == "—") this.stopRace();
             this._reset();
 
