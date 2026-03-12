@@ -192,7 +192,7 @@ class Config {
             // this.params.swimmers.useTracking = true;
             // this.params.swimmers.showSpheres = this.currentVideo.video ? false : true;
             // timeSliderContainer.hidden = this.currentVideo.video ? false : true;
-            if (sceneName == "—") this.stopRace();
+            this.stopRace();
             this._reset();
 
             this.params.simulation.optimized = this.currentVideo.video ? true : false;
