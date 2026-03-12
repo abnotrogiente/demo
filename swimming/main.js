@@ -6,18 +6,18 @@
  * Released under the MIT license
  */
 
-import { Water } from './water.js';
 import { Renderer } from './renderer.js';
 import { Cubemap } from './cubemap.js';
 import { Sphere } from './sphere.js';
 import GL from './lightgl.js';
 import { Video } from './video.js';
-import { Swimmer } from './swimmer.js';
 import { config } from './params.js';
+import { Swimmer } from './swimmer.js';
 import { MAX_SPARKS } from './video.js';
 import { createGUI } from './gui.js';
 import { createEventEditor } from './eventEditor.js';
 import { Calibration } from './calibration.js';
+import { Water } from './water.js';
 
 
 function text2html(text) {
@@ -37,8 +37,6 @@ function handleError(text) {
 }
 
 window.onerror = handleError
-/**@type {Water} */
-var water;
 var cubemap;
 /**@type {Renderer} */
 var renderer;
@@ -50,13 +48,10 @@ var paused = false;
 var flagCenter;
 var flagSize;
 
-// make video accessible to slider handler
-var video;
 
 Swimmer.initAttributes();
-let resolution = new GL.Vector(256, 256);
 function updateResolutionWarning() {
-  document.getElementById('warning').hidden = !(resolution.x * resolution.y > 300000 && (water && config.params.visualizations.areaConservationEnabled));
+  document.getElementById('warning').hidden = !(config.resolution.x * config.resolution.y > 300000 && (config.water && config.params.visualizations.areaConservationEnabled));
 }
 
 let timeSinceFrameRateUpdate = 0;
@@ -75,10 +70,10 @@ function updateFrameRateHTML(dt) {
 }
 function reset() {
   console.log("reset");
-  document.getElementById('resolution').innerText = `Resolution: ${resolution.x} x ${resolution.y}`;
+  document.getElementById('resolution').innerText = `Resolution: ${config.resolution.x} x ${config.resolution.y}`;
   updateResolutionWarning();
   flagCenter = new GL.Vector(0., -config.params.simulation.poolSize.z / 2. + 1.);
-  water.reset(resolution);
+  config.water.reset(config.resolution);
   renderer.flagCenter = flagCenter;
   renderer.flagSize = flagSize;
   renderer.reset();
@@ -102,10 +97,6 @@ function onTimeSliderChange(event) {
 
   // update parameters and video playback
   config.setRaceTime(t);
-  if (video && video.video) {
-    // if copyVideo is true the code elsewhere will update currentTime as needed
-    video.video.currentTime = config.time;
-  }
   config.swimmers.forEach(swimmer => swimmer.setCurrentDataIndex());
 
   // optionally pause simulation while dragging
@@ -140,16 +131,6 @@ window.onload = function () {
 
   flagCenter = new GL.Vector(0., -config.params.simulation.poolSize.z / 2. + 1.);
   flagSize = 0.7;
-  water = new Water(gl);
-  // this.translateX = -0.53;
-  // this.translateY = 1.25;
-  // this.zoomDistance = 47.86;
-  // this.angleX = -29;
-  // this.angleY = -260.5;
-  // this.angleZ = -5;
-  const calibration = new Calibration({ tx: -0.53, ty: 1.25, zoom: 47.86, ax: -29, ay: -260.5, az: -5, fov: 39.98 });
-  video = new Video(gl, "./video.mp4", calibration);  // Empty path - use drag-and-drop instead
-  // video.video.src = "./video.mp4";
 
   // attach slider listener
   const slider = document.getElementById('time-slider');
@@ -178,27 +159,28 @@ window.onload = function () {
     }
   });
 
-  document.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dragCounter = 0;
-    dropZone.style.display = 'none';
-    const files = e.dataTransfer.files;
-    if (files.length > 0 && (files[0].type.startsWith('video/') || files[0].name.endsWith('.mp4'))) {
-      const url = URL.createObjectURL(files[0]);
-      video.video.src = url;
-      video.video.play();
-      console.log('Loaded:', files[0].name);
-    }
-  });
+  // document.addEventListener('drop', (e) => {
+  //   e.preventDefault();
+  //   dragCounter = 0;
+  //   dropZone.style.display = 'none';
+  //   const files = e.dataTransfer.files;
+  //   if (files.length > 0 && (files[0].type.startsWith('video/') || files[0].name.endsWith('.mp4'))) {
+  //     const url = URL.createObjectURL(files[0]);
+  //     video.video.src = url;
+  //     video.video.play();
+  //     console.log('Loaded:', files[0].name);
+  //   }
+  // });
 
   createGUI(gl, reset);
+  config._reset = reset;
   // render the event timeline/editor once configuration has been loaded
   // config.parseConfigFile is asynchronous; give it a small delay or hook
   setTimeout(() => {
     createEventEditor('event-editor', config);
   }, 50);
   // folder.add(config.params, 'numSteps', 1, 10).step(1).name("number of simulation steps");
-  renderer = new Renderer(gl, water, flagCenter, flagSize);
+  renderer = new Renderer(gl, config.water, flagCenter, flagSize);
   cubemap = new Cubemap({
     xneg: document.getElementById('xneg'),
     xpos: document.getElementById('xpos'),
@@ -208,22 +190,20 @@ window.onload = function () {
     zpos: document.getElementById('zpos')
   }, gl);
 
+  const swimmer = new Swimmer(new GL.Vector(0, 0, 0));
+  config.swimmers.push(swimmer);
+  config.water = new Water(config.gl);
+  config.water.addSwimmer(swimmer);
 
-  if (!water.textureA.canDrawTo() || !water.textureB.canDrawTo()) {
+  if (!config.water.textureA.canDrawTo() || !config.water.textureB.canDrawTo()) {
     throw new Error('Rendering to floating-point textures is required but not supported');
   }
 
-  const center = new GL.Vector(-0.4, -0.75, 0.2);
-  const center2 = new GL.Vector(0.4, -0.75, 0.2);
-  const s = new Swimmer(center);
-  const s2 = new Swimmer(center2)
-  for (let i = 0; i < 1; i++) config.swimmers.push(new Swimmer(center));
-  const radius = s.body.radius;
-  for (let swimmer of config.swimmers) water.addSwimmer(swimmer);
+
   reset();
 
   for (var i = 0; i < 20; i++) {
-    water.addDrop(Math.random() * 2 - 1, Math.random() * 2 - 1, 0.06, (i & 1) ? 0.01 : -0.01);
+    config.water.addDrop(Math.random() * 2 - 1, Math.random() * 2 - 1, 0.06, (i & 1) ? 0.01 : -0.01);
   }
 
   document.getElementById('loading').innerHTML = '';
@@ -295,10 +275,10 @@ window.onload = function () {
         var tracer = new GL.Raytracer();
         var ray = tracer.getRayForPixel(x * ratio, y * ratio);
         var pointOnPlane = tracer.eye.add(ray.multiply(-tracer.eye.y / ray.y));
-        water.addDrop(pointOnPlane.x / config.params.simulation.poolSize.x * 2, pointOnPlane.z / config.params.simulation.poolSize.z * 2, 0.06, 0.03);
+        config.water.addDrop(pointOnPlane.x / config.params.simulation.poolSize.x * 2, pointOnPlane.z / config.params.simulation.poolSize.z * 2, 0.06, 0.03);
         if (paused) {
-          water.updateNormals();
-          renderer.updateCaustics(water);
+          config.water.updateNormals();
+          renderer.updateCaustics(config.water);
         }
         break;
       }
@@ -314,7 +294,7 @@ window.onload = function () {
         const z_sphere = Math.max(radius - config.params.simulation.poolSize.z / 2, Math.min(config.params.simulation.poolSize.z / 2 - radius, center.z));
         swimmerSelected.body.move(new GL.Vector(x_sphere, y_sphere, z_sphere));
         prevHit = nextHit;
-        if (paused) renderer.updateCaustics(water);
+        if (paused) renderer.updateCaustics(config.water);
         break;
       }
       case MODE_ORBIT_CAMERA: {
@@ -402,26 +382,18 @@ window.onload = function () {
   };
 
   function startRace() {
-    video.video.play();
-    Swimmer.useGravity = true;
-    water.WR_position = 0;
-    config.setTimeBeginRace();
-    video.setTime(config.time);
-    Swimmer.raceHasStarted = true;
-    for (let swimmer of config.swimmers) swimmer.startRace();
+    config.startRace();
+    config.water.WR_position = 0;
   }
 
   function stopRace() {
-    Swimmer.raceHasStarted = false;
-    for (let swimmer of config.swimmers) swimmer.swim(false);
-    video.video.pause();
+    config.stopRace();
   }
 
   function pause() {
     paused = !paused;
-    if (paused) video.video.pause();
-    else if (Swimmer.raceHasStarted) video.video.play();
-    video.video.currentTime = config.time;
+    if (paused) config.pauseVideo();
+    else if (Swimmer.raceHasStarted) config.playVideo();
   }
 
   const onkeydown = function (e) {
@@ -440,12 +412,12 @@ window.onload = function () {
       console.log("Area conservation " + (config.params.visualizations.areaConservationEnabled ? "enabled." : "disabled."));
     }
     else if (e.which == 'P'.charCodeAt(0)) {
-      water.showProjectionGrid = !water.showProjectionGrid;
-      console.log("Projection grid " + (water.showProjectionGrid ? "enabled." : "disabled."));
+      config.water.showProjectionGrid = !config.water.showProjectionGrid;
+      console.log("Projection grid " + (config.water.showProjectionGrid ? "enabled." : "disabled."));
     }
     else if (e.which == 'A'.charCodeAt(0)) {
-      water.showAreaConservedGrid = !water.showAreaConservedGrid;
-      console.log("Area conserved grid " + (water.showAreaConservedGrid ? "enabled." : "disabled."));
+      config.water.showAreaConservedGrid = !config.water.showAreaConservedGrid;
+      console.log("Area conserved grid " + (config.water.showAreaConservedGrid ? "enabled." : "disabled."));
     }
     else if (e.which == 'S'.charCodeAt(0)) {
       Swimmer.swimming = !Swimmer.swimming;
@@ -460,35 +432,7 @@ window.onload = function () {
     else if (e.which == 'V'.charCodeAt(0)) {
       config.params.video.show = !config.params.video.show;
     }
-    else if (e.which == 'O'.charCodeAt(0)) {
-      config.params.simulation.optimized = true;
-
-      // resolution = new GL.Vector(2048, 4096);
-      resolution.x = 1024;
-      resolution.y = 2048;
-
-      config.params.visualizations.areaConservationEnabled = false;
-
-      config.params.simulation.waterDamping = 0.1;
-
-      if (config.swimmers.length != numSwimmers) {
-        for (let i = config.swimmers.length; i < numSwimmers; i++) {
-          const s = new Swimmer(center);
-          config.swimmers.push(s);
-          water.addSwimmer(s);
-        }
-      }
-
-      config.time = 0;
-      if (video.copyVideo) video.video.currentTime = config.time;
-
-
-      config.setRaceCalibration(gl, video.calibration);
-      reset();
-      console.log("Olympic mode enabled.");
-    }
     else if (e.which == 'W'.charCodeAt(0)) {
-      water.resetTextures();
       if (Swimmer.raceHasStarted) {
         stopRace();
         return;
@@ -500,26 +444,26 @@ window.onload = function () {
       document.getElementById("h").hidden = !document.getElementById("h").hidden;
     }
     else if (e.which == 40) { // down
-      if (resolution.x > 129)
-        resolution.x = Math.round(resolution.x / 2);
+      if (config.resolution.x > 129)
+        config.resolution.x = Math.round(config.resolution.x / 2);
       reset();
       console.log("decreasing x resolution");
     }
     else if (e.which == 38) { // up
-      if (resolution.x < 16384)
-        resolution.x = Math.round(resolution.x * 2);
+      if (config.resolution.x < 16384)
+        config.resolution.x = Math.round(config.resolution.x * 2);
       reset();
       console.log("increasing x resolution");
     }
     else if (e.which == 37) { // left
-      if (resolution.y > 129)
-        resolution.y = Math.round(resolution.y / 2);
+      if (config.resolution.y > 129)
+        config.resolution.y = Math.round(config.resolution.y / 2);
       reset();
       console.log("decreasing y resolution");
     }
     else if (e.which == 39) { // right
-      if (resolution.y < 16384)
-        resolution.y = Math.round(resolution.y * 2);
+      if (config.resolution.y < 16384)
+        config.resolution.y = Math.round(config.resolution.y * 2);
       reset();
       console.log("increasing y resolution");
     }
@@ -540,12 +484,12 @@ window.onload = function () {
 
     // Update the water simulation and graphics
     for (let swimmer of config.swimmers) swimmer.update(dt);
-    water.updateSpheres(dt);
+    config.water.updateSpheres(dt);
     for (let i = 0; i < config.params.numSteps; i++) {
-      water.stepSimulation();
+      config.water.stepSimulation();
     }
 
-    renderer.updateCaustics(water);
+    renderer.updateCaustics(config.water);
     if (Swimmer.raceHasStarted) config.updateTime(dt);
     config.updateParams();
     slider.value = config.getRaceTime();
@@ -557,11 +501,11 @@ window.onload = function () {
     // Change the light direction to the camera look vector when the L key is pressed
     if (GL.keys.L) {
       renderer.lightDir = GL.Vector.fromAngles((90 - config.angleY) * Math.PI / 180, -config.angleX * Math.PI / 180);
-      if (paused) renderer.updateCaustics(water);
+      if (paused) renderer.updateCaustics(config.water);
     }
     if (config.isOneVisualizationEnabled()) Swimmer.updateAttributesTexture();
-    water.addOrRemoveVisualizationWaves(true);
-    water.updateNormals();
+    config.water.addOrRemoveVisualizationWaves(true);
+    config.water.updateNormals();
 
     /**@type {WebGLRenderingContext} */
     const g = gl;
@@ -586,13 +530,13 @@ window.onload = function () {
 
     gl.enable(gl.DEPTH_TEST);
     renderer.sphereCenter = config.swimmers[0].body.center;
-    renderer.sphereRadius = radius;
-    renderer.renderCube(water);
-    renderer.renderWater(water, cubemap, config.params.visualizations.shadow);
-    if (config.params.swimmers.showSpheres) renderer.renderSpheres(water);
+    renderer.sphereRadius = config.swimmers[0].body.radius;
+    renderer.renderCube(config.water);
+    renderer.renderWater(config.water, cubemap, config.params.visualizations.shadow);
+    if (config.params.swimmers.showSpheres) renderer.renderSpheres(config.water);
     // Swimmer.attributes.draw();
-    video.render();
+    config.renderVideo();
     gl.disable(gl.DEPTH_TEST);
-    water.addOrRemoveVisualizationWaves(false);
+    config.water.addOrRemoveVisualizationWaves(false);
   }
 };

@@ -2,7 +2,7 @@ import { Calibration } from "./calibration.js";
 import GL from "./lightgl.js";
 import { config } from "./params.js";
 import { Swimmer } from "./swimmer.js";
-import { swimmersHelperFunctions } from "./swimmer.js";
+import { swimmersHelperFunctions } from "./swimmersHelperFunctions.js";
 
 const MAX_SPARKS = 200;
 
@@ -244,11 +244,15 @@ class Video {
      * @param {Calibration} calibration 
      * @returns 
      */
-    constructor(gl, src, calibration) {
+    constructor(gl, src, calibration, { poolSize = new GL.Vector(2, 2), waterResolution = new GL.Vector(256, 256), numSwimmers = 1, thresholdBlending = false }) {
         /**@type {WebGLRenderingContext} */
         this.gl = gl;
         /**@type {Calibration} */
         this.calibration = calibration;
+        this.poolSize = poolSize;
+        this.waterResolution = waterResolution;
+        this.numSwimmers = numSwimmers;
+        this.thresholdBlending = thresholdBlending;
         this.copyVideo = false;
         this.show = false;
         // Only continue if WebGL is available and working

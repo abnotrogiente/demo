@@ -9,7 +9,7 @@
 import GL from './lightgl.js';
 import { Sphere } from './sphere.js';
 import { Swimmer } from './swimmer.js';
-import { swimmersHelperFunctions } from './swimmer.js';
+import { swimmersHelperFunctions } from './swimmersHelperFunctions.js';
 import { config } from './params.js';
 
 // The data in the texture is (position.y, velocity.y, normal.x, normal.z)

@@ -1,7 +1,8 @@
 import { Calibration } from "./calibration";
 import GL from "./lightgl";
-import { Scene } from "./scene";
+import { Scene } from "./Scene";
 import { Swimmer } from "./swimmer";
+import { Water } from "./water";
 import { Video } from "./video";
 
 const videoStartTime = 16.5;
@@ -38,9 +39,12 @@ class Config {
             simulation: { optimized: false, waterDamping: .02, poolSize: new GL.Vector(2.0, 1.0, 2.0) }
         };
 
+        this.resolution = new GL.Vector(256, 256);
+
         /**@type {WebGLRenderingContext} */
         this.gl = GL.create();
         this.gl.canvas.tabIndex = 0;
+
 
         this.originalVisParams = JSON.parse(JSON.stringify(this.params.visualizations));
         delete this.originalVisParams.shadow;
@@ -57,13 +61,30 @@ class Config {
         this.angleY = -200.5;
         this.angleZ = 0.;
 
-        const sceneRace = new Scene("100m freestyle");
-        console.log("scene title : " + sceneRace.title);
+        const raceScene = new Scene("100m freestyle");
         const calibration1 = new Calibration({ tx: -0.53, ty: 1.25, zoom: 47.86, ax: -29, ay: -260.5, az: -5, fov: 39.98 });
-        sceneRace.addVideo(new Video(this.gl, "video.mp4", calibration1));
+        raceScene.addVideo(new Video(this.gl, "swimming-race.mp4", calibration1,
+            {
+                poolSize: new GL.Vector(25, 2, 50),
+                waterResolution: new GL.Vector(1024, 2048),
+                numSwimmers: 10,
+                thresholdBlending: true
+            }));
+        this.currentVideo = raceScene.videos[0];
+
+        const synchronizedSwimmingScene = new Scene("synchronized swimming");
+        const calibration2 = new Calibration({ tx: -1.32, ty: .4, zoom: 32.41, ax: -18, ay: -291.5, az: 1, fov: 42.8 });
+        synchronizedSwimmingScene.addVideo(new Video(this.gl, "synchronized-swimming.mp4", calibration2,
+            {
+                poolSize: new GL.Vector(25, 2, 30),
+                waterResolution: new GL.Vector(1024, 2048),
+                numSwimmers: 2
+            }
+        ));
+
 
         /**@type {Scene[]} */
-        this.scenesList = [sceneRace, new Scene("test2")];
+        this.scenesList = [raceScene, synchronizedSwimmingScene];
         this.scenes = {};
         this.scenesList.forEach(scene => this.scenes[scene.title] = scene);
         this.currentScene = null;
@@ -83,12 +104,46 @@ class Config {
         this.angleY = calibration.ay;
         this.angleZ = calibration.az;
         this.params.fov = calibration.fov;
+
+        this.gl.matrixMode(this.gl.PROJECTION);
+        this.gl.loadIdentity();
+        this.gl.perspective(this.params.fov, this.gl.canvas.width / this.gl.canvas.height, 0.01, 100);
+        this.gl.matrixMode(this.gl.MODELVIEW);
+    }
+
+    #setPoolSize(poolSize) {
+        console.log("SET POOL SIZE : " + poolSize.z);
+        this.params.simulation.poolSize.x = poolSize.x;
+        this.params.simulation.poolSize.y = poolSize.y;
+        this.params.simulation.poolSize.z = poolSize.z;
     }
 
 
     setScene(sceneName) {
         console.log("SET SCENE : " + sceneName);
         this.currentScene = this.scenes[sceneName];
+        if (this.currentScene) {
+            this.currentVideo = this.currentScene.videos[0];
+            this.params.video.show = true;
+            this.setCalibration(this.currentVideo.calibration);
+            this.#setPoolSize(this.currentVideo.poolSize);
+            this.resolution = this.currentVideo.waterResolution;
+            this.params.video.thresholdBlending = this.currentVideo.thresholdBlending;
+            config.params.visualizations.areaConservationEnabled = false;
+            config.params.simulation.optimized = true;
+            config.params.simulation.waterDamping = 0.1;
+            const numSwimmers = this.currentVideo.numSwimmers;
+            if (this.swimmers.length != numSwimmers) {
+                for (let i = this.swimmers.length; i < numSwimmers; i++) {
+                    const s = new Swimmer(new GL.Vector(0, 0, 0));
+                    this.swimmers.push(s);
+                    this.water.addSwimmer(s);
+                }
+            }
+            // this.params.swimmers.useTracking = true;
+            // this.params.swimmers.showSpheres = false;
+            this._reset();
+        }
     }
     isOneVisualizationEnabled() {
         return this.params.visualizations.showFlags ||
@@ -121,12 +176,37 @@ class Config {
     }
     setRaceTime(t) {
         this.time = videoStartTime + t;
+        if (this.currentVideo) this.currentVideo.setTime(this.time);
         if (!this.events) return;
         this.updateEventIndex();
         this.resetParams();
     }
-    setTimeBeginRace() {
+    startRace() {
         this.setRaceTime(0);
+        if (this.currentVideo) this.currentVideo.video.play();
+        this.swimmers.forEach(swimmer => swimmer.startRace());
+        Swimmer.raceHasStarted = true;
+        Swimmer.useGravity = true;
+        this.water.resetTextures();
+    }
+    stopRace() {
+        this.setRaceTime(0);
+        if (this.currentVideo) this.currentVideo.video.pause();
+        this.swimmers.forEach(swimmer => swimmer.swim(false));
+        Swimmer.raceHasStarted = false;
+        this.water.resetTextures();
+    }
+    pauseVideo() {
+        if (this.currentVideo) this.currentVideo.video.pause();
+    }
+    playVideo() {
+        if (this.currentVideo) {
+            this.currentVideo.video.play();
+            this.currentVideo.video.currentTime = this.time;
+        }
+    }
+    renderVideo() {
+        if (this.currentVideo) this.currentVideo.render();
     }
     parseConfigFile(source) {
         fetch(source)
@@ -194,6 +274,12 @@ class Config {
         this.params.simulation.poolSize.y = 2;
         this.params.simulation.poolSize.z = 30;
         this.params.fov = 42.8; // 31.75
+        this.translateX = -1.32;
+        this.translateY = 0.40;
+        this.zoomDistance = 32.41;
+        this.angleX = -18;
+        this.angleY = -291.5;
+        this.angleZ = 1;
         this.params.visualizations.sparks.fov = this.params.fov * 2 * Math.PI / 360;
         gl.matrixMode(gl.PROJECTION);
         gl.loadIdentity();
@@ -201,12 +287,6 @@ class Config {
         gl.matrixMode(gl.MODELVIEW);
 
 
-        this.translateX = -1.32;
-        this.translateY = 0.40;
-        this.zoomDistance = 32.41;
-        this.angleX = -18;
-        this.angleY = -291.5;
-        this.angleZ = 1;
     }
 }
 

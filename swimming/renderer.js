@@ -9,7 +9,7 @@
 import GL from './lightgl.js';
 import { Swimmer } from './swimmer.js';
 import { Water } from './water.js';
-import { swimmersHelperFunctions } from './swimmer.js';
+import { swimmersHelperFunctions } from './swimmersHelperFunctions.js';
 import { textHelperFunctions } from './renderText.js';
 import { config } from './params.js';
 
