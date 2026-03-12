@@ -142,7 +142,7 @@ window.onload = function () {
   flagCenter = new GL.Vector(0., -config.params.simulation.poolSize.z / 2. + 1.);
   flagSize = 0.7;
   water = new Water(gl);
-  video = new Video(gl, "./natation-synchro.mp4");  // Empty path - use drag-and-drop instead
+  video = new Video(gl, "./video.mp4");  // Empty path - use drag-and-drop instead
   // video.video.src = "./video.mp4";
 
   // attach slider listener
@@ -399,7 +399,7 @@ window.onload = function () {
     Swimmer.useGravity = true;
     water.WR_position = 0;
     config.setTimeBeginRace();
-    if (video.copyVideo) video.video.currentTime = config.time;
+    video.setTime(config.time);
     Swimmer.raceHasStarted = true;
     for (let swimmer of config.swimmers) swimmer.startRace();
   }
@@ -452,9 +452,7 @@ window.onload = function () {
     }
     else if (e.which == 'O'.charCodeAt(0)) {
       config.params.simulation.optimized = true;
-      config.params.simulation.poolSize.x = 25;
-      config.params.simulation.poolSize.y = 2;
-      config.params.simulation.poolSize.z = 30;
+
       // resolution = new GL.Vector(2048, 4096);
       resolution.x = 1024;
       resolution.y = 2048;
@@ -474,9 +472,9 @@ window.onload = function () {
       config.time = 0;
       if (video.copyVideo) video.video.currentTime = config.time;
 
-      reset();
 
-      config.setSynchroCalibration(gl);
+      config.setRaceCalibration(gl);
+      reset();
       console.log("Olympic mode enabled.");
     }
     else if (e.which == 'W'.charCodeAt(0)) {
