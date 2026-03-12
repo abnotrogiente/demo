@@ -61,6 +61,19 @@ class Config {
         this.angleY = -200.5;
         this.angleZ = 0.;
 
+        /**@type {Water} */
+        this.water = null;
+
+        const defaultScene = new Scene("—");
+        const calibration0 = new Calibration({});
+        defaultScene.addVideo(new Video(this.gl, "", calibration0,
+            {
+                poolSize: new GL.Vector(2, 1, 2),
+                waterResolution: new GL.Vector(256, 256),
+                numSwimmers: 1
+            }
+        ));
+
         const raceScene = new Scene("100m freestyle");
         const calibration1 = new Calibration({ tx: -0.53, ty: 1.25, zoom: 47.86, ax: -29, ay: -260.5, az: -5, fov: 39.98 });
         raceScene.addVideo(new Video(this.gl, "swimming-race.mp4", calibration1,
@@ -84,7 +97,7 @@ class Config {
 
 
         /**@type {Scene[]} */
-        this.scenesList = [raceScene, synchronizedSwimmingScene];
+        this.scenesList = [defaultScene, raceScene, synchronizedSwimmingScene];
         this.scenes = {};
         this.scenesList.forEach(scene => this.scenes[scene.title] = scene);
         this.currentScene = null;
@@ -155,26 +168,33 @@ class Config {
         console.log("SET SCENE : " + sceneName);
         this.currentScene = this.scenes[sceneName];
         if (this.currentScene) {
+            console.log("scene name : " + this.currentScene.title);
             this.currentVideo = this.currentScene.videos[0];
-            this.params.video.show = true;
             this.setCalibration(this.currentVideo.calibration);
             this.#setPoolSize(this.currentVideo.poolSize);
             this.resolution = this.currentVideo.waterResolution;
             this.params.video.thresholdBlending = this.currentVideo.thresholdBlending;
             config.params.visualizations.areaConservationEnabled = false;
-            config.params.simulation.optimized = true;
             config.params.simulation.waterDamping = 0.1;
             const numSwimmers = this.currentVideo.numSwimmers;
             if (this.swimmers.length != numSwimmers) {
                 for (let i = this.swimmers.length; i < numSwimmers; i++) {
                     const s = new Swimmer(new GL.Vector(0, 0, 0));
                     this.swimmers.push(s);
-                    this.water.addSwimmer(s);
+                }
+                for (let i = this.swimmers.length; i > numSwimmers; i--) {
+                    // this.swimmers[i].
+                    this.swimmers = this.swimmers.slice(1);
                 }
             }
+            // this.params.video.show = this.currentVideo.video ? true : false;
             // this.params.swimmers.useTracking = true;
             // this.params.swimmers.showSpheres = false;
+            // timeSliderContainer.hidden = this.currentVideo.video ? false : true;
             this._reset();
+
+            const timeSliderContainer = document.getElementById("time-slider-container");
+            this.params.simulation.optimized = this.currentVideo.video ? true : false;
         }
     }
     isOneVisualizationEnabled() {
@@ -208,14 +228,14 @@ class Config {
     }
     setRaceTime(t) {
         this.time = videoStartTime + t;
-        if (this.currentVideo) this.currentVideo.setTime(this.time);
+        if (this.currentVideo.video) this.currentVideo.setTime(this.time);
         if (!this.events) return;
         this.updateEventIndex();
         this.resetParams();
     }
     startRace() {
         this.setRaceTime(0);
-        if (this.currentVideo) this.currentVideo.video.play();
+        if (this.currentVideo.video) this.currentVideo.video.play();
         this.swimmers.forEach(swimmer => swimmer.startRace());
         Swimmer.raceHasStarted = true;
         Swimmer.useGravity = true;
@@ -224,7 +244,7 @@ class Config {
     }
     stopRace() {
         this.setRaceTime(0);
-        if (this.currentVideo) this.currentVideo.video.pause();
+        if (this.currentVideo.video) this.currentVideo.video.pause();
         this.swimmers.forEach(swimmer => swimmer.swim(false));
         Swimmer.raceHasStarted = false;
         this.water.resetTextures();
@@ -235,16 +255,16 @@ class Config {
         else if (Swimmer.raceHasStarted) this.playVideo();
     }
     pauseVideo() {
-        if (this.currentVideo) this.currentVideo.video.pause();
+        if (this.currentVideo.video) this.currentVideo.video.pause();
     }
     playVideo() {
-        if (this.currentVideo) {
+        if (this.currentVideo.video) {
             this.currentVideo.video.play();
             this.currentVideo.video.currentTime = this.time;
         }
     }
     renderVideo() {
-        if (this.currentVideo) this.currentVideo.render();
+        if (this.currentVideo.video) this.currentVideo.render();
     }
     parseConfigFile(source) {
         fetch(source)

@@ -328,10 +328,6 @@ function createEventEditor(containerId) {
         const videoSelector = document.createElement('select');
         videoSelector.style.width = "auto";
 
-        const option = document.createElement('option');
-        option.textContent = "—";
-        option.value = '';
-        videoSelector.appendChild(option);
         config.scenesList.forEach(scene => {
             const option = document.createElement('option');
             option.textContent = scene.title;
@@ -340,10 +336,7 @@ function createEventEditor(containerId) {
 
         });
         videoSelector.addEventListener('change', () => {
-            if (videoSelector.value === '') {
-                return; //TODO scene sandbox
-            }
-            else config.setScene(videoSelector.value);
+            config.setScene(videoSelector.value);
         });
         videoSelectionWrapper.appendChild(videoSelector);
 

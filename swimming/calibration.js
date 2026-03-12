@@ -1,5 +1,5 @@
 class Calibration {
-    constructor({ tx = 0, ty = 0, zoom = 10, ax = 0, ay = 0, az = 0, fov = 45 }) {
+    constructor({ tx = 0, ty = 0, zoom = 4, ax = -25, ay = -200, az = 0, fov = 45 }) {
         this.tx = tx;
         this.ty = ty;
         this.zoom = zoom;

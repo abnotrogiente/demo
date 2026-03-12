@@ -192,7 +192,6 @@ window.onload = function () {
   const swimmer = new Swimmer(new GL.Vector(0, 0, 0));
   config.swimmers.push(swimmer);
   config.water = new Water(config.gl);
-  config.water.addSwimmer(swimmer);
 
   if (!config.water.textureA.canDrawTo() || !config.water.textureB.canDrawTo()) {
     throw new Error('Rendering to floating-point textures is required but not supported');

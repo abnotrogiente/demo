@@ -675,7 +675,9 @@ Renderer.prototype.renderWater = function (water, sky, shadowParams) {
  * @param {Water} water 
  */
 Renderer.prototype.renderSpheres = function (water) {
-  for (let sphere of water.spheres) {
+  const spheres = [];
+  config.swimmers.forEach(swimmer => swimmer.spheres.forEach(sphere => spheres.push(sphere)));
+  for (let sphere of spheres) {
     this.renderSphere(water, sphere);
   }
 };

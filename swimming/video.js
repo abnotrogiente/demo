@@ -344,10 +344,11 @@ class Video {
         // this.buffers = initBuffers(gl);
 
         this.texture = this.initTexture();
-        this.video = this.setupVideo(src);
 
         // Flip image pixels into the bottom-to-top order that WebGL expects.
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+        if (src == "") return;
+        this.video = this.setupVideo(src);
 
     }
 

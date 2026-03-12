@@ -18,8 +18,6 @@ function Water(gl, resolution = null) {
   this.gl = gl;
   this.visualizationWavesEnabled = true;
   this.sqrt_2_PI = Math.sqrt(2 * Math.PI);
-  /**@type {Sphere[]} */
-  this.spheres = [];
   var vertexShader = `
     out vec2 coord;
     uniform vec2 invPoolSizeVertex;
@@ -284,18 +282,6 @@ Water.prototype.addOrRemoveVisualizationWaves = function (add) {
 
 }
 
-/**
- * 
- * @param {Swimmer} swimmer 
- */
-Water.prototype.addSwimmer = function (swimmer) {
-  for (let sphere of swimmer.spheres) this.addSphere(sphere);
-}
-
-Water.prototype.addSphere = function (sphere) {
-  this.spheres.push(sphere);
-};
-
 Water.prototype.updateSpheres = function (dt) {
   const speed = 2.155;
   this.prev_WR_position = this.WR_position;
@@ -322,8 +308,10 @@ Water.prototype.updateSpheres = function (dt) {
   }
 
   else {
-    for (let i = 0; i < this.spheres.length; i++) {
-      const sphere = this.spheres[i];
+    const spheres = [];
+    config.swimmers.forEach(swimmer => swimmer.spheres.forEach(sphere => spheres.push(sphere)));
+    for (let i = 0; i < spheres.length; i++) {
+      const sphere = spheres[i];
       this.moveSphere(sphere.oldCenter, sphere.center, sphere.radius);
     }
   }
