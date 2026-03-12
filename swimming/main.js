@@ -379,13 +379,6 @@ window.onload = function () {
     }
   };
 
-  function startRace() {
-    config.startRace();
-  }
-
-  function stopRace() {
-    config.stopRace();
-  }
 
   function pause() {
     config.paused = !config.paused;
@@ -428,13 +421,6 @@ window.onload = function () {
     }
     else if (e.which == 'V'.charCodeAt(0)) {
       config.params.video.show = !config.params.video.show;
-    }
-    else if (e.which == 'W'.charCodeAt(0)) {
-      if (Swimmer.raceHasStarted) {
-        stopRace();
-        return;
-      }
-      startRace();
     }
     else if (e.which == 'H'.charCodeAt(0)) {
       document.getElementById("commands").hidden = !document.getElementById("commands").hidden;
