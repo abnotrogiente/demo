@@ -10,7 +10,6 @@ const maxVal = 100;
 function createEventEditor(containerId) {
     const container = document.createElement("div");
     document.body.appendChild(container);
-    console.log("container created !!");
     container.id = "event-editor";
     container.style.position = "fixed";
     container.display = "block";
@@ -323,14 +322,29 @@ function createEventEditor(containerId) {
         videoSelectionWrapper.style.marginBottom = '4px';
         const label = document.createElement('label');
         label.style.whiteSpace = 'nowrap';
-        label.textContent = 'select video';
+        label.textContent = 'select scene';
         label.style.margin = "30px"
         videoSelectionWrapper.appendChild(label);
         const videoSelector = document.createElement('select');
         videoSelector.style.width = "auto";
+
         const option = document.createElement('option');
-        option.textContent = "video1";
+        option.textContent = "—";
+        option.value = '';
         videoSelector.appendChild(option);
+        config.scenesList.forEach(scene => {
+            const option = document.createElement('option');
+            option.textContent = scene.title;
+            option.value = scene.title;
+            videoSelector.appendChild(option);
+
+        });
+        videoSelector.addEventListener('change', () => {
+            if (videoSelector.value === '') {
+                return; //TODO scene sandbox
+            }
+            else config.setScene(videoSelector.value);
+        });
         videoSelectionWrapper.appendChild(videoSelector);
 
 

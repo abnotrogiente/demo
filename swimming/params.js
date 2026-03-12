@@ -1,5 +1,7 @@
 import GL from "./lightgl";
+import { Scene } from "./Scene";
 import { Swimmer } from "./swimmer";
+import { Video } from "./video";
 
 const videoStartTime = 16.5;
 
@@ -48,6 +50,23 @@ class Config {
         this.angleX = -25;
         this.angleY = -200.5;
         this.angleZ = 0.;
+
+        const sceneRace = new Scene("100m freestyle");
+        console.log("scene title : " + sceneRace.title);
+        // sceneRace.addVideo(new Video("video.mp4"));
+
+        /**@type {Scene[]} */
+        this.scenesList = [sceneRace, new Scene("test2")];
+        this.scenes = {};
+        this.scenesList.forEach(scene => this.scenes[scene.title] = scene);
+        /**@type {Scene} */
+        this.currentScene = null;
+    }
+
+
+    setScene(sceneName) {
+        console.log("SET SCENE : " + sceneName);
+        this.currentScene = this.scenes[sceneName];
     }
     isOneVisualizationEnabled() {
         return this.params.visualizations.showFlags ||
@@ -124,6 +143,9 @@ class Config {
      * @param {WebGLRenderingContext} gl 
      */
     setRaceCalibration(gl) {
+        this.params.simulation.poolSize.x = 25;
+        this.params.simulation.poolSize.y = 2;
+        this.params.simulation.poolSize.z = 50;
         this.params.focal = 39.98; // 31.75
         this.params.visualizations.sparks.fov = this.params.focal * 2 * Math.PI / 360;
         gl.matrixMode(gl.PROJECTION);
@@ -145,6 +167,9 @@ class Config {
      * @param {WebGLRenderingContext} gl 
      */
     setSynchroCalibration(gl) {
+        this.params.simulation.poolSize.x = 25;
+        this.params.simulation.poolSize.y = 2;
+        this.params.simulation.poolSize.z = 30;
         this.params.focal = 42.8; // 31.75
         this.params.visualizations.sparks.fov = this.params.focal * 2 * Math.PI / 360;
         gl.matrixMode(gl.PROJECTION);
