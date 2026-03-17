@@ -66,6 +66,13 @@ const swimmersHelperFunctions = `
         return attributes.a;
     }
 
+    float getSwimmerWaterDamping(int i ) {
+        float i_float = float(i);
+        vec2 pixel = vec2(2., i_float);
+        vec4 attributes = texture(swimmersAttributesTexture, (pixel + .5) / TEXTURE_SIZE);
+        return attributes.a;
+    }
+
 
     float gaussian(float x, float mean, float std) {
         return exp(-(x - mean) * (x - mean) / (2. * std * std)) / (std * sqrt_2_PI);

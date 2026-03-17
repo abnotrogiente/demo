@@ -5,8 +5,6 @@ import { Swimmer } from "./swimmer";
 import { Water } from "./water";
 import { Video } from "./video";
 
-const videoStartTime = 16.5;
-
 function listToDict(L) {
     const dict = {};
     for (let i = 0; i < L.length; i++) {
@@ -17,6 +15,7 @@ function listToDict(L) {
 
 const swimmersLinesList = ["none", "only medals", "all"];
 const swimmersLinesModeList = ["neighbours", "per swimmer"];
+const waterPertubatorsList = ["none", "cycle frequency"]
 
 class Config {
     constructor() {
@@ -25,6 +24,8 @@ class Config {
             visualizations: {
                 enabled: true, showFlags: false, showWR: false, showSpeed: false, showDivingDistance: true,
                 showFinishTimes: false,
+                customWaterPerturbation: "none", waterPerturbatorsList: waterPertubatorsList,
+                WATER_PERTURBATOR_NONE: "none", WATER_PERTURBATOR_CYCLES: "cycle frequency",
                 showSwimmersLines: "none", swimmersLinesList: swimmersLinesList, showSwimmersLinesDict: listToDict(swimmersLinesList),
                 swimmersLinesMode: "neighbours", swimmersLinesModeList: swimmersLinesModeList, swimmersLinesModeDict: listToDict(swimmersLinesModeList),
                 medalsModeBeforeFinish: "none", medalsModesDict: { "none": 0, "stars": 1, "bright": 2, "lanes": 3 },
@@ -64,45 +65,46 @@ class Config {
         /**@type {Water} */
         this.water = null;
 
-        const defaultScene = new Scene("—");
-        const calibration0 = new Calibration({});
-        defaultScene.addVideo(new Video(this.gl, "", calibration0,
+        const defaultScene = new Scene("—",
             {
                 poolSize: new GL.Vector(2, 1, 2),
                 waterResolution: new GL.Vector(256, 256),
                 numSwimmers: 1
-            }
-        ));
+            });
+        const calibration0 = new Calibration({});
+        defaultScene.addVideo(new Video(this.gl, "", calibration0));
 
-        const raceScene = new Scene("100m freestyle");
-        const calibration1 = new Calibration({ tx: -0.53, ty: 1.25, zoom: 47.86, ax: -29, ay: -260.5, az: -5, fov: 39.98 });
-        raceScene.addVideo(new Video(this.gl, "swimming-race.mp4", calibration1,
+        const raceScene = new Scene("100m freestyle",
             {
                 poolSize: new GL.Vector(25, 2, 50),
                 waterResolution: new GL.Vector(1024, 2048),
                 numSwimmers: 10,
-                thresholdBlending: true
-            }));
+                thresholdBlending: true,
+                dataFolder: "./assets/race-data/"
+            }
+        );
+        const calibration1 = new Calibration({ tx: -0.53, ty: 1.25, zoom: 47.86, ax: -29, ay: -260.5, az: -5, fov: 39.98 });
+        raceScene.addVideo(new Video(this.gl, "swimming-race.mp4", calibration1, 16.5));
         this.currentVideo = raceScene.videos[0];
 
-        const synchronizedSwimmingScene = new Scene("synchronized swimming");
-        const calibration2 = new Calibration({ tx: -1.32, ty: .4, zoom: 32.41, ax: -18, ay: -291.5, az: 1, fov: 42.8 });
-        synchronizedSwimmingScene.addVideo(new Video(this.gl, "synchronized-swimming.mp4", calibration2,
+        const synchronizedSwimmingScene = new Scene("synchronized swimming",
             {
                 poolSize: new GL.Vector(25, 2, 30),
                 waterResolution: new GL.Vector(1024, 2048),
-                numSwimmers: 2
+                numSwimmers: 2,
+                dataFolder: "./assets/synchronized-swimming-data/"
             }
-        ));
+        );
+        const calibration2 = new Calibration({ tx: -1.32, ty: .4, zoom: 32.41, ax: -18, ay: -291.5, az: 1, fov: 42.8 });
+        synchronizedSwimmingScene.addVideo(new Video(this.gl, "synchronized-swimming.mp4", calibration2, 17.5));
 
 
         /**@type {Scene[]} */
         this.scenesList = [defaultScene, raceScene, synchronizedSwimmingScene];
         this.scenes = {};
         this.scenesList.forEach(scene => this.scenes[scene.title] = scene);
-        this.currentScene = null;
         /**@type {Scene} */
-        this.currentScene = null;
+        this.currentScene = defaultScene;
 
         this.paused = false;
 
@@ -167,12 +169,13 @@ class Config {
             console.log("scene name : " + this.currentScene.title);
             this.currentVideo = this.currentScene.videos[0];
             this.setCalibration(this.currentVideo.calibration);
-            this.#setPoolSize(this.currentVideo.poolSize);
-            this.resolution = this.currentVideo.waterResolution;
-            this.params.video.thresholdBlending = this.currentVideo.thresholdBlending;
-            config.params.visualizations.areaConservationEnabled = false;
-            config.params.simulation.waterDamping = 0.1;
-            const numSwimmers = this.currentVideo.numSwimmers;
+            this.#setPoolSize(this.currentScene.poolSize);
+            this.resolution = this.currentScene.waterResolution;
+            this.params.video.thresholdBlending = this.currentScene.thresholdBlending;
+            this.params.visualizations.areaConservationEnabled = false;
+            this.params.simulation.waterDamping = 0.1;
+            const numSwimmers = this.currentScene.numSwimmers;
+            console.log("num swimmers : " + numSwimmers)
             if (this.swimmers.length != numSwimmers) {
                 for (let i = this.swimmers.length; i < numSwimmers; i++) {
                     const s = new Swimmer(new GL.Vector(0, 0, 0));
@@ -183,6 +186,7 @@ class Config {
                     this.swimmers = this.swimmers.slice(1);
                 }
             }
+            this.currentScene.parseData(this.swimmers);
             const timeSliderContainer = document.getElementById("time-slider-container");
             this.params.video.show = this.currentVideo.video ? true : false;
             this.params.swimmers.useTracking = true;
@@ -207,7 +211,7 @@ class Config {
         if (this._updateDistanceMarker) this._updateDistanceMarker();
     }
     getRaceTime() {
-        return this.time - videoStartTime;
+        return this.time - this.currentVideo.videoStartTime;
     }
     resetParams() {
         // this.params.visualizations = JSON.parse(JSON.stringify(this.originalVisParams));
@@ -224,7 +228,7 @@ class Config {
         if (this.currentEventIndex > 0) this.currentEventIndex--;
     }
     setRaceTime(t) {
-        this.time = videoStartTime + t;
+        this.time = this.currentVideo.videoStartTime + t;
         if (this.currentVideo.video) this.currentVideo.setTime(this.time);
         if (!this.events) return;
         this.updateEventIndex();
@@ -304,55 +308,6 @@ class Config {
                 // console.log("\n\n\n")
             });
         }
-    }
-
-    /**
-     * 
-     * @param {WebGLRenderingContext} gl 
-     */
-    setRaceCalibration(gl, calibration) {
-        this.params.simulation.poolSize.x = 25;
-        this.params.simulation.poolSize.y = 2;
-        this.params.simulation.poolSize.z = 50;
-        this.setCalibration(calibration);
-        this.params.visualizations.sparks.fov = this.params.fov * 2 * Math.PI / 360;
-        gl.matrixMode(gl.PROJECTION);
-        gl.loadIdentity();
-        gl.perspective(this.params.fov, gl.canvas.width / gl.canvas.height, 0.01, 100);
-        gl.matrixMode(gl.MODELVIEW);
-
-
-
-        // this.translateX = -0.53;
-        // this.translateY = 1.25;
-        // this.zoomDistance = 47.86;
-        // this.angleX = -29;
-        // this.angleY = -260.5;
-        // this.angleZ = -5;
-    }
-
-    /**
-     * 
-     * @param {WebGLRenderingContext} gl 
-     */
-    setSynchroCalibration(gl) {
-        this.params.simulation.poolSize.x = 25;
-        this.params.simulation.poolSize.y = 2;
-        this.params.simulation.poolSize.z = 30;
-        this.params.fov = 42.8; // 31.75
-        this.translateX = -1.32;
-        this.translateY = 0.40;
-        this.zoomDistance = 32.41;
-        this.angleX = -18;
-        this.angleY = -291.5;
-        this.angleZ = 1;
-        this.params.visualizations.sparks.fov = this.params.fov * 2 * Math.PI / 360;
-        gl.matrixMode(gl.PROJECTION);
-        gl.loadIdentity();
-        gl.perspective(this.params.fov, gl.canvas.width / gl.canvas.height, 0.01, 100);
-        gl.matrixMode(gl.MODELVIEW);
-
-
     }
 }
 

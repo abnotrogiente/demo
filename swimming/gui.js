@@ -29,6 +29,7 @@ const createGUI = function (gl, reset) {
     visualizationsFolder.add(config.params.visualizations, "showWR").name('show world record').listen();
     visualizationsFolder.add(config.params.visualizations, "showSwimmersLines", config.params.visualizations.swimmersLinesList).name('show neighbours lines').listen();
     visualizationsFolder.add(config.params.visualizations, "swimmersLinesMode", config.params.visualizations.swimmersLinesModeList).name('show neighbours lines').listen();
+    visualizationsFolder.add(config.params.visualizations, "customWaterPerturbation", config.params.visualizations.waterPerturbatorsList).name('custom water perturbation').listen();
     visualizationsFolder.add(config.params.visualizations, "medalsModeBeforeFinish", ["none", "stars", "bright", "lanes"]).name('show potential medals').listen();
     visualizationsFolder.add(config.params.visualizations, "medalsModeAfterFinish", ["none", "stars", "bright", "lanes"]).name('show potential medals after finish').listen();
     visualizationsFolder.add(config.params.visualizations, "showSpeed").name('show speed').listen();

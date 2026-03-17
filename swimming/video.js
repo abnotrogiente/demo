@@ -244,17 +244,14 @@ class Video {
      * @param {Calibration} calibration 
      * @returns 
      */
-    constructor(gl, src, calibration, { poolSize = new GL.Vector(2, 2), waterResolution = new GL.Vector(256, 256), numSwimmers = 1, thresholdBlending = false }) {
+    constructor(gl, src, calibration, videoStartTime) {
         /**@type {WebGLRenderingContext} */
         this.gl = gl;
         /**@type {Calibration} */
         this.calibration = calibration;
-        this.poolSize = poolSize;
-        this.waterResolution = waterResolution;
-        this.numSwimmers = numSwimmers;
-        this.thresholdBlending = thresholdBlending;
         this.copyVideo = false;
         this.show = false;
+        this.videoStartTime = videoStartTime;
         // Only continue if WebGL is available and working
         if (gl === null) {
             alert(

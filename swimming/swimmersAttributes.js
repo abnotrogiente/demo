@@ -239,6 +239,7 @@ class SwimmersAttributes {
         this.swimmersAttributes[this.numVecAttributes * 4 * index + 8] = swimmer.breakoutDistance;
         this.swimmersAttributes[this.numVecAttributes * 4 * index + 9] = swimmer.breakoutTime;
         this.swimmersAttributes[this.numVecAttributes * 4 * index + 10] = swimmer.finishTime;
+        this.swimmersAttributes[this.numVecAttributes * 4 * index + 11] = swimmer.waterDamping;
     }
 
     update() {

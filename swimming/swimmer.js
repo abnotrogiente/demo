@@ -19,7 +19,8 @@ const armFrequency = 2;
 
 const TIME_KEY = "Temps (s)";
 const EVENT_KEY = "event";
-const DISTANCE_KEY = "distance (m)";
+const DISTANCE_KEY = "eventX"; // "distance (m)"
+const FREQUENCY_KEY = "frequence (cylce/min)";
 
 
 class Swimmer {
@@ -96,6 +97,8 @@ class Swimmer {
         this.cycleTime = 0.;
         this.cyclePhase = 0.;
         this.finishTime = 0;
+
+        this.waterDamping = .1;
     }
 
     async parseData(source) {
@@ -111,9 +114,9 @@ class Swimmer {
             .then(text => {
                 if (!text) return;
                 const rows = text.split('\n');
-                const headers = rows[0].split(',');
+                const headers = rows[0].split(/,|;/);
                 this.data = rows.slice(1).map(row => {
-                    const values = row.split(",");
+                    const values = row.split(/,|;/);
                     return Object.fromEntries(
                         headers.map((h, i) => [h, values[i]])
                     );
@@ -203,13 +206,41 @@ class Swimmer {
         return parseFloat(this.data[nextCycleIndex][TIME_KEY]);
     }
 
+    setDamping(eventData) {
+        if (config.params.visualizations.customWaterPerturbation == config.params.visualizations.WATER_PERTURBATOR_CYCLES) {
+            const freq = parseFloat(eventData[FREQUENCY_KEY]);
+            if (freq > 0) {
+                console.log("FREQ : " + freq);
+                const freqMax = 80.;
+                const freqMin = 35.;
+                let intensity = (freq - freqMin) / (freqMax - freqMin);
+                intensity = Math.max(Math.min(intensity, 1.), 0.);
+                const dampingMin = .03;
+                const dampingMax = .22;
+                this.waterDamping = dampingMin + (dampingMax - dampingMin) * (1. - intensity);
+            }
+        }
+        else {
+            this.waterDamping = config.params.simulation.waterDamping;
+        }
+    }
+
     handleTracking(time) {
+        // console.log("current data index : " + this.currendDataIndex);
+        // if (this.data && this.data[this.currendDataIndex]) console.log("next event time : " + this.data[this.currendDataIndex][TIME_KEY]);
+        // if (this.data && this.data[this.currendDataIndex]) console.log("next event : " + JSON.stringify(this.data[this.currendDataIndex]));
+        // console.log("current time : " + time);
+        // console.log("\n\n");
         if (this.hasReacted && this.useTracking && this.currendDataIndex < this.data.length && this.data[this.currendDataIndex][TIME_KEY] < time) {
+
+            this.setDamping(this.data[this.currendDataIndex]);
+
             let nextDistanceTarget = null;
             let nextEventTime = time;
             const nextData = this.data[this.currendDataIndex + 1];
             if (this.currendDataIndex + 1 < this.data.length) {
                 nextDistanceTarget = parseFloat(nextData[DISTANCE_KEY]);
+                // console.log("next distance target : " + nextDistanceTarget);
                 nextEventTime = parseFloat(nextData[TIME_KEY]);
             }
             const D = config.params.simulation.poolSize.z;

@@ -83,7 +83,7 @@ function reset() {
   for (let swimmer of config.swimmers) {
     swimmer.body.center.x = x;
     swimmer.startingPoint.x = x;
-    swimmer.parseData("./assets/race-data/" + i + ".csv");
+    // swimmer.parseData("./assets/race-data/" + i + ".csv");
     i++;
     x -= dx;
   }
@@ -454,6 +454,7 @@ window.onload = function () {
   gl.canvas.addEventListener("keydown", onkeydown);
 
   var frame = 0;
+  // config.setScene("100m freestyle");
 
   function update(dt) {
     if (dt > 1) return;

@@ -56,16 +56,13 @@ function Water(gl, resolution = null) {
   this.updateShader = new GL.Shader(vertexShader, `
     uniform sampler2D tex;
     uniform vec2 delta;
-    uniform float wr;
     uniform float prev_wr;
     uniform float damping;
     uniform float sqrt_2_PI;
     uniform vec3 poolSize;
+    `+ swimmersHelperFunctions + `
     in vec2 coord;
     out vec4 fragColor;
-    float gaussian(float x, float mean, float std) {
-    return exp(-(x - mean) * (x - mean) / (2. * std * std)) / (std * sqrt_2_PI);
-  }
   void main() {
       /* get vertex info */
       vec4 info = texture(tex, coord);
@@ -84,7 +81,19 @@ function Water(gl, resolution = null) {
     info.g += (average - info.r) * 2.0;
 
     /* attenuate the velocity a little so waves do not last forever */
-    info.g *= 1. - damping;/*TODO parametriser ça*/
+    float d = damping;
+    vec2 pos = (coord - .5) * poolSize.xz;
+    float halfLane = poolSize.x / 20.;
+    for (int i = 0; i < 10; i++) {
+    float i_float = float(i);
+      if (i_float > swimmersNumber - 0.1) break;
+      vec2 swimmerPos = getSwimmerPosition(i);
+      if (abs(swimmerPos.x - pos.x) <= halfLane) {
+        d = getSwimmerWaterDamping(i);
+        break;
+      }
+    }
+    info.g *= 1. - d;/*TODO parametriser ça*/
 
     /* move the vertex along the velocity */
     info.r += info.g;
@@ -337,7 +346,11 @@ Water.prototype.stepSimulation = function () {
   var this_ = this;
   this.textureB.drawTo(function () {
     this_.textureA.bind();
+    const swimmersAttributesTexture = Swimmer.getAttributesTexture();
+    if (swimmersAttributesTexture) swimmersAttributesTexture.bind(2);
     this_.updateShader.uniforms({
+      swimmersAttributesTexture: 2,
+      swimmersNumber: config.swimmers.length,
       invPoolSizeVertex: [this_.invPoolSize.x, this_.invPoolSize.z],
       delta: [this_.delta.x, this_.delta.y],
       wr: this_.WR_position,
