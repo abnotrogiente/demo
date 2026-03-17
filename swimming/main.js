@@ -126,7 +126,7 @@ window.onload = function () {
 
   document.body.appendChild(gl.canvas);
   gl.canvas.oncontextmenu = function (e) { e.preventDefault(); };
-  gl.clearColor(0, 0, 0, 1);
+  gl.clearColor(0., 0., 0., 1);
 
   flagCenter = new GL.Vector(0., -config.params.simulation.poolSize.z / 2. + 1.);
   flagSize = 0.7;
@@ -465,6 +465,10 @@ window.onload = function () {
       for (let swimmer of config.swimmers) swimmer.body.velocity = new GL.Vector(0, 0, 0);
     }
 
+    gl.clearColor(0., 0., 0., 1.);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+
     // Update the water simulation and graphics
     for (let swimmer of config.swimmers) swimmer.update(dt);
     config.water.updateSpheres(dt);
@@ -492,7 +496,8 @@ window.onload = function () {
 
     /**@type {WebGLRenderingContext} */
     const g = gl;
-    // g.clearColor(1, 1, 1, 1);
+    // g.clearColor(.1, .9, .5, 1);
+    gl.clearColor(.1, .2, .5, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.loadIdentity();
     gl.translate(config.translateX, config.translateY, -config.zoomDistance);
