@@ -222,6 +222,14 @@ function createEventEditor(containerId) {
         });
         panel.appendChild(validateBtn);
 
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = 'cancel';
+        cancelBtn.addEventListener('click', () => {
+            addPanel.remove();
+            addPanel = null;
+        });
+        panel.appendChild(cancelBtn);
+
         return panel;
     }
 
