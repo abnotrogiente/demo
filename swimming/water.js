@@ -64,35 +64,6 @@ function Water(gl, resolution = null) {
     in vec2 coord;
     out vec4 fragColor;
 
-    // float rand(vec2 co){
-    //   return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
-    // }
-    #define M_PI 3.14159265358979323846
-
-    float rand(vec2 co){return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);}
-    float rand (vec2 co, float l) {return rand(vec2(rand(co), l));}
-    float rand (vec2 co, float l, float t) {return rand(vec2(rand(co, l), t));}
-
-    float perlin(vec2 p, float dim, float time) {
-      vec2 pos = floor(p * dim);
-      vec2 posx = pos + vec2(1.0, 0.0);
-      vec2 posy = pos + vec2(0.0, 1.0);
-      vec2 posxy = pos + vec2(1.0);
-      
-      float c = rand(pos, dim, time);
-      float cx = rand(posx, dim, time);
-      float cy = rand(posy, dim, time);
-      float cxy = rand(posxy, dim, time);
-      
-      vec2 d = fract(p * dim);
-      d = -0.5 * cos(d * M_PI) + 0.5;
-      
-      float ccx = mix(c, cx, d.x);
-      float cycxy = mix(cy, cxy, d.x);
-      float center = mix(ccx, cycxy, d.y);
-      
-      return center * 2.0 - 1.0;
-    }
 
     void main() {
       /* get vertex info */
@@ -128,11 +99,6 @@ function Water(gl, resolution = null) {
 
     /* move the vertex along the velocity */
     info.r += info.g;
-
-    // float h = rand(coord + vec2(time,0.)) - .5;
-    float h = perlin(coord, 200., 0. * time / 10000.);
-    h *= .01;
-    // info.r += h;
       
 
     fragColor = info;
@@ -248,16 +214,13 @@ function Water(gl, resolution = null) {
         float i_float = float(i); 
         float seed = i_float + .5;
         float kx = rand(vec2(seed, seed));
-        // kx = 0.;
         float ky = rand(vec2(seed, -seed));
         float omega = rand(vec2(-seed, seed));
         vec2 k = normalize(vec2(kx, ky));
         k *= waveLength0 * pow(frequencyFactor, i_float);
-        // k = vec2(1., 0.);
         omega = omega0 * (omega - .5) * pow(frequencyFactor, i_float);
         float s = sin(dot(k, pos) + omega * t) * amplitude * pow(amplitudeFactor, i_float);
         y += exp(s - 1.0) - .37;
-        // y += s;
       }
       return y;
     }
