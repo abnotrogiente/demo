@@ -172,6 +172,8 @@ function Renderer(gl, water, flagCenter, flagSize) {
       uniform sampler2D china;
       uniform vec2 flagSize;
 
+      uniform bool heightFieldRendering;
+
       uniform bool shadowEnabled;
       uniform float shadowRadius;
       uniform float shadowPower;
@@ -452,6 +454,16 @@ function Renderer(gl, water, flagCenter, flagSize) {
           coord += info.ba * 0.005;
           info = texture(water, coord);
         }*/
+        if (heightFieldRendering) {
+          float interval = .1;
+          float value = abs(info.r) / interval;
+          value = min(max(value, 0.), 1.);
+          vec4 lowColor = vec4(0., 0., 1., 1.);
+          vec4 highColor = vec4(1., 0., 0., 1.);
+          vec4 color = info.r > 0. ? highColor : lowColor;
+          fragColor = value * color;
+          return;
+        }
         
         vec3 normal = vec3(info.b, sqrt(1.0 - dot(info.ba, info.ba)), info.a);
         vec3 incomingRay = normalize(position - eye);
@@ -664,7 +676,8 @@ Renderer.prototype.renderWater = function (water, sky, shadowParams) {
       showSwimmersLines: Math.round(config.params.visualizations.showSwimmersLinesDict[config.params.visualizations.showSwimmersLines]),
       swimmersLinesMode: config.params.visualizations.swimmersLinesModeDict[config.params.visualizations.swimmersLinesMode],
       medalsModeBeforeFinish: Math.round(config.params.visualizations.medalsModesDict[config.params.visualizations.medalsModeBeforeFinish]),
-      medalsModeAfterFinish: Math.round(config.params.visualizations.medalsModesDict[config.params.visualizations.medalsModeAfterFinish])
+      medalsModeAfterFinish: Math.round(config.params.visualizations.medalsModesDict[config.params.visualizations.medalsModeAfterFinish]),
+      heightFieldRendering: config.params.visualizations.heightFieldRendering
     }).draw(water.plane);
   }
   this.gl.disable(this.gl.CULL_FACE);

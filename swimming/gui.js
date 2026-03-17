@@ -37,6 +37,7 @@ const createGUI = function (gl, reset) {
     visualizationsFolder.add(config.params.visualizations, "showDivingDistance").name('show diving distance').listen();
     visualizationsFolder.add(config.params.visualizations.shadow, "enabled").name("show shadow");
     visualizationsFolder.add(config.params.visualizations, 'areaConservationEnabled', 'areaConservationEnabled').name('area conservation').listen();
+    visualizationsFolder.add(config.params.visualizations, "heightFieldRendering").name('height field rendering').listen();
 
     const videoFolder = gui.addFolder("video");
     videoFolder.close();
