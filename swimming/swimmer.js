@@ -98,7 +98,7 @@ class Swimmer {
         this.cyclePhase = 0.;
         this.finishTime = 0;
 
-        this.waterDamping = .1;
+        this.waterDamping = config.params.simulation.waterDamping;
     }
 
     async parseData(source) {

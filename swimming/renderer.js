@@ -244,11 +244,13 @@ function Renderer(gl, water, flagCenter, flagSize) {
       
       }
 
-      void drawFlags(in vec2 position, in vec2 swimmerPos, in float nationality, bool rightSide, inout vec3 color) {
+      void drawFlags(in vec2 position, in vec2 swimmerPos, in float swimmerAltitude, in float nationality, bool rightSide, inout vec3 color) {
         float swimmer_x = swimmerPos.x;
         float swimmer_z = swimmerPos.y;
         float dz = rightSide ? -2.5 : 2.5;
-        vec2 flagCenterNew = vec2(swimmer_x, swimmer_z + dz);
+        float staticFlag_z = flagSize.y / 2. - poolSize.z / 2. + 2.;
+        float flag_z = swimmerAltitude <= 0. ? max(staticFlag_z, swimmer_z + dz) : staticFlag_z;
+        vec2 flagCenterNew = vec2(swimmer_x, flag_z);
         // TODO nettoyer
         vec2 flagCorner = flagCenterNew - flagSize / 2.;
         
@@ -398,6 +400,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
           float i_float = float(i);
           if (i_float > swimmersNumber - 0.1) break;
           vec2 swimmerPos = getSwimmerPosition(i);
+          float swimmerAltitude = getSwimmerAltitude(i);
           if (showProjectionGrid && isOnConservedAreaGrid(position, 0.1)) color = vec3(1., 1., 0.); /* Debug conserved area grid */
           if (showWR) drawWorldRecordLine(position, color); 
           if (areaConservation) {
@@ -410,9 +413,9 @@ function Renderer(gl, water, flagCenter, flagSize) {
           drawSwimmerLines(projectedPosition, swimmerPos, i, color);
           
           drawRanks(projectedPosition, swimmerPos, i, rightSide, color);
-          drawFlags(position, swimmerPos, getSwimmerNationality(i), rightSide, color);
+          drawFlags(position, swimmerPos, swimmerAltitude, getSwimmerNationality(i), rightSide, color);
           if (showSpeed || showFinishTimes) drawNumbers(position, swimmerPos, i, rightSide, color);
-          if (shadowEnabled) drawShadows(projectedPosition, swimmerPos, getSwimmerAltitude(i), color);
+          if (shadowEnabled) drawShadows(projectedPosition, swimmerPos, swimmerAltitude, color);
         }
       
       }

@@ -63,7 +63,38 @@ function Water(gl, resolution = null) {
     `+ swimmersHelperFunctions + `
     in vec2 coord;
     out vec4 fragColor;
-  void main() {
+
+    // float rand(vec2 co){
+    //   return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+    // }
+    #define M_PI 3.14159265358979323846
+
+    float rand(vec2 co){return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);}
+    float rand (vec2 co, float l) {return rand(vec2(rand(co), l));}
+    float rand (vec2 co, float l, float t) {return rand(vec2(rand(co, l), t));}
+
+    float perlin(vec2 p, float dim, float time) {
+      vec2 pos = floor(p * dim);
+      vec2 posx = pos + vec2(1.0, 0.0);
+      vec2 posy = pos + vec2(0.0, 1.0);
+      vec2 posxy = pos + vec2(1.0);
+      
+      float c = rand(pos, dim, time);
+      float cx = rand(posx, dim, time);
+      float cy = rand(posy, dim, time);
+      float cxy = rand(posxy, dim, time);
+      
+      vec2 d = fract(p * dim);
+      d = -0.5 * cos(d * M_PI) + 0.5;
+      
+      float ccx = mix(c, cx, d.x);
+      float cycxy = mix(cy, cxy, d.x);
+      float center = mix(ccx, cycxy, d.y);
+      
+      return center * 2.0 - 1.0;
+    }
+
+    void main() {
       /* get vertex info */
       vec4 info = texture(tex, coord);
 
@@ -97,6 +128,11 @@ function Water(gl, resolution = null) {
 
     /* move the vertex along the velocity */
     info.r += info.g;
+
+    // float h = rand(coord + vec2(time,0.)) - .5;
+    float h = perlin(coord, 200., 0. * time / 10000.);
+    h *= .01;
+    // info.r += h;
       
 
     fragColor = info;
@@ -192,8 +228,43 @@ function Water(gl, resolution = null) {
     uniform bool showDivingDistance;
     in vec2 coord;
     out vec4 fragColor;
+    uniform float t;
 
     ` + swimmersHelperFunctions + `
+
+    const int order = 20;
+
+    uniform float amplitudeFactor;
+    uniform float frequencyFactor;
+    uniform float amplitude;
+    uniform float omega0;
+    uniform float waveLength0;
+
+    float rand(vec2 co){return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);}
+
+    float waveFunctionExp(vec2 pos) {
+      float y = 0.0;
+      for (int i = 0; i < 20; i++) {
+        float i_float = float(i); 
+        float seed = i_float + .5;
+        float kx = rand(vec2(seed, seed));
+        // kx = 0.;
+        float ky = rand(vec2(seed, -seed));
+        float omega = rand(vec2(-seed, seed));
+        vec2 k = normalize(vec2(kx, ky));
+        k *= waveLength0 * pow(frequencyFactor, i_float);
+        // k = vec2(1., 0.);
+        omega = omega0 * (omega - .5) * pow(frequencyFactor, i_float);
+        float s = sin(dot(k, pos) + omega * t) * amplitude * pow(amplitudeFactor, i_float);
+        y += exp(s - 1.0) - .37;
+        // y += s;
+      }
+      return y;
+    }
+
+    float interpIntensity(float intensity) {
+      return 1. - sqrt(2.*intensity - intensity * intensity);
+    }
 
     void main() {
       vec4 info = texture(tex, coord);
@@ -201,7 +272,18 @@ function Water(gl, resolution = null) {
       if(showDivingDistance) w += getDivingWaves(coord).x;
       if(showWR) w += getRecordWave(coord);
       info.r += add ? w : -w;
+      float h = 0.;
+      if (time < 0.) {
+        float interval = 5.;
+        float intensity = -time / interval;
+        intensity = min(max(intensity, 0.), 1.);
+        intensity = 1. - intensity;
+        intensity = interpIntensity(intensity);
+        h = waveFunctionExp(coord*poolSize.xz) * intensity;
+      }
+      info.r += add ? h : -h;
       fragColor = info;
+
     }
     `);
 }
@@ -270,6 +352,8 @@ Water.prototype.addOrRemoveVisualizationWaves = function (add) {
   if (!this.visualizationWavesEnabled || !Swimmer.raceHasStarted) return;
   var this_ = this;
 
+  // console.log("time : " + config.time);
+
   this.textureB.drawTo(function () {
     this_.textureA.bind();
     const swimmersAttributesTexture = Swimmer.getAttributesTexture();
@@ -285,6 +369,12 @@ Water.prototype.addOrRemoveVisualizationWaves = function (add) {
       add: add,
       swimmersNumber: config.swimmers.length,
       time: config.getRaceTime(),
+      t: config.time,
+      amplitudeFactor: config.params.quiver.amplitudeFactor,
+      frequencyFactor: config.params.quiver.frequencyFactor,
+      amplitude: config.params.quiver.amplitude,
+      omega0: config.params.quiver.omega,
+      waveLength0: config.params.quiver.waveLength
     }).draw(this_.plane);
   });
   this.textureB.swapWith(this.textureA);
@@ -353,6 +443,7 @@ Water.prototype.stepSimulation = function () {
       swimmersNumber: config.swimmers.length,
       invPoolSizeVertex: [this_.invPoolSize.x, this_.invPoolSize.z],
       delta: [this_.delta.x, this_.delta.y],
+      time: config.time,
       wr: this_.WR_position,
       prev_wr: this_.prev_WR_position,
       poolSize: [config.params.simulation.poolSize.x, config.params.simulation.poolSize.y, config.params.simulation.poolSize.z],

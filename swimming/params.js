@@ -38,7 +38,8 @@ class Config {
             },
             swimmers: { showSpheres: true, useTracking: false },
             video: { thresholdBlending: false, blendingThreshold: .41, show: false },
-            simulation: { optimized: false, waterDamping: .02, poolSize: new GL.Vector(2.0, 1.0, 2.0) }
+            simulation: { optimized: false, waterDamping: .02, poolSize: new GL.Vector(2.0, 1.0, 2.0) },
+            quiver: { amplitudeFactor: 0.8, frequencyFactor: 1.2, amplitude: .1, omega: 2., waveLength: 5. }
         };
 
         this.resolution = new GL.Vector(256, 256);
@@ -212,6 +213,7 @@ class Config {
         if (this._updateDistanceMarker) this._updateDistanceMarker();
     }
     getRaceTime() {
+        if (!Swimmer.raceHasStarted) return 0;
         return this.time - this.currentVideo.videoStartTime;
     }
     resetParams() {
@@ -236,7 +238,7 @@ class Config {
         this.resetParams();
     }
     startRace() {
-        this.setRaceTime(0);
+        this.setRaceTime(-3);
         if (this.currentVideo.video) this.currentVideo.video.play();
         this.swimmers.forEach(swimmer => swimmer.startRace());
         Swimmer.raceHasStarted = true;

@@ -88,6 +88,14 @@ const createGUI = function (gl, reset) {
         gl.matrixMode(gl.MODELVIEW);
         console.log("perspective : " + config.params.fov);
     });
+
+    const quiverFolder = gui.addFolder("quiver");
+    quiverFolder.close();
+    quiverFolder.add(config.params.quiver, "amplitude", .01, 1).name("amplitude");
+    quiverFolder.add(config.params.quiver, "omega", .5, 5).name("omega");
+    quiverFolder.add(config.params.quiver, "amplitudeFactor", .5, .9).name("amplitude factor");
+    quiverFolder.add(config.params.quiver, "frequencyFactor", 1.1, 2).name("frequency factor");
+    quiverFolder.add(config.params.quiver, "waveLength", 1, 30).name("wave length");
 }
 
 export { createGUI };
