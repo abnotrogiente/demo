@@ -5,6 +5,10 @@
             "showFlags": true,
             "showWR": true,
             "medalsModeAfterFinish": "lanes"
+        },
+        "transition": {
+            "type": "dissolve",
+            "duration": 3
         }
     },
     {
