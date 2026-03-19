@@ -160,7 +160,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
       uniform vec3 eye;
       in vec3 position;
       out vec4 fragColor;
-      uniform bool showFlags;
+      uniform float showFlags;
       uniform bool showWR;
       uniform bool showSpeed;
       uniform bool showFinishTimes;
@@ -184,7 +184,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
       uniform float swimmersLinesMode;
       uniform float medalsModeBeforeFinish;
       uniform float medalsModeAfterFinish;
-
+      
       // Show lines
       #define LINES_NONE 0
       #define LINES_ONLY_MEDALS 1
@@ -262,15 +262,15 @@ function Renderer(gl, water, flagCenter, flagSize) {
         if (showAreaConservedGrid && isOnConservedAreaGrid(position, 0.1)) color = vec3(1., 0., 0.); /* Debug conserved area grid */
         vec2 posFlag = position - flagCorner - flagSize / 2.;/*Fixes the corner of the flag on the XZ plane*/
         vec2 flagCoord = posFlag / flagSize + 0.5;
-        if (showFlags && abs(posFlag.x) <= flagSize.x / 2. && abs(posFlag.y) <= flagSize.y / 2.) {
+        if (bool(showFlags) && abs(posFlag.x) <= flagSize.x / 2. && abs(posFlag.y) <= flagSize.y / 2.) {
           vec3 flagColor;
           if(nationality < .5) flagColor = texture(france, vec2(1.-flagCoord.y,1.- flagCoord.x)).xyz;
           else flagColor = texture(china, vec2(1.-flagCoord.y,1.- flagCoord.x)).xyz;
-          color = flagColor;
+          color = showFlags * flagColor + (1. - showFlags) * color;
           float delta = .1;
           vec2 delta_tex = vec2(delta, delta) / flagSize;
           if (min(flagCoord.y, 1.- flagCoord.y) <= delta_tex.y 
-            || min(flagCoord.x, 1. - flagCoord.x) <= delta_tex.x) color = vec3(1., 1., 1.);
+            || min(flagCoord.x, 1. - flagCoord.x) <= delta_tex.x) color = showFlags * vec3(1., 1., 1.) + (1. - showFlags) * color;
         }
       }
 
@@ -284,7 +284,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
         float speed = getSwimmerSpeed(index);
         float finishTime = getSwimmerFinishTime(index);
         float visSize = flagSize.x / 2.;
-        float delta = showFlags? 5. : 2.;
+        float delta = bool(showFlags)? 5. : 2.;
         float dz = rightSide? delta : -delta - 9. * visSize * .75 ;
         vec2 visPosition = swimmerPosition - position - vec2(0., dz);
         vec2 visCoord = toTextCoord(visPosition, visSize);
@@ -442,7 +442,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
         }
         if (ray.y < 0.0) {
           color *= waterColor;
-          if (showFlags || showWR || int(medalsModeAfterFinish) != MEDALS_NONE || int(medalsModeBeforeFinish) != MEDALS_NONE || showSpeed || showDivingDistance) drawVisualizations(origin.xz, color);
+          if (bool(showFlags) || showWR || int(medalsModeAfterFinish) != MEDALS_NONE || int(medalsModeBeforeFinish) != MEDALS_NONE || showSpeed || showDivingDistance) drawVisualizations(origin.xz, color);
           
           
         }
@@ -638,6 +638,7 @@ Renderer.prototype.renderWater = function (water, sky, shadowParams) {
   const swimmersAttributesTexture = Swimmer.getAttributesTexture();
   if (swimmersAttributesTexture) swimmersAttributesTexture.bind(6);
   this.gl.enable(this.gl.CULL_FACE);
+  config.updateTransitions();
 
   for (var i = 0; i < 2; i++) {
     this.gl.cullFace(i ? this.gl.BACK : this.gl.FRONT);
@@ -664,7 +665,7 @@ Renderer.prototype.renderWater = function (water, sky, shadowParams) {
       showAreaConservedGrid: water.showAreaConservedGrid,
       wr: water.WR_position,
       swimmersNumber: config.swimmers.length,
-      showFlags: config.params.visualizations.showFlags,
+      showFlags: config.transitions.showFlags ? config.transitions.showFlags.opacity : config.params.visualizations.showFlags,
       showWR: config.params.visualizations.showWR,
       showSpeed: config.params.visualizations.showSpeed,
       showDivingDistance: config.params.visualizations.showDivingDistance,
@@ -680,7 +681,7 @@ Renderer.prototype.renderWater = function (water, sky, shadowParams) {
       swimmersLinesMode: config.params.visualizations.swimmersLinesModeDict[config.params.visualizations.swimmersLinesMode],
       medalsModeBeforeFinish: Math.round(config.params.visualizations.medalsModesDict[config.params.visualizations.medalsModeBeforeFinish]),
       medalsModeAfterFinish: Math.round(config.params.visualizations.medalsModesDict[config.params.visualizations.medalsModeAfterFinish]),
-      heightFieldRendering: config.params.visualizations.heightFieldRendering
+      heightFieldRendering: config.params.visualizations.heightFieldRendering,
     }).draw(water.plane);
   }
   this.gl.disable(this.gl.CULL_FACE);

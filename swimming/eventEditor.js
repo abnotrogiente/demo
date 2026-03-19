@@ -46,7 +46,8 @@ function createEventEditor(containerId) {
         { name: 'customWaterPerturbation', type: 'select', options: config.params.visualizations.waterPerturbatorsList },
         { name: 'medalsModeBeforeFinish', type: 'select', options: ['none', 'stars', 'bright', 'lanes'] },
         { name: 'medalsModeAfterFinish', type: 'select', options: ['none', 'stars', 'bright', 'lanes'] },
-        { name: 'rankSwimmerToggle', type: 'number', min: 1, max: 10 }
+        { name: 'rankSwimmerToggle', type: 'number', min: 1, max: 10 },
+        // { name: 'transition', type: 'select', options: ['none', 'dissolve'] }
     ];
 
     function createParamsDisplay(event) {
@@ -177,6 +178,44 @@ function createEventEditor(containerId) {
             if (input) wrapper.appendChild(input);
             panel.appendChild(wrapper);
         });
+        const wrapper = document.createElement('div');
+        wrapper.style.marginRight = '8px';
+        wrapper.style.marginBottom = '4px';
+
+        const label = document.createElement('label');
+        label.style.whiteSpace = 'nowrap';
+        label.textContent = 'transition :';
+        wrapper.appendChild(label);
+
+        const transitionInput = document.createElement("input");
+        transitionInput.type = 'number';
+        transitionInput.min = 0;
+        transitionInput.placeholder = "—";
+        transitionInput.style.width = "50px";
+        transitionInput.value = event.transition !== undefined ? event.transition.duration : '';
+        transitionInput.addEventListener("change", () => {
+            if (transitionInput.value === '') {
+                delete event.transition;
+                return;
+            }
+            const v = parseFloat(transitionInput.value);
+            if (!isNaN(v)) {
+                event.transition = {
+                    type: "dissolve",
+                    duration: v
+                };
+                update();
+            }
+        });
+        wrapper.appendChild(transitionInput);
+        panel.appendChild(wrapper);
+        // if (event.params.transition == "dissolve") {
+        //     const durationInput = document.createElement('input');
+        //     durationInput.type = 'number';
+        //     input.min = 0;
+        //     input.max = 10;
+        //     input.
+        // }
         return panel;
     }
 
@@ -200,8 +239,8 @@ function createEventEditor(containerId) {
         distanceInput.style.marginRight = '8px';
         panel.appendChild(distanceInput);
 
-        const params = {}; // temporary params object
-        const paramPanel = createParamsPanel({ params }, null); // pass dummy event, no textarea
+        const event = { params: {} }; // temporary params object
+        const paramPanel = createParamsPanel(event, null); // pass dummy event, no textarea
         paramPanel.style.margin = '4px 0';
         panel.appendChild(paramPanel);
 
@@ -213,7 +252,7 @@ function createEventEditor(containerId) {
                 alert('Please enter a valid distance');
                 return;
             }
-            const newEvent = { distance, params: { ...params } };
+            const newEvent = { distance, ...event };
             config.events.push(newEvent);
             syncEvents();
             // close panel

@@ -32,6 +32,7 @@ class Config {
                 medalsModeAfterFinish: "none",
                 areaConservationEnabled: true,
                 heightFieldRendering: false,
+                transitionBeginTime: null,
 
                 shadow: { enabled: true, shadowRadius: .5, shadowPower: .5, showCircle: true, circleRadius: .6, circleStroke: .15 },
                 sparks: { enabled: false, glow: 5., glowOffset: .5, lengthFactor: 1., stroke: .01, num: 40, sizeFactor: 50, fov: Math.PI / 4 }
@@ -111,6 +112,8 @@ class Config {
         this.paused = false;
 
         this.configPlayButton();
+
+        this.transitions = {};
     }
 
     configStopButton() {
@@ -291,18 +294,40 @@ class Config {
                 if (this._renderTimeline) this._renderTimeline();
             });
     }
+    updateTransitions() {
+        Object.entries(this.transitions).forEach(pair => {
+            const key = pair[0];
+            const value = pair[1];
+            const dt = this.getRaceTime() - value.beginTime;
+            if (dt > value.duration) {
+                delete this.transitions[key];
+                return;
+            }
+            if (value.show) {
+                value.opacity = dt / value.duration;
+            }
+            else value.opacity = 1. - dt / value.duration;
+        })
+    }
+
     updateParams() {
+        if (!Swimmer.raceHasStarted) return;
         if (!this.events || !this.useConfigFile) return;
         const event = this.events[this.currentEventIndex];
         if (!event) return;
         let rankSwimmerToggle = event.rankSwimmerToggle;
         if (!rankSwimmerToggle) rankSwimmerToggle = 1;
         if (event.distance && this.swimmers[rankSwimmerToggle - 1].getDistanceTraveled() >= event.distance || event.time !== undefined && this.getRaceTime() >= event.time) {
-
+            // console.log("event : " + JSON.stringify(event));
             this.currentEventIndex++;
+            const dissolve = event.transition && event.transition.type == "dissolve";
             Object.entries(event.params).forEach((pair) => {
                 const key = pair[0];
                 const value = pair[1];
+                if (key === "transition") return;
+                if (dissolve && (value === true || value === false)) {
+                    this.transitions[key] = { opacity: 1. - 1. * value, show: value, beginTime: this.getRaceTime(), duration: event.transition.duration };
+                }
                 this.params.visualizations[key] = value;
                 // console.log("key : " + key);
                 // console.log("value : " + value);
@@ -311,6 +336,14 @@ class Config {
                 // console.log("\n\n\n")
             });
         }
+    }
+    launchDemo() {
+        console.log("Launch demo");
+        this.setScene("100m freestyle");
+        this.params.video.show = false;
+    }
+    updateDemo() {
+
     }
 }
 

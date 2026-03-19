@@ -425,6 +425,9 @@ window.onload = function () {
       document.getElementById("commands").hidden = !document.getElementById("commands").hidden;
       document.getElementById("h").hidden = !document.getElementById("h").hidden;
     }
+    else if (e.which == 'D'.charCodeAt(0)) {
+      config.launchDemo();
+    }
     else if (e.which == 40) { // down
       if (config.resolution.x > 129)
         config.resolution.x = Math.round(config.resolution.x / 2);
