@@ -145,6 +145,13 @@ function Renderer(gl, water, flagCenter, flagSize) {
   this.lightDir = new GL.Vector(2.0, 2.0, -1.0).unit();
   this.causticTex = new GL.Texture(1024, 1024);
   this.waterShaders = [];
+  let parametersstr = "";
+  Object.entries(config.params.visualizations.customParametersDict).forEach(pair => {
+    const name = pair[1].name;
+    const value = pair[1].value;
+
+    parametersstr += "#define " + name + " " + value + "\n";
+  });
   for (var i = 0; i < 2; i++) {
     this.waterShaders[i] = new GL.Shader(`
       uniform sampler2D water;
@@ -184,6 +191,10 @@ function Renderer(gl, water, flagCenter, flagSize) {
       uniform float swimmersLinesMode;
       uniform float medalsModeBeforeFinish;
       uniform float medalsModeAfterFinish;
+
+      uniform float waterColorParameter;
+
+      `+ parametersstr + `
       
       // Show lines
       #define LINES_NONE 0
@@ -333,7 +344,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
       }
 
       void drawShadows(in vec2 projectedPosition, in vec2 swimmerPosition, in float altitude, inout vec3 color) {
-        if (!shadowEnabled || abs(altitude) < .15) return;
+        if (!shadowEnabled || abs(altitude - (-.06)) < .18) return;
         vec2 diff = (projectedPosition - swimmerPosition);
         vec2 diffNormalized = diff/shadowRadius;
         float distSq = dot(diffNormalized, diffNormalized);
@@ -391,6 +402,31 @@ function Renderer(gl, water, flagCenter, flagSize) {
         }
       }
 
+      void colorWater(in vec2 projectedPosition, in vec2 swimmerPosition, in float value, inout vec3 color) {
+        vec3 minColor = vec3(1., 1., 1.)*0.;
+        minColor = color;
+        vec3 maxColor = vec3(1., 0., 0.);
+        vec3 localColor = value * maxColor + (1. - value) * minColor;
+        float maxDist = .5 + value;
+        vec2 diff = projectedPosition - swimmerPosition;
+        vec2 diffDistorted = vec2(diff.x, .33*diff.y);
+        float distSq = dot(diffDistorted, diffDistorted);
+        float coeff = pow(max(0., (maxDist - sqrt(distSq))/maxDist), 2.);
+        color = coeff * localColor + (1. - coeff) * color;
+        
+      }
+
+      float getColorValue(float speed) {
+      float res;
+        if (int(waterColorParameter) == PARAMETER_SPEED) {
+          float minSpeed = 5.;
+          float maxSpeed = 8.;
+          res = (abs(speed) - minSpeed) / (maxSpeed - minSpeed);
+          res = min(max(res, 0.), 1.);
+          } 
+          return res;
+      }
+
       void drawVisualizations(in vec2 position, inout vec3 color) {
         vec2 projectedPosition = position;
         vec2 coord = position / poolSize.xz + .5;
@@ -416,6 +452,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
           drawFlags(position, swimmerPos, swimmerAltitude, getSwimmerNationality(i), rightSide, color);
           if (showSpeed || showFinishTimes) drawNumbers(position, swimmerPos, i, rightSide, color);
           if (shadowEnabled) drawShadows(projectedPosition, swimmerPos, swimmerAltitude, color);
+          colorWater(projectedPosition, swimmerPos, getColorValue(speed), color);
         }
       
       }
@@ -682,6 +719,7 @@ Renderer.prototype.renderWater = function (water, sky, shadowParams) {
       medalsModeBeforeFinish: Math.round(config.params.visualizations.medalsModesDict[config.params.visualizations.medalsModeBeforeFinish]),
       medalsModeAfterFinish: Math.round(config.params.visualizations.medalsModesDict[config.params.visualizations.medalsModeAfterFinish]),
       heightFieldRendering: config.params.visualizations.heightFieldRendering,
+      waterColorParameter: config.params.visualizations.customParametersDict[config.params.visualizations.waterColorParameter].value
     }).draw(water.plane);
   }
   this.gl.disable(this.gl.CULL_FACE);

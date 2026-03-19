@@ -207,7 +207,7 @@ class Swimmer {
     }
 
     setDamping(eventData) {
-        if (config.params.visualizations.customWaterPerturbation == config.params.visualizations.WATER_PERTURBATOR_CYCLES) {
+        if (config.params.visualizations.customWaterPerturbation == config.params.visualizations.PARAMETER_CYCLES) {
             const freq = parseFloat(eventData[FREQUENCY_KEY]);
             if (freq > 0) {
                 console.log("FREQ : " + freq);

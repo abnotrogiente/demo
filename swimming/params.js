@@ -15,7 +15,13 @@ function listToDict(L) {
 
 const swimmersLinesList = ["none", "only medals", "all"];
 const swimmersLinesModeList = ["neighbours", "per swimmer"];
-const waterPertubatorsList = ["none", "cycle frequency"]
+const customParametersList = ["none", "cycle frequency", "speed", "acceleration"];
+const customParametersDict = {
+    "none": { value: 0, name: "PARAMETER_NONE" },
+    "cycle frequency": { value: 1, name: "PARAMETER_CYCLES" },
+    "speed": { value: 2, name: "PARAMETER_SPEED" },
+    "acceleration": { value: 3, name: "PARAMETER_ACCELERATION" }
+};
 
 class Config {
     constructor() {
@@ -24,8 +30,9 @@ class Config {
             visualizations: {
                 enabled: true, showFlags: false, showWR: false, showSpeed: false, showDivingDistance: true,
                 showFinishTimes: false,
-                customWaterPerturbation: "none", waterPerturbatorsList: waterPertubatorsList,
-                WATER_PERTURBATOR_NONE: "none", WATER_PERTURBATOR_CYCLES: "cycle frequency",
+                customWaterPerturbation: "none",
+                waterColorParameter: "none", customParametersList: customParametersList, customParametersDict: customParametersDict,
+                PARAMETER_NONE: "none", PARAMETER_CYCLES: "cycle frequency", PARAMETER_SPEED: "speed", PARAMETER_ACCELERATION: "acceleration",
                 showSwimmersLines: "none", swimmersLinesList: swimmersLinesList, showSwimmersLinesDict: listToDict(swimmersLinesList),
                 swimmersLinesMode: "neighbours", swimmersLinesModeList: swimmersLinesModeList, swimmersLinesModeDict: listToDict(swimmersLinesModeList),
                 medalsModeBeforeFinish: "none", medalsModesDict: { "none": 0, "stars": 1, "bright": 2, "lanes": 3 },
