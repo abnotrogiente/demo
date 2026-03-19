@@ -108,6 +108,7 @@ var helperFunctions = `
       diffuse *= 1.0 / (1.0 + exp(-200.0 / (1.0 + 10.0 * (t.y - t.x)) * (point.y + refractedLight.y * t.y - 2.0 / 12.0)));
       
       scale += diffuse * 0.5;
+      scale = min(1., scale);
     }
     
     return wallColor * scale;
