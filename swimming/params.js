@@ -191,9 +191,10 @@ class Config {
             this.resolution = this.currentScene.waterResolution;
             this.params.video.thresholdBlending = this.currentScene.thresholdBlending;
             this.params.visualizations.areaConservationEnabled = false;
-            this.params.simulation.waterDamping = 0.1;
+            if (this.currentScene.title != "—") this.params.simulation.waterDamping = 0.1;
+            else this.params.simulation.waterDamping = .02;
             const numSwimmers = this.currentScene.numSwimmers;
-            console.log("num swimmers : " + numSwimmers)
+            console.log("num swimmers : " + numSwimmers);
             if (this.swimmers.length != numSwimmers) {
                 for (let i = this.swimmers.length; i < numSwimmers; i++) {
                     const s = new Swimmer(new GL.Vector(0, 0, 0));
@@ -368,19 +369,31 @@ class Config {
         this.useGravity(true);
         this.params.simulation.buoyancyFactor = 1.5;
         this.params.visualizations.shadow.enabled = false;
-        this._setPannelMinimized(true);
         this.renderWater = false;
         this.translateX = 200;
         this.parseConfigFile("./assets/vis-config-demo-2.json");
         this._gui.hide();
-        document.getElementById("event-editor").hidden = "true";
-        document.getElementById("time-slider-container").hidden = "true";
-        document.getElementById("h").hidden = "true";
+        document.getElementById("event-editor").hidden = true;
+        document.getElementById("time-slider-container").hidden = true;
+        document.getElementById("h").hidden = true;
         // this.angleY = this.currentVideo.calibration.ay + 360;
         // this.playButton.hidden = true;
         // this.stopButton.hidden = true;
         // this.renderCube = false;
         // this.setCalibration(new Calibration({}));
+    }
+    stopDemo() {
+        this.playingDemo = false;
+        this.setScene("—");
+        document.getElementById("event-editor").hidden = false;
+        document.getElementById("time-slider-container").hidden = false;
+        document.getElementById("h").hidden = false;
+        this.renderWater = true;
+        this.renderCube = true;
+        this.params.visualizations.shadow.enabled = true;
+        this._gui.show();
+        this.params.simulation.buoyancyFactor = 1.1;
+
     }
 
     #demoAddSwimmers(t, beginTime) {

@@ -425,7 +425,8 @@ window.onload = function () {
       document.getElementById("h").hidden = !document.getElementById("h").hidden;
     }
     else if (e.which == 'D'.charCodeAt(0)) {
-      config.launchDemo();
+      if (!config.playingDemo) config.launchDemo();
+      else config.stopDemo();
     }
     else if (e.which == 40) { // down
       if (config.resolution.x > 129)
