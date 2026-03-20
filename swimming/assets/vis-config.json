@@ -16,6 +16,10 @@
         "params": {
             "showFlags": false,
             "showSpeed": true
+        },
+        "transition": {
+            "type": "dissolve",
+            "duration": 3
         }
     },
     {
