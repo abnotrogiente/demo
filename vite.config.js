@@ -13,6 +13,8 @@ const copies = [
 ];
 
 copies.push({ src: "swimming/assets/vis-config.json", dest: "swimming/assets" });
+copies.push({ src: "swimming/assets/vis-config-demo.json", dest: "swimming/assets" });
+copies.push({ src: "swimming/assets/vis-config-demo-2.json", dest: "swimming/assets" });
 
 for (let i = 1; i <= 8; i++) copies.push({ src: "swimming/assets/race-data/" + i + ".csv", dest: "swimming/assets/race-data/" });
 
