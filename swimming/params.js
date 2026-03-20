@@ -371,7 +371,7 @@ class Config {
         this._setPannelMinimized(true);
         this.renderWater = false;
         this.translateX = 200;
-        this.parseConfigFile("./assets/vis-config-demo.json");
+        this.parseConfigFile("./assets/vis-config-demo-2.json");
         this._gui.hide();
         document.getElementById("event-editor").hidden = "true";
         document.getElementById("time-slider-container").hidden = "true";
