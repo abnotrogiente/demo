@@ -1,5 +1,6 @@
+import { gapSize } from "three/tsl";
 import GL from "./lightgl";
-import { config } from "./params";
+import { AWAY, config } from "./params";
 import { Sphere } from "./sphere";
 import { SwimmersAttributes } from "./swimmersAttributes";
 import { ARM_DELTA_X, FOOT_DELTA_X, FOOT_DELTA_Z, MAX_NUM_SWIMMER, NUM_VEC_ATTRIBUTES } from "./swimmersConstants";
@@ -12,7 +13,6 @@ function gaussianRandom(mean = 0, stdev = 1) {
     return z * stdev + mean;
 }
 
-const AWAY = new GL.Vector(1000, 0, -1000);
 const armAmplitude = 0.5;
 const armFrequency = 2;
 
@@ -318,6 +318,7 @@ class Swimmer {
         if (!this.hasReacted && Swimmer.raceHasStarted) {
             if (this.useTracking || raceTime > this.reactionTime && !config.params.swimmers.useTracking) {
                 this.swim(true);
+                this.waterDamping = config.params.simulation.waterDamping;
                 this.jump();
                 if (this.useTracking) {
                     this.body.cinematic = true;
@@ -327,7 +328,8 @@ class Swimmer {
             } else {
                 this.swim(false);
                 this.body.cinematic = true;
-                this.body.move(AWAY);
+                // this.body.move(AWAY);
+                this.body.move(new GL.Vector(this.body.center.x, 1, -config.params.simulation.poolSize.z / 2));
             }
             this.currendDataIndex = 0;
         }
@@ -347,14 +349,14 @@ class Swimmer {
 
 
 
-        if (!this.hasDove && this.body.center.y < 0 && this.body.oldCenter.y >= 0) {
+        if (Swimmer.raceHasStarted && !this.hasDove && this.body.center.y < 0 && this.body.oldCenter.y >= 0) {
             this.divingDistance = this.body.center.z + config.params.simulation.poolSize.z / 2;
             this.divingTime = raceTime;
             this.hasDove = true;
         }
 
         const radius = this.body.radius;
-        if (!this.hasBrokeOut && this.body.center.y > -radius && this.body.oldCenter.y <= -radius) {
+        if (Swimmer.raceHasStarted && !this.hasBrokeOut && this.body.center.y > -radius && this.body.oldCenter.y <= -radius) {
             this.breakoutDistance = this.body.center.z + config.params.simulation.poolSize.z / 2;
             this.breakoutTime = raceTime;
             this.hasBrokeOut = true;

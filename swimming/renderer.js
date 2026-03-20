@@ -29,6 +29,7 @@ var helperFunctions = `
   uniform bool areaConservation;
   uniform vec2 flagCenter;
   uniform vec3 poolSize;
+  uniform bool renderWater;
   
   vec2 intersectCube(vec3 origin, vec3 ray, vec3 cubeMin, vec3 cubeMax) {
     vec3 tMin = (cubeMin - origin) / ray;
@@ -99,7 +100,7 @@ var helperFunctions = `
     vec3 refractedLight = -refract(-light, vec3(0.0, 1.0, 0.0), IOR_AIR / IOR_WATER);
     float diffuse = max(0.0, dot(refractedLight, normal));
     vec4 info = texture(water, point.xz / poolSize.xz + 0.5);
-    if (point.y < info.r) {
+    if (renderWater && point.y < info.r) {
       vec4 caustic = texture(causticTex, 0.75 * (point.xz - point.y * refractedLight.xz / refractedLight.y) / poolSize.xz + 0.5);
       scale += diffuse * caustic.r * 2.0 * caustic.g;
     } else {
@@ -564,7 +565,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
   void main() {
     fragColor = vec4(getWallColor(position), 1.0);
       vec4 info = texture(water, position.xz / poolSize.xz + 0.5);
-    if (position.y < info.r) {
+    if (renderWater && position.y < info.r) {
       fragColor.rgb *= underwaterColor * 1.2;
     }
   }
@@ -664,6 +665,7 @@ Renderer.prototype.updateCaustics = function (water) {
  * @param {*} sky 
  */
 Renderer.prototype.renderWater = function (water, sky, shadowParams) {
+  if (!config.renderWater) return;
   var tracer = new GL.Raytracer();
   water.textureA.bind(0);
   this.tileTexture.bind(1);
@@ -681,6 +683,7 @@ Renderer.prototype.renderWater = function (water, sky, shadowParams) {
   for (var i = 0; i < 2; i++) {
     this.gl.cullFace(i ? this.gl.BACK : this.gl.FRONT);
     this.waterShaders[i].uniforms({
+      renderWater: true,
       light: this.lightDir,
       water: 0,
       tiles: 1,
@@ -751,7 +754,7 @@ Renderer.prototype.renderSphere = function (water, sphere) {
     water: 0,
     causticTex: 1,
     sphereCenter: [sphere.center.x, sphere.center.y, sphere.center.z],
-    sphereRadius: sphere.radius,
+    sphereRadius: sphere.radius * config.spheresRadiusCoeff,
     poolSize: [config.params.simulation.poolSize.x, config.params.simulation.poolSize.y, config.params.simulation.poolSize.z],
   }).draw(sphere.mesh);
 };
@@ -770,6 +773,7 @@ Renderer.prototype.renderSphereOld = function (water) {
 };
 
 Renderer.prototype.renderCube = function (water) {
+  if (!config.renderCube) return;
   this.gl.enable(this.gl.CULL_FACE);
   water.textureA.bind(0);
   this.tileTexture.bind(1);
@@ -782,6 +786,7 @@ Renderer.prototype.renderCube = function (water) {
     sphereCenter: this.sphereCenter,
     sphereRadius: this.sphereRadius,
     poolSize: [config.params.simulation.poolSize.x, config.params.simulation.poolSize.y, config.params.simulation.poolSize.z],
+    renderWater: config.renderWater
   }).draw(this.cubeMesh);
   this.gl.disable(this.gl.CULL_FACE);
 };

@@ -97,6 +97,8 @@ const createGUI = function (gl, reset) {
     quiverFolder.add(config.params.quiver, "amplitudeFactor", .5, .9).name("amplitude factor");
     quiverFolder.add(config.params.quiver, "frequencyFactor", 1.1, 2).name("frequency factor");
     quiverFolder.add(config.params.quiver, "waveLength", 1, 30).name("wave length");
+
+    config._gui = gui;
 }
 
 export { createGUI };

@@ -13,6 +13,8 @@ function listToDict(L) {
     return dict;
 }
 
+const AWAY = new GL.Vector(1000, 0, -1000);
+
 const swimmersLinesList = ["none", "only medals", "all"];
 const swimmersLinesModeList = ["neighbours", "per swimmer"];
 const customParametersList = ["none", "cycle frequency", "speed", "acceleration"];
@@ -45,8 +47,8 @@ class Config {
                 sparks: { enabled: false, glow: 5., glowOffset: .5, lengthFactor: 1., stroke: .01, num: 40, sizeFactor: 50, fov: Math.PI / 4 }
             },
             swimmers: { showSpheres: true, useTracking: false },
-            video: { thresholdBlending: false, blendingThreshold: .41, show: false },
-            simulation: { optimized: false, waterDamping: .02, poolSize: new GL.Vector(2.0, 1.0, 2.0) },
+            video: { thresholdBlending: false, blendingThreshold: .41, show: false, opacity: 1. },
+            simulation: { optimized: false, waterDamping: .02, poolSize: new GL.Vector(2.0, 1.0, 2.0), buoyancyFactor: 1.1 },
             quiver: { amplitudeFactor: 0.8, frequencyFactor: 1.2, amplitude: .1, omega: 2., waveLength: 5. }
         };
 
@@ -121,6 +123,10 @@ class Config {
         this.configPlayButton();
 
         this.transitions = {};
+        this.playingDemo = false;
+        this.renderWater = true;
+        this.renderCube = true;
+        this.spheresRadiusCoeff = 1.;
     }
 
     configStopButton() {
@@ -197,6 +203,7 @@ class Config {
                     // this.swimmers[i].
                     this.swimmers = this.swimmers.slice(1);
                 }
+                this.swimmers.forEach(swimmer => swimmer.waterDamping = this.params.simulation.waterDamping);
             }
             this.currentScene.parseData(this.swimmers);
             const timeSliderContainer = document.getElementById("time-slider-container");
@@ -209,6 +216,10 @@ class Config {
 
             this.params.simulation.optimized = this.currentVideo.video ? true : false;
         }
+    }
+    useGravity(value) {
+        Swimmer.useGravity = value;
+        for (let swimmer of config.swimmers) swimmer.body.cinematic = !Swimmer.useGravity;
     }
     isOneVisualizationEnabled() {
         return this.params.visualizations.showFlags ||
@@ -348,8 +359,125 @@ class Config {
         console.log("Launch demo");
         this.setScene("100m freestyle");
         this.params.video.show = false;
+        this.params.swimmers.showSpheres = true;
+        this.demoTime = 0;
+        this.swimmers.forEach(swimmer => swimmer.body.move(AWAY));
+        this.swimmersShown = 0;
+        this.playingDemo = true;
+        // this.params.swimmers.useTracking = false;
+        this.useGravity(true);
+        this.params.simulation.buoyancyFactor = 1.5;
+        this.params.visualizations.shadow.enabled = false;
+        this._setPannelMinimized(true);
+        this.renderWater = false;
+        this.translateX = 200;
+        this.parseConfigFile("./assets/vis-config-demo.json");
+        this._gui.hide();
+        document.getElementById("event-editor").hidden = "true";
+        document.getElementById("time-slider-container").hidden = "true";
+        document.getElementById("h").hidden = "true";
+        // this.angleY = this.currentVideo.calibration.ay + 360;
+        // this.playButton.hidden = true;
+        // this.stopButton.hidden = true;
+        // this.renderCube = false;
+        // this.setCalibration(new Calibration({}));
     }
-    updateDemo() {
+
+    #demoAddSwimmers(t, beginTime) {
+        const dt_showSwimmers = .1;
+
+        const nextSwimmerIdx = Math.floor((t - beginTime) / dt_showSwimmers)
+        if (this.swimmersShown < 10 && nextSwimmerIdx >= this.swimmersShown) {
+            console.log("swimmers shown : " + this.swimmersShown);
+            console.log("next index swimmer : " + nextSwimmerIdx);
+            console.log("num swimmers : " + this.swimmers.length);
+            const width = this.params.simulation.poolSize.x;
+            const x0 = -width / 2 + width / 20;
+            const x = x0 + nextSwimmerIdx * width / 10;
+            const swimmer = this.swimmers[nextSwimmerIdx];
+            swimmer.body.move(new GL.Vector(x, .5, 0));
+            this.swimmersShown++;
+        }
+    }
+
+    #getInterpFactor(t0, tf, t) {
+        if (t < t0) return 0;
+        if (t > tf) return 1;
+        const t_norm = (t - t0) / (tf - t0);
+        return 1. - (Math.cos(t_norm * Math.PI) + 1.) / 2.;
+    }
+
+    /**
+     * 
+     * @param {GL.Vector} p1 
+     * @param {GL.Vector} p2 
+     * @param {*} t0 
+     * @param {*} tf 
+     * @param {*} t 
+     * @returns 
+     */
+    #moveInterp(p1, p2, t0, tf, t) {
+        const t_norm = this.#getInterpFactor(t0, tf, t);
+        console.log("t norm : " + t_norm);
+        const interp = (x, y, t, alpha = 1) => Math.pow(t, alpha) * y + (1. - Math.pow(t, alpha)) * x;
+        return new GL.Vector(interp(p1.x, p2.x, t_norm), interp(p1.y, p2.y, t_norm, 20), interp(p1.z, p2.z, t_norm, 2));
+
+    }
+    updateDemo(dt) {
+        if (!this.playingDemo) return;
+        const t = this.demoTime;
+        this.demoTime += dt;
+        const beginShowSwimmersTime = 2.;
+        const poolSlidingTime = 1.;
+        if (t <= poolSlidingTime) {
+            const t_norm = this.#getInterpFactor(0., poolSlidingTime, t);
+            this.translateX = t_norm * this.currentVideo.calibration.tx + (1. - t_norm) * 200;
+            // if (t >= poolSlidingTime) this.demoCalibrated = true;
+        }
+        else if (!this.demoShowVideoTime) this.angleY += .4;
+        if (!this.renderCube && t > .5) this.renderCube = true;
+        const showWaterTime = 1.5;
+        if (!this.renderWater && t > 1.5) {
+            this.renderWater = true;
+
+        }
+        if (t > showWaterTime && t < showWaterTime + .5) {
+            for (var i = 0; i < 10; i++) {
+                this.water.addDrop(Math.random() * 2 - 1, Math.random() * 2 - 1, 0.06, (i & 1) ? 0.6 : -0.6);
+            }
+        }
+        this.#demoAddSwimmers(t, beginShowSwimmersTime);
+        const startMoveTime = 3;
+        const startRaceTime = 5;
+        if (!Swimmer.raceHasStarted && t >= startMoveTime && t < startRaceTime) {
+            this.swimmers.forEach(swimmer => {
+                const p1 = new GL.Vector(swimmer.body.center.x, 0, 0);
+                const p2 = new GL.Vector(swimmer.body.center.x, 1, -this.params.simulation.poolSize.z / 2);
+                swimmer.body.move(this.#moveInterp(p1, p2, startMoveTime, startRaceTime, t));
+            });
+        }
+        if (!Swimmer.raceHasStarted && t >= startRaceTime) {
+            this.params.simulation.buoyancyFactor = 1.1;
+            this.startRace();
+        }
+
+        if (!this.demoShowVideoTime && this.angleY >= this.currentVideo.calibration.ay + 360) {
+            //this.params.video.show = true;
+            this.demoShowVideoTime = this.demoTime + 1.;
+        }
+        if (!this.params.video.show && this.demoShowVideoTime && t >= this.demoShowVideoTime) {
+            this.params.video.show = true;
+            this.params.video.opacity = 0.;
+        }
+        const videoAppearDuration = 2.;
+        if (this.params.video.show && t <= this.demoShowVideoTime + videoAppearDuration) {
+            this.params.video.opacity = (t - this.demoShowVideoTime) / videoAppearDuration;
+            console.log("opacity : " + this.params.video.opacity);
+        }
+        const spheresDisparitionDuration = 2.;
+        if (this.params.video.show && t > this.demoShowVideoTime + videoAppearDuration && t < this.demoShowVideoTime + videoAppearDuration + spheresDisparitionDuration) {
+            this.spheresRadiusCoeff = 1. - (t - (this.demoShowVideoTime + videoAppearDuration)) / spheresDisparitionDuration;
+        }
 
     }
 }
@@ -358,4 +486,4 @@ const config = new Config();
 config.parseConfigFile("./assets/vis-config.json");
 
 
-export { config };
+export { config, AWAY };

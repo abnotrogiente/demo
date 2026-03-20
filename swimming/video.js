@@ -291,17 +291,17 @@ class Video {
     uniform vec3 poolSize;
     uniform bool thresholdBlending;
     uniform float blendingThreshold;
+    uniform float opacity;
 
     ` + sparksHelper + `` + swimmersHelperFunctions + `
 
     void main(void) {
         highp vec4 texelColor = texture(uSampler, vTextureCoord);
         vec3 waterColor = vec3(.294, .812, 1.);
-        float r = .5;
+        float r = opacity;
         if (thresholdBlending) {
-            r = 1.;
             if (length(waterColor - texelColor.rgb) < blendingThreshold ||
-             length(texelColor.rgb) > 1.5 && texelColor.b > .1 + (texelColor.r + texelColor.g) * .5) r = 0.3;
+             length(texelColor.rgb) > 1.5 && texelColor.b > .1 + (texelColor.r + texelColor.g) * .5) r = 0.3 * opacity;
         }
         fragColor = vec4(texelColor.rgb, r);
         //fragColor.a += 1. - r;
@@ -390,7 +390,8 @@ class Video {
             sparksSizeFactor: sparksParams.sizeFactor,
             fov: sparksParams.fov,
             thresholdBlending: config.params.video.thresholdBlending,
-            blendingThreshold: config.params.video.blendingThreshold
+            blendingThreshold: config.params.video.blendingThreshold,
+            opacity: config.params.video.opacity
         }).draw(this.mesh);
         this.gl.disable(this.gl.BLEND);
         this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);

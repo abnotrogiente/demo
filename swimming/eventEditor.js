@@ -304,6 +304,11 @@ function createEventEditor(containerId) {
 
     }
 
+    function setMinimized(minimized) {
+        isMinimized = minimized;
+        render();
+    }
+
     // generate the editor UI whenever the config changes
     function render() {
         container.innerHTML = "";
@@ -717,6 +722,7 @@ function createEventEditor(containerId) {
     render();
     config._renderTimeline = render; // a small helper if other code wants to refresh
     config._updateDistanceMarker = updateTimeLineDistanceMarker;
+    config._setPannelMinimized = setMinimized;
 }
 
 export { createEventEditor };

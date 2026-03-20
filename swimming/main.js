@@ -388,8 +388,7 @@ window.onload = function () {
   const onkeydown = function (e) {
     if (e.which == ' '.charCodeAt(0)) pause();
     else if (e.which == 'G'.charCodeAt(0)) {
-      Swimmer.useGravity = !Swimmer.useGravity;
-      for (let swimmer of config.swimmers) swimmer.body.cinematic = Swimmer.useGravity;
+      config.useGravity(!Swimmer.useGravity);
     }
     else if (e.which == 'L'.charCodeAt(0) && config.paused) draw();
     else if (e.which == 'J'.charCodeAt(0)) {
@@ -484,6 +483,7 @@ window.onload = function () {
     config.updateParams();
     slider.value = config.getRaceTime();
     updateFrameRateHTML(dt);
+    config.updateDemo(dt);
 
   }
 
