@@ -230,6 +230,34 @@ function Renderer(gl, water, flagCenter, flagSize) {
       makeStrF(printSpeed) _num_ __ _k _m _DIV _h _endNum
       makeStrF(printTime) _num_ __ _s _endNum
 
+
+      #define M_PI 3.14159265358979323846
+
+      float rand(vec2 co){return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);}
+      float rand (vec2 co, float l) {return rand(vec2(rand(co), l));}
+      float rand (vec2 co, float l, float t) {return rand(vec2(rand(co, l), t));}
+
+      float perlin(vec2 p, float dim, float time) {
+        vec2 pos = floor(p * dim);
+        vec2 posx = pos + vec2(1.0, 0.0);
+        vec2 posy = pos + vec2(0.0, 1.0);
+        vec2 posxy = pos + vec2(1.0);
+        
+        float c = rand(pos, dim, time);
+        float cx = rand(posx, dim, time);
+        float cy = rand(posy, dim, time);
+        float cxy = rand(posxy, dim, time);
+        
+        vec2 d = fract(p * dim);
+        d = -0.5 * cos(d * M_PI) + 0.5;
+        
+        float ccx = mix(c, cx, d.x);
+        float cycxy = mix(cy, cxy, d.x);
+        float center = mix(ccx, cycxy, d.y);
+        
+        return center * 2.0 - 1.0;
+      }
+
       makeStr(printStar) _STAR _end
       
       bool isOnConservedAreaGrid(vec2 pos, float size) {
@@ -274,16 +302,33 @@ function Renderer(gl, water, flagCenter, flagSize) {
         }
         if (showAreaConservedGrid && isOnConservedAreaGrid(position, 0.1)) color = vec3(1., 0., 0.); /* Debug conserved area grid */
         vec2 posFlag = position - flagCorner - flagSize / 2.;/*Fixes the corner of the flag on the XZ plane*/
+        float distFactor = 0.;
+        float startDissipationTime = -1.;
+        float stopDissipationTime = 1.;
+        float reshowTime = 4.;
+        float reshowAppearDuration = 2.;
+        if (time >= startDissipationTime && time <= stopDissipationTime) {
+          distFactor =  (time - startDissipationTime) / (stopDissipationTime - startDissipationTime);
+          // distFactor = log(1. - (time - startDissipationTime) / (stopDissipationTime - startDissipationTime));
+          distFactor = pow(distFactor, 3.);
+          distFactor /= 2.5;
+        }
+        posFlag.x += perlin(posFlag.xy, 5., time*.000001) * distFactor;
+        posFlag.y += perlin(posFlag.yx, 5., time*.000001) * distFactor;
         vec2 flagCoord = posFlag / flagSize + 0.5;
         if (bool(showFlags) && abs(posFlag.x) <= flagSize.x / 2. && abs(posFlag.y) <= flagSize.y / 2.) {
           vec3 flagColor;
           if(nationality < .5) flagColor = texture(france, vec2(1.-flagCoord.y,1.- flagCoord.x)).xyz;
           else flagColor = texture(china, vec2(1.-flagCoord.y,1.- flagCoord.x)).xyz;
-          color = showFlags * flagColor + (1. - showFlags) * color;
+          float opacity = showFlags;
+          if (time >= stopDissipationTime && time <= reshowTime) opacity = 0.;
+          else if (time >= reshowTime && time <= reshowTime + reshowAppearDuration) opacity *= (time - reshowTime) / reshowAppearDuration;
+          else if (time >= startDissipationTime && time <= stopDissipationTime ) opacity *= 1. - (time - startDissipationTime) / (stopDissipationTime - startDissipationTime);
+          color = opacity * flagColor + (1. - opacity) * color;
           float delta = .1;
           vec2 delta_tex = vec2(delta, delta) / flagSize;
           if (min(flagCoord.y, 1.- flagCoord.y) <= delta_tex.y 
-            || min(flagCoord.x, 1. - flagCoord.x) <= delta_tex.x) color = showFlags * vec3(1., 1., 1.) + (1. - showFlags) * color;
+            || min(flagCoord.x, 1. - flagCoord.x) <= delta_tex.x) color = opacity * vec3(1., 1., 1.) + (1. - opacity) * color;
         }
       }
 

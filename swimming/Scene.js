@@ -25,9 +25,9 @@ class Scene {
      * 
      * @param {Swimmer[]} swimmers 
      */
-    parseData(swimmers) {
+    async parseData(swimmers) {
         for (let i = 0; i < swimmers.length; i++) {
-            swimmers[i].parseData(this.dataFolder + i + ".csv");
+            await swimmers[i].parseData(this.dataFolder + i + ".csv");
         }
     }
 

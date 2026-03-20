@@ -102,7 +102,7 @@ class Swimmer {
     }
 
     async parseData(source) {
-        fetch(source)
+        await fetch(source)
             .then(res => {
                 const contentType = res.headers.get("content-type");
                 if (!contentType || !contentType.includes("text/csv")) {
@@ -230,8 +230,11 @@ class Swimmer {
         // if (this.data && this.data[this.currendDataIndex]) console.log("next event time : " + this.data[this.currendDataIndex][TIME_KEY]);
         // if (this.data && this.data[this.currendDataIndex]) console.log("next event : " + JSON.stringify(this.data[this.currendDataIndex]));
         // console.log("current time : " + time);
+        // console.log("use tracking : " + this.useTracking);
+        // console.log("hasReacted : " + this.hasReacted);
         // console.log("\n\n");
         if (this.hasReacted && this.useTracking && this.currendDataIndex < this.data.length && this.data[this.currendDataIndex][TIME_KEY] < time) {
+            console.log("enter handle tracking");
 
             this.setDamping(this.data[this.currendDataIndex]);
 
@@ -314,7 +317,9 @@ class Swimmer {
 
     update(dt) {
         const raceTime = config.getRaceTime();
-        if (!Swimmer.raceHasStarted) this.useTracking = config.params.swimmers.useTracking && this.data;
+        if (!Swimmer.raceHasStarted && this.data) {
+            this.useTracking = config.params.swimmers.useTracking;
+        }
         if (!this.hasReacted && Swimmer.raceHasStarted) {
             if (this.useTracking || raceTime > this.reactionTime && !config.params.swimmers.useTracking) {
                 this.swim(true);
@@ -328,8 +333,8 @@ class Swimmer {
             } else {
                 this.swim(false);
                 this.body.cinematic = true;
-                // this.body.move(AWAY);
-                this.body.move(new GL.Vector(this.body.center.x, 1, -config.params.simulation.poolSize.z / 2));
+                if (config.playingDemo) this.body.move(new GL.Vector(this.body.center.x, 1, -config.params.simulation.poolSize.z / 2));
+                else this.body.move(AWAY); //TODO fix this mess
             }
             this.currendDataIndex = 0;
         }

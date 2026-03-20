@@ -180,17 +180,14 @@ class Config {
     }
 
 
-    setScene(sceneName) {
+    async setScene(sceneName) {
         console.log("SET SCENE : " + sceneName);
         this.currentScene = this.scenes[sceneName];
         if (this.currentScene) {
-            console.log("scene name : " + this.currentScene.title);
-            this.currentVideo = this.currentScene.videos[0];
-            this.setCalibration(this.currentVideo.calibration);
-            this.#setPoolSize(this.currentScene.poolSize);
-            this.resolution = this.currentScene.waterResolution;
-            this.params.video.thresholdBlending = this.currentScene.thresholdBlending;
-            this.params.visualizations.areaConservationEnabled = false;
+            const timeSliderContainer = document.getElementById("time-slider-container");
+            this.params.video.show = this.currentVideo.video ? true : false;
+            this.params.swimmers.showSpheres = this.currentVideo.video ? false : true;
+            timeSliderContainer.hidden = this.currentVideo.video ? false : true;
             if (this.currentScene.title != "—") this.params.simulation.waterDamping = 0.1;
             else this.params.simulation.waterDamping = .02;
             const numSwimmers = this.currentScene.numSwimmers;
@@ -206,17 +203,23 @@ class Config {
                 }
                 this.swimmers.forEach(swimmer => swimmer.waterDamping = this.params.simulation.waterDamping);
             }
-            this.currentScene.parseData(this.swimmers);
-            const timeSliderContainer = document.getElementById("time-slider-container");
-            this.params.video.show = this.currentVideo.video ? true : false;
             this.params.swimmers.useTracking = true;
-            this.params.swimmers.showSpheres = this.currentVideo.video ? false : true;
-            timeSliderContainer.hidden = this.currentVideo.video ? false : true;
+            await this.currentScene.parseData(this.swimmers);
+            this.swimmers.forEach(swimmer => swimmer.update(0));
+            console.log("scene name : " + this.currentScene.title);
+            this.currentVideo = this.currentScene.videos[0];
+            this.setCalibration(this.currentVideo.calibration);
+            this.#setPoolSize(this.currentScene.poolSize);
+            this.resolution = this.currentScene.waterResolution;
+            this.params.video.thresholdBlending = this.currentScene.thresholdBlending;
+            this.params.visualizations.areaConservationEnabled = false;
+
             this.stopRace();
             this._reset();
 
             this.params.simulation.optimized = this.currentVideo.video ? true : false;
         }
+
     }
     useGravity(value) {
         Swimmer.useGravity = value;
@@ -260,6 +263,7 @@ class Config {
         this.resetParams();
     }
     startRace() {
+        console.log("START RACE");
         this.setRaceTime(-3);
         if (this.currentVideo.video) this.currentVideo.video.play();
         this.swimmers.forEach(swimmer => swimmer.startRace());
@@ -356,9 +360,9 @@ class Config {
             });
         }
     }
-    launchDemo() {
+    async launchDemo() {
         console.log("Launch demo");
-        this.setScene("100m freestyle");
+        await this.setScene("100m freestyle");
         this.params.video.show = false;
         this.params.swimmers.showSpheres = true;
         this.demoTime = 0;

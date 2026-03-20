@@ -385,7 +385,7 @@ window.onload = function () {
     else config.pause();
   }
 
-  const onkeydown = function (e) {
+  const onkeydown = async function (e) {
     if (e.which == ' '.charCodeAt(0)) pause();
     else if (e.which == 'G'.charCodeAt(0)) {
       config.useGravity(!Swimmer.useGravity);
@@ -425,8 +425,12 @@ window.onload = function () {
       document.getElementById("h").hidden = !document.getElementById("h").hidden;
     }
     else if (e.which == 'D'.charCodeAt(0)) {
-      if (!config.playingDemo) config.launchDemo();
+      if (!config.playingDemo) await config.launchDemo();
       else config.stopDemo();
+    }
+    else if (e.which == 'R'.charCodeAt(0)) {
+      config.setScene("100m freestyle").then(() => config.startRace());
+      config._setPannelMinimized(true);
     }
     else if (e.which == 40) { // down
       if (config.resolution.x > 129)
