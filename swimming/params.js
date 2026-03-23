@@ -24,13 +24,19 @@ const customParametersDict = {
     "speed": { value: 2, name: "PARAMETER_SPEED" },
     "acceleration": { value: 3, name: "PARAMETER_ACCELERATION" }
 };
-
+const renderingList = ["realistic", "height field", "lambert", "toon"];
+const renderingDict = {
+    "realistic": { value: 0, name: "RENDERING_REALISTIC" },
+    "height field": { value: 1, name: "RENDERING_HEIGHT_FIELD" },
+    "lambert": { value: 2, name: "RENDERING_LAMBERT" },
+    "toon": { value: 3, name: "RENDERING_TOON" },
+}
 class Config {
     constructor() {
         this.params = {
             numSteps: 2, fov: 45,
             visualizations: {
-                enabled: true, showFlags: false, showWR: false, showSpeed: false, showDivingDistance: true,
+                enabled: true, showFlags: true, showWR: false, showSpeed: false, showDivingDistance: true,
                 showFinishTimes: false,
                 customWaterPerturbation: "none",
                 waterColorParameter: "none", customParametersList: customParametersList, customParametersDict: customParametersDict,
@@ -40,7 +46,7 @@ class Config {
                 medalsModeBeforeFinish: "none", medalsModesDict: { "none": 0, "stars": 1, "bright": 2, "lanes": 3 },
                 medalsModeAfterFinish: "none",
                 areaConservationEnabled: true,
-                heightFieldRendering: false,
+                rendering: "realistic", renderingList: renderingList, renderingDict: renderingDict,
                 transitionBeginTime: null,
 
                 shadow: { enabled: true, shadowRadius: .5, shadowPower: .5, showCircle: true, circleRadius: .6, circleStroke: .15 },

@@ -154,6 +154,12 @@ function Renderer(gl, water, flagCenter, flagSize) {
 
     parametersstr += "#define " + name + " " + value + "\n";
   });
+  Object.entries(config.params.visualizations.renderingDict).forEach(pair => {
+    const name = pair[1].name;
+    const value = pair[1].value;
+
+    parametersstr += "#define " + name + " " + value + "\n";
+  });
   for (var i = 0; i < 2; i++) {
     this.waterShaders[i] = new GL.Shader(`
       uniform sampler2D water;
@@ -181,7 +187,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
       uniform sampler2D china;
       uniform vec2 flagSize;
 
-      uniform bool heightFieldRendering;
+      uniform float rendering;
 
       uniform bool shadowEnabled;
       uniform float shadowRadius;
@@ -193,6 +199,8 @@ function Renderer(gl, water, flagCenter, flagSize) {
       uniform float swimmersLinesMode;
       uniform float medalsModeBeforeFinish;
       uniform float medalsModeAfterFinish;
+
+      uniform float seed;
 
       uniform float waterColorParameter;
 
@@ -285,6 +293,20 @@ function Renderer(gl, water, flagCenter, flagSize) {
       
       }
 
+      void distort(inout vec2 pos, in float intensity) {
+        float distFactor = intensity / 2.5;
+        pos.x += perlin(pos.xy, 3., seed*.0000005) * distFactor;
+        pos.y += perlin(pos.yx, 3., seed*.0000005) * distFactor; 
+      }
+
+      void distort(inout vec2 pos, in float beginTime, in float endTime, in bool appearing) {
+        if (time < beginTime || time > endTime) return;
+        float intensity = (time - beginTime) / (endTime - beginTime);
+        intensity = pow(intensity, 3.);
+        if (!appearing) intensity = 1. - intensity;
+        distort(pos, intensity);
+      }
+
       void drawFlags(in vec2 position, in vec2 swimmerPos, in float swimmerAltitude, in float nationality, bool rightSide, inout vec3 color) {
         float swimmer_x = swimmerPos.x;
         float swimmer_z = swimmerPos.y;
@@ -303,18 +325,13 @@ function Renderer(gl, water, flagCenter, flagSize) {
         if (showAreaConservedGrid && isOnConservedAreaGrid(position, 0.1)) color = vec3(1., 0., 0.); /* Debug conserved area grid */
         vec2 posFlag = position - flagCorner - flagSize / 2.;/*Fixes the corner of the flag on the XZ plane*/
         float distFactor = 0.;
-        float startDissipationTime = -1.;
+        float startDissipationTime = 0.;
         float stopDissipationTime = 1.;
         float reshowTime = 4.;
         float reshowAppearDuration = 2.;
-        if (time >= startDissipationTime && time <= stopDissipationTime) {
-          distFactor =  (time - startDissipationTime) / (stopDissipationTime - startDissipationTime);
-          // distFactor = log(1. - (time - startDissipationTime) / (stopDissipationTime - startDissipationTime));
-          distFactor = pow(distFactor, 3.);
-          distFactor /= 2.5;
-        }
-        posFlag.x += perlin(posFlag.xy, 5., time*.000001) * distFactor;
-        posFlag.y += perlin(posFlag.yx, 5., time*.000001) * distFactor;
+        if (showFlags < .99) distort(posFlag, pow(1. - showFlags, 3.));
+        distort(posFlag, startDissipationTime, stopDissipationTime, true);
+        // distort(posFlag, .75);
         vec2 flagCoord = posFlag / flagSize + 0.5;
         if (bool(showFlags) && abs(posFlag.x) <= flagSize.x / 2. && abs(posFlag.y) <= flagSize.y / 2.) {
           vec3 flagColor;
@@ -504,8 +521,54 @@ function Renderer(gl, water, flagCenter, flagSize) {
       
       }
 
+      vec3 toonRendering(vec3 normal, vec3 ray) {
+        // Calculate diffuse lighting
+        float diffuse = max(0., dot(light, normal));
+        
+        // Quantize to 4 levels for toon effect
+        float levels = 4.0;
+        float quantized = floor(diffuse * levels) / levels;
+        
+        // Create toon colors - dark to light (blue tones)
+        vec3 toonColors[5];
+        toonColors[0] = vec3(0.05, 0.1, 0.2); // Darkest blue
+        toonColors[1] = vec3(0.2, 0.3, 0.5); // Dark blue
+        toonColors[2] = vec3(0.4, 0.5, 0.7); // Medium blue
+        toonColors[3] = vec3(0.6, 0.7, 0.9); // Light blue
+        toonColors[4] = vec3(0.8, 0.9, 1.0); // Brightest blue
+        
+        // Get the color based on quantized level
+        int level = int(quantized * levels);
+        vec3 color = toonColors[level];
+        
+        // Add a small specular highlight for toon effect
+        vec3 reflectDir = reflect(-light, normal);
+        float spec = pow(max(0., dot(ray, reflectDir)), 32.0);
+        if (spec > 0.5) {
+          color += vec3(1.0, 1.0, 0.8) * 0.3;
+        }
+        
+        return color;
+      }
 
-      vec3 getSurfaceRayColor(vec3 origin, vec3 ray, vec3 waterColor) {
+      vec3 lambertRendering(vec3 normal) {
+        vec3 color = vec3(.3);
+        float diffuse = max(0., dot(light, normal)) * .3;
+        color += diffuse;
+        return color;
+      }
+
+      vec3 heightFieldRendering(float height) {
+        float interval = .1;
+        float value = abs(height) / interval;
+        value = min(max(value, 0.), 1.);
+        vec3 lowColor = vec3(0., 0., 1.);
+        vec3 highColor = vec3(1., 0., 0.);
+        vec3 color = height > 0. ? highColor : lowColor;
+        return value * color;
+      }
+
+      vec3 realisticRendering(vec3 origin, vec3 ray, vec3 waterColor) {
         vec3 color;
         float q = intersectSphere(origin, ray, sphereCenter, sphereRadius);
         if (q < 1.0e6) {
@@ -525,11 +588,23 @@ function Renderer(gl, water, flagCenter, flagSize) {
           }
         }
         if (ray.y < 0.0) {
-          color *= waterColor;
-          if (bool(showFlags) || showWR || int(medalsModeAfterFinish) != MEDALS_NONE || int(medalsModeBeforeFinish) != MEDALS_NONE || showSpeed || showDivingDistance) drawVisualizations(origin.xz, color);
-          
-          
+          color *= waterColor;          
         }
+        return color;
+      }
+
+
+      vec3 getSurfaceRayColor(vec3 origin, vec3 ray, vec3 waterColor, vec3 normal) {
+        vec3 color;
+        if (int(rendering) == RENDERING_REALISTIC) color = realisticRendering(origin, ray, waterColor);
+        else if (int(rendering) == RENDERING_HEIGHT_FIELD) color = heightFieldRendering(origin.y);
+        else if (int(rendering) == RENDERING_LAMBERT) color = lambertRendering(normal);
+        else if (int(rendering) == RENDERING_TOON) color = toonRendering(normal, ray);
+        
+        if (bool(showFlags) || showWR || int(medalsModeAfterFinish) != MEDALS_NONE || int(medalsModeBeforeFinish) != MEDALS_NONE || showSpeed || showDivingDistance) drawVisualizations(origin.xz, color);
+          
+          
+        
         return color;
       }
       
@@ -541,16 +616,16 @@ function Renderer(gl, water, flagCenter, flagSize) {
           coord += info.ba * 0.005;
           info = texture(water, coord);
         }*/
-        if (heightFieldRendering) {
-          float interval = .1;
-          float value = abs(info.r) / interval;
-          value = min(max(value, 0.), 1.);
-          vec4 lowColor = vec4(0., 0., 1., 1.);
-          vec4 highColor = vec4(1., 0., 0., 1.);
-          vec4 color = info.r > 0. ? highColor : lowColor;
-          fragColor = value * color;
-          return;
-        }
+        // if (int(rendering) == RENDERING_HEIGHT_FIELD) {
+        //   float interval = .1;
+        //   float value = abs(info.r) / interval;
+        //   value = min(max(value, 0.), 1.);
+        //   vec4 lowColor = vec4(0., 0., 1., 1.);
+        //   vec4 highColor = vec4(1., 0., 0., 1.);
+        //   vec4 color = info.r > 0. ? highColor : lowColor;
+        //   fragColor = value * color;
+        //   return;
+        // }
         
         vec3 normal = vec3(info.b, sqrt(1.0 - dot(info.ba, info.ba)), info.a);
         vec3 incomingRay = normalize(position - eye);
@@ -561,8 +636,8 @@ function Renderer(gl, water, flagCenter, flagSize) {
           vec3 refractedRay = refract(incomingRay, normal, IOR_WATER / IOR_AIR);
           float fresnel = mix(0.5, 1.0, pow(1.0 - dot(normal, -incomingRay), 3.0));
           
-          vec3 reflectedColor = getSurfaceRayColor(position, reflectedRay, underwaterColor);
-          vec3 refractedColor = getSurfaceRayColor(position, refractedRay, vec3(1.0)) * vec3(0.8, 1.0, 1.1);
+          vec3 reflectedColor = getSurfaceRayColor(position, reflectedRay, underwaterColor, normal);
+          vec3 refractedColor = getSurfaceRayColor(position, refractedRay, vec3(1.0), normal) * vec3(0.8, 1.0, 1.1);
           
           fragColor = vec4(mix(reflectedColor, refractedColor, (1.0 - fresnel) * length(refractedRay)), 1.0);
         ` : /* above water */ `
@@ -570,8 +645,8 @@ function Renderer(gl, water, flagCenter, flagSize) {
           vec3 refractedRay = refract(incomingRay, normal, IOR_AIR / IOR_WATER);
           float fresnel = mix(0.25, 1.0, pow(1.0 - dot(normal, -incomingRay), 3.0));
           
-          vec3 reflectedColor = getSurfaceRayColor(position, reflectedRay, abovewaterColor);
-          vec3 refractedColor = getSurfaceRayColor(position, refractedRay, abovewaterColor);
+          vec3 reflectedColor = getSurfaceRayColor(position, reflectedRay, abovewaterColor, normal);
+          vec3 refractedColor = getSurfaceRayColor(position, refractedRay, abovewaterColor, normal);
           
           fragColor = vec4(mix(refractedColor, reflectedColor, fresnel), 1.0);
         `) + `
@@ -757,6 +832,7 @@ Renderer.prototype.renderWater = function (water, sky, shadowParams) {
       showDivingDistance: config.params.visualizations.showDivingDistance,
       showFinishTimes: config.params.visualizations.showFinishTimes,
       time: config.getRaceTime(),
+      seed: config.time,
       shadowEnabled: shadowParams.enabled,
       shadowRadius: shadowParams.shadowRadius,
       shadowPower: shadowParams.shadowPower,
@@ -767,7 +843,7 @@ Renderer.prototype.renderWater = function (water, sky, shadowParams) {
       swimmersLinesMode: config.params.visualizations.swimmersLinesModeDict[config.params.visualizations.swimmersLinesMode],
       medalsModeBeforeFinish: Math.round(config.params.visualizations.medalsModesDict[config.params.visualizations.medalsModeBeforeFinish]),
       medalsModeAfterFinish: Math.round(config.params.visualizations.medalsModesDict[config.params.visualizations.medalsModeAfterFinish]),
-      heightFieldRendering: config.params.visualizations.heightFieldRendering,
+      rendering: config.params.visualizations.renderingDict[config.params.visualizations.rendering].value,
       waterColorParameter: config.params.visualizations.customParametersDict[config.params.visualizations.waterColorParameter].value
     }).draw(water.plane);
   }
