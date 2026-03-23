@@ -36,7 +36,7 @@ class Config {
         this.params = {
             numSteps: 2, fov: 45,
             visualizations: {
-                enabled: true, showFlags: true, showWR: false, showSpeed: false, showDivingDistance: true,
+                enabled: true, showFlags: false, showWR: false, showSpeed: false, showDivingDistance: true,
                 showFinishTimes: false,
                 customWaterPerturbation: "none",
                 waterColorParameter: "none", customParametersList: customParametersList, customParametersDict: customParametersDict,
