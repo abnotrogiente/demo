@@ -293,18 +293,20 @@ function Renderer(gl, water, flagCenter, flagSize) {
       
       }
 
-      void distort(inout vec2 pos, in float intensity) {
+      void distort(inout vec2 pos, vec2 swimmerPos, in float intensity) {
         float distFactor = intensity / 2.5;
-        pos.x += perlin(pos.xy, 3., seed*.0000005) * distFactor;
-        pos.y += perlin(pos.yx, 3., seed*.0000005) * distFactor; 
+        // pos.x += perlin(pos.xy + swimmerPos, 3., seed*.0000005) * distFactor;
+        // pos.y += perlin(pos.yx + swimmerPos, 3., seed*.0000005) * distFactor;
+        pos.x += perlin(pos.xy + swimmerPos + vec2(seed * 2., 0.), 3., 0.) * distFactor;
+        pos.y += perlin(pos.yx + swimmerPos + vec2(seed * 2., 0.), 3., 0.) * distFactor; 
       }
 
-      void distort(inout vec2 pos, in float beginTime, in float endTime, in bool appearing) {
+      void distort(inout vec2 pos, vec2 swimmerPos, in float beginTime, in float endTime, in bool appearing) {
         if (time < beginTime || time > endTime) return;
         float intensity = (time - beginTime) / (endTime - beginTime);
-        intensity = pow(intensity, 3.);
+        intensity = pow(intensity, 2.);
         if (!appearing) intensity = 1. - intensity;
-        distort(pos, intensity);
+        distort(pos, swimmerPos, intensity);
       }
 
       void drawFlags(in vec2 position, in vec2 swimmerPos, in float swimmerAltitude, in float nationality, bool rightSide, inout vec3 color) {
@@ -325,22 +327,23 @@ function Renderer(gl, water, flagCenter, flagSize) {
         if (showAreaConservedGrid && isOnConservedAreaGrid(position, 0.1)) color = vec3(1., 0., 0.); /* Debug conserved area grid */
         vec2 posFlag = position - flagCorner - flagSize / 2.;/*Fixes the corner of the flag on the XZ plane*/
         float distFactor = 0.;
-        float startDissipationTime = 0.;
-        float stopDissipationTime = 1.;
+        float startDissipationTime = 0.5;
+        float stopDissipationTime = 1.5;
         float reshowTime = 4.;
         float reshowAppearDuration = 2.;
-        if (showFlags < .99) distort(posFlag, pow(1. - showFlags, 3.));
-        distort(posFlag, startDissipationTime, stopDissipationTime, true);
-        // distort(posFlag, .75);
+        float opacity = showFlags;
+        if (time >= stopDissipationTime && time <= reshowTime) opacity = 0.;
+        else if (time >= reshowTime && time <= reshowTime + reshowAppearDuration) opacity *= (time - reshowTime) / reshowAppearDuration;
+        else if (time >= startDissipationTime && time <= stopDissipationTime ) opacity *= 1. - (time - startDissipationTime) / (stopDissipationTime - startDissipationTime);
+        if (opacity < .99) distort(posFlag, swimmerPos, pow(1. - opacity, 2.));
+        else distort(posFlag, swimmerPos, startDissipationTime, stopDissipationTime, true);
+        // distort(posFlag, swimmerPos, .75);
         vec2 flagCoord = posFlag / flagSize + 0.5;
         if (bool(showFlags) && abs(posFlag.x) <= flagSize.x / 2. && abs(posFlag.y) <= flagSize.y / 2.) {
           vec3 flagColor;
           if(nationality < .5) flagColor = texture(france, vec2(1.-flagCoord.y,1.- flagCoord.x)).xyz;
           else flagColor = texture(china, vec2(1.-flagCoord.y,1.- flagCoord.x)).xyz;
-          float opacity = showFlags;
-          if (time >= stopDissipationTime && time <= reshowTime) opacity = 0.;
-          else if (time >= reshowTime && time <= reshowTime + reshowAppearDuration) opacity *= (time - reshowTime) / reshowAppearDuration;
-          else if (time >= startDissipationTime && time <= stopDissipationTime ) opacity *= 1. - (time - startDissipationTime) / (stopDissipationTime - startDissipationTime);
+          
           color = opacity * flagColor + (1. - opacity) * color;
           float delta = .1;
           vec2 delta_tex = vec2(delta, delta) / flagSize;
