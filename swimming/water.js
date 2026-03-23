@@ -239,6 +239,7 @@ function Water(gl, resolution = null) {
       if (time < 0.) {
         float interval = 5.;
         float intensity = -time / interval;
+        // intensity = .5;
         intensity = min(max(intensity, 0.), 1.);
         intensity = 1. - intensity;
         intensity = interpIntensity(intensity);

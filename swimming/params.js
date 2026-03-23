@@ -55,7 +55,7 @@ class Config {
             swimmers: { showSpheres: true, useTracking: false },
             video: { thresholdBlending: false, blendingThreshold: .41, show: false, opacity: 1. },
             simulation: { optimized: false, waterDamping: .02, poolSize: new GL.Vector(2.0, 1.0, 2.0), buoyancyFactor: 1.1 },
-            quiver: { amplitudeFactor: 0.8, frequencyFactor: 1.2, amplitude: .1, omega: 2., waveLength: 5. }
+            quiver: { amplitudeFactor: 0.78, frequencyFactor: 1.2, amplitude: .1, omega: 2., waveLength: 1. }
         };
 
         this.resolution = new GL.Vector(256, 256);

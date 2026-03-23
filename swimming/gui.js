@@ -38,7 +38,9 @@ const createGUI = function (gl, reset) {
     visualizationsFolder.add(config.params.visualizations, "showDivingDistance").name('show diving distance').listen();
     visualizationsFolder.add(config.params.visualizations.shadow, "enabled").name("show shadow");
     visualizationsFolder.add(config.params.visualizations, 'areaConservationEnabled', 'areaConservationEnabled').name('area conservation').listen();
-    visualizationsFolder.add(config.params.visualizations, "rendering", config.params.visualizations.renderingList).name('rendering').listen();
+    visualizationsFolder.add(config.params.visualizations, "rendering", config.params.visualizations.renderingList).name('rendering').listen().onChange(() => {
+        if (config.params.visualizations.rendering == "toon") config.params.simulation.waterDamping = .35
+    });
 
     const videoFolder = gui.addFolder("video");
     videoFolder.close();
@@ -71,7 +73,7 @@ const createGUI = function (gl, reset) {
     simulationFolder.add(config.params.simulation.poolSize, 'x', 1, 25).name('pool width').onChange(function (value) { reset(); }).listen();
     simulationFolder.add(config.params.simulation.poolSize, 'z', 1, 50).name('pool height').onChange(function (value) { reset(); }).listen();
     simulationFolder.add(config.params.simulation.poolSize, 'y', 1, 3).name('pool depth').onChange(function (value) { reset(); }).listen();
-    simulationFolder.add(config.params.simulation, 'waterDamping', 0.005, 0.15).name('water damping').listen();
+    simulationFolder.add(config.params.simulation, 'waterDamping', 0.005, 0.4).name('water damping').listen();
 
     const swimmersFolder = gui.addFolder("swimmers");
     swimmersFolder.close();

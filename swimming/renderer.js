@@ -526,16 +526,17 @@ function Renderer(gl, water, flagCenter, flagSize) {
         float diffuse = max(0., dot(light, normal));
         
         // Quantize to 4 levels for toon effect
-        float levels = 4.0;
+        float levels = 5.0;
         float quantized = floor(diffuse * levels) / levels;
         
-        // Create toon colors - dark to light (blue tones)
-        vec3 toonColors[5];
-        toonColors[0] = vec3(0.05, 0.1, 0.2); // Darkest blue
-        toonColors[1] = vec3(0.2, 0.3, 0.5); // Dark blue
-        toonColors[2] = vec3(0.4, 0.5, 0.7); // Medium blue
-        toonColors[3] = vec3(0.6, 0.7, 0.9); // Light blue
-        toonColors[4] = vec3(0.8, 0.9, 1.0); // Brightest blue
+        // Create toon colors - tropical paradisiac water tones
+        vec3 toonColors[6];
+        toonColors[0] = vec3(0.0, 0.2, 0.4); // Deep tropical blue
+        toonColors[1] = vec3(0.0, 0.4, 0.7); // Rich turquoise
+        toonColors[2] = vec3(0.2, 0.6, 0.9); // Bright turquoise
+        toonColors[3] = vec3(0.4, 0.8, 1.0); // Light turquoise
+        toonColors[4] = vec3(0.7, 0.95, 1.0); // Crystal clear tropical
+        toonColors[5] = vec3(1., 1., 1.0); // white
         
         // Get the color based on quantized level
         int level = int(quantized * levels);
@@ -544,9 +545,9 @@ function Renderer(gl, water, flagCenter, flagSize) {
         // Add a small specular highlight for toon effect
         vec3 reflectDir = reflect(-light, normal);
         float spec = pow(max(0., dot(ray, reflectDir)), 32.0);
-        if (spec > 0.5) {
-          color += vec3(1.0, 1.0, 0.8) * 0.3;
-        }
+        // if (spec > 0.5) {
+        //   color += vec3(1.0, 1.0, 0.8) * 0.3;
+        // }
         
         return color;
       }
