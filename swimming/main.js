@@ -18,7 +18,6 @@ import { createGUI } from './gui.js';
 import { createEventEditor } from './eventEditor.js';
 import { Calibration } from './calibration.js';
 import { Water } from './water.js';
-import { clear } from './clearScreen.js';
 import { drawChronoPhotography } from './chronophotography.js';
 
 

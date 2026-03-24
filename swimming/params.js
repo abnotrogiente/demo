@@ -313,6 +313,7 @@ class Config {
         this.water.resetTextures();
         this.water.WR_position = 0;
         this.stopButton.hidden = false;
+        this._clearChronoTexture(this.gl.canvas.width, this.gl.canvas.height, this.gl);
     }
     stopRace() {
         if (this.paused) this.play();

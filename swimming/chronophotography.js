@@ -139,6 +139,12 @@ function toClipSpace(p) {
     p.y -= 1;
 }
 
+const clearTexture = () => {
+    config.gl.activeTexture(config.gl.TEXTURE0);
+    config.gl.bindTexture(config.gl.TEXTURE_2D, textureA.id);
+    config.gl.texSubImage2D(config.gl.TEXTURE_2D, 0, 0, 0, textureA.width, textureA.height, config.gl.RGBA, config.gl.FLOAT, 0);
+}
+
 const fixTexture = () => {
     if (!init) initTextures(config.gl.canvas.width, config.gl.canvas.height, config.gl);
 
@@ -187,5 +193,6 @@ const drawChronoPhotography = () => {
 }
 
 config._fixTexture = fixTexture;
+config._clearChronoTexture = initTextures;
 
 export { fixTexture, drawChronoPhotography };
