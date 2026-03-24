@@ -292,10 +292,23 @@ class Video {
     uniform bool thresholdBlending;
     uniform float blendingThreshold;
     uniform float opacity;
+    uniform float distanceFixed;
 
     ` + sparksHelper + `` + swimmersHelperFunctions + `
 
+    
+    bool isInFixedPart(vec2 p) {
+        vec4 P1 = vec4(poolSize.x/2., 0., distanceFixed - poolSize.z / 2., 1.);
+        vec4 P2 = vec4(-poolSize.x/2., 0., distanceFixed - poolSize.z / 2., 1.);
+        vec2 p1 = (gl_ModelViewMatrix * P1).xy;
+        vec2 p2 = (gl_ModelViewMatrix * P2).xy;
+        vec2 d = p1 - p2;
+        vec2 n = vec2(-d.y, d.x);
+        return dot(p, n) <= 0.;
+    }
+
     void main(void) {
+        // if (distanceFixed > 1.) return;
         highp vec4 texelColor = texture(uSampler, vTextureCoord);
         vec3 waterColor = vec3(.294, .812, 1.);
         float r = opacity;
@@ -375,6 +388,7 @@ class Video {
         this.gl.viewport(x, 0, W, H);
 
         if (Swimmer.swimmersAttributesTexture) Swimmer.swimmersAttributesTexture.bind(1);
+        console.log("drawing video");
         this.shader.uniforms({
             uSampler: 0,
             swimmersHelperFunctions: 1,
@@ -391,7 +405,8 @@ class Video {
             fov: sparksParams.fov,
             thresholdBlending: config.params.video.thresholdBlending,
             blendingThreshold: config.params.video.blendingThreshold,
-            opacity: config.params.video.opacity
+            opacity: config.params.video.opacity,
+            distanceFixed: config.distanceFixed
         }).draw(this.mesh);
         this.gl.disable(this.gl.BLEND);
         this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);

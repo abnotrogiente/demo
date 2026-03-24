@@ -61,7 +61,7 @@ class Config {
         this.resolution = new GL.Vector(256, 256);
 
         /**@type {WebGLRenderingContext} */
-        this.gl = GL.create();
+        this.gl = GL.create({ preserveDrawingBuffer: true });
         this.gl.canvas.tabIndex = 0;
 
 
@@ -133,6 +133,41 @@ class Config {
         this.renderWater = true;
         this.renderCube = true;
         this.spheresRadiusCoeff = 1.;
+        this.distanceFixed = 0.;
+        this.drawingFrameBuffer = this.gl.createFramebuffer();
+        this.drawingTexture = this.gl.createTexture();
+        this.resetDrawingTexture();
+    }
+
+    resetDrawingTexture() {
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.drawingFrameBuffer);
+
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.drawingTexture);
+
+        const width = this.gl.canvas.width;
+        const height = this.gl.canvas.height;
+
+        this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, width, height, 0,
+            this.gl.RGBA, this.gl.UNSIGNED_BYTE, null);
+
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
+
+        this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, this.gl.COLOR_ATTACHMENT0,
+            this.gl.TEXTURE_2D, this.drawingTexture, 0);
+
+
+        const depthBuffer = this.gl.createRenderbuffer();
+        this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, depthBuffer);
+
+        this.gl.renderbufferStorage(this.gl.RENDERBUFFER, this.gl.DEPTH_COMPONENT16, width, height);
+
+        this.gl.framebufferRenderbuffer(
+            this.gl.FRAMEBUFFER,
+            this.gl.DEPTH_ATTACHMENT,
+            this.gl.RENDERBUFFER,
+            depthBuffer
+        );
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
     }
 
     configStopButton() {
@@ -365,6 +400,16 @@ class Config {
                 // console.log("\n\n\n")
             });
         }
+    }
+    chronoPhotography() {
+        console.log("shoot");
+        this.distanceFixed = this.swimmers[0].getDistanceTraveled();
+        console.log("distance fixed : " + this.distanceFixed);
+        this._fixTexture();
+        // fixTexture();
+
+        // gl.enable(gl.SCISSOR_TEST);
+        // gl.scissor(0, 0, gl.canvas.width / 2, gl.canvas.height / 2);
     }
     async launchDemo() {
         console.log("Launch demo");

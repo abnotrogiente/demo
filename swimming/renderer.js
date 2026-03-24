@@ -294,7 +294,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
       }
 
       void distort(inout vec2 pos, vec2 swimmerPos, in float intensity) {
-        float distFactor = intensity / 2.5;
+        float distFactor = intensity / 2.;
         // pos.x += perlin(pos.xy + swimmerPos, 3., seed*.0000005) * distFactor;
         // pos.y += perlin(pos.yx + swimmerPos, 3., seed*.0000005) * distFactor;
         pos.x += perlin(pos.xy + swimmerPos + vec2(seed * 2., 0.), 3., 0.) * distFactor;
@@ -872,12 +872,12 @@ Renderer.prototype.renderSpheres = function (water) {
  * @param {Sphere} sphere 
  */
 Renderer.prototype.renderSphere = function (water, sphere) {
-  water.textureA.bind(0);
-  this.causticTex.bind(1);
+  water.textureA.bind(1);
+  this.causticTex.bind(2);
   this.sphereShader.uniforms({
     light: this.lightDir,
-    water: 0,
-    causticTex: 1,
+    water: 1,
+    causticTex: 2,
     sphereCenter: [sphere.center.x, sphere.center.y, sphere.center.z],
     sphereRadius: sphere.radius * config.spheresRadiusCoeff,
     poolSize: [config.params.simulation.poolSize.x, config.params.simulation.poolSize.y, config.params.simulation.poolSize.z],

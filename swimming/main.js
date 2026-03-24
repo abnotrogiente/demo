@@ -18,6 +18,8 @@ import { createGUI } from './gui.js';
 import { createEventEditor } from './eventEditor.js';
 import { Calibration } from './calibration.js';
 import { Water } from './water.js';
+import { clear } from './clearScreen.js';
+import { drawChronoPhotography } from './chronophotography.js';
 
 
 function text2html(text) {
@@ -121,6 +123,8 @@ window.onload = function () {
     gl.loadIdentity();
     gl.perspective(config.params.fov, gl.canvas.width / gl.canvas.height, 0.01, 100);
     gl.matrixMode(gl.MODELVIEW);
+
+    config.resetDrawingTexture();
     draw();
   }
 
@@ -428,6 +432,9 @@ window.onload = function () {
       if (!config.playingDemo) await config.launchDemo();
       else config.stopDemo();
     }
+    else if (e.which == 'Q'.charCodeAt(0)) {
+      config.chronoPhotography();
+    }
     else if (e.which == 'R'.charCodeAt(0)) {
       config.setScene("100m freestyle").then(() => config.startRace());
       config._setPannelMinimized(true);
@@ -473,6 +480,7 @@ window.onload = function () {
     }
 
     gl.clearColor(0., 0., 0., 1.);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
 
@@ -502,10 +510,8 @@ window.onload = function () {
     config.water.addOrRemoveVisualizationWaves(true);
     config.water.updateNormals();
 
-    /**@type {WebGLRenderingContext} */
-    const g = gl;
-    // g.clearColor(.1, .9, .5, 1);
     gl.clearColor(.1, .2, .5, 1);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, config.drawingFrameBuffer);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.loadIdentity();
     gl.translate(config.translateX, config.translateY, -config.zoomDistance);
@@ -523,16 +529,18 @@ window.onload = function () {
     // console.log(config.params.fov);
     // console.log("\n\n\n");
 
-
     gl.enable(gl.DEPTH_TEST);
     renderer.sphereCenter = config.swimmers[0].body.center;
     renderer.sphereRadius = config.swimmers[0].body.radius;
     renderer.renderCube(config.water);
     renderer.renderWater(config.water, cubemap, config.params.visualizations.shadow);
+    gl.enable(gl.DEPTH_TEST);
     if (config.params.swimmers.showSpheres) renderer.renderSpheres(config.water);
     // Swimmer.attributes.draw();
     config.renderVideo();
+    drawChronoPhotography();
     gl.disable(gl.DEPTH_TEST);
+
     config.water.addOrRemoveVisualizationWaves(false);
   }
 };
