@@ -253,6 +253,8 @@ class Config {
             this.#setPoolSize(this.currentScene.poolSize);
             this.resolution = this.currentScene.waterResolution;
             this.params.video.thresholdBlending = this.currentScene.thresholdBlending;
+            if (!this.currentScene.thresholdBlending) this.params.video.opacity = .5;
+            else this.params.video.opacity = 1.;
             this.params.visualizations.areaConservationEnabled = false;
 
             this.stopRace();
