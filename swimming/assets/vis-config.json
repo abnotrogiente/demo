@@ -3,7 +3,7 @@
         "time": -3,
         "params": {
             "showFlags": true,
-            "showWR": true,
+            "showWR": false,
             "medalsModeAfterFinish": "lanes"
         },
         "transition": {
@@ -34,6 +34,12 @@
         "params": {
             "showFlags": true,
             "showSpeed": false
+        }
+    },
+    {
+        "distance": 40,
+        "params": {
+            "showWR": true
         }
     },
     {
