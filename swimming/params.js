@@ -53,7 +53,7 @@ class Config {
                 sparks: { enabled: false, glow: 5., glowOffset: .5, lengthFactor: 1., stroke: .01, num: 40, sizeFactor: 50, fov: Math.PI / 4 }
             },
             swimmers: { showSpheres: true, useTracking: false },
-            video: { thresholdBlending: false, blendingThreshold: .41, show: false, opacity: 1. },
+            video: { thresholdBlending: false, blendingThreshold: .41, show: false, opacity: 1., hideObstructions: false, hideObstructionThreshold: .2 },
             simulation: { optimized: false, waterDamping: .02, poolSize: new GL.Vector(4.0, 1.0, 4.0), buoyancyFactor: 1.1 },
             quiver: { amplitudeFactor: 0.78, frequencyFactor: 1.2, amplitude: .1, omega: 2., waveLength: 1. },
             cornerView: { show: true }

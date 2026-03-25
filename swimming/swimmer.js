@@ -234,7 +234,7 @@ class Swimmer {
         // console.log("hasReacted : " + this.hasReacted);
         // console.log("\n\n");
         if (this.hasReacted && this.useTracking && this.currendDataIndex < this.data.length && this.data[this.currendDataIndex][TIME_KEY] < time) {
-            console.log("enter handle tracking");
+            // console.log("enter handle tracking");
 
             this.setDamping(this.data[this.currendDataIndex]);
 

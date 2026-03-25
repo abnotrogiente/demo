@@ -46,6 +46,8 @@ const createGUI = function (gl, reset) {
     videoFolder.add(config.params.video, "thresholdBlending").name("threshold blending");
     videoFolder.add(config.params.video, "blendingThreshold", .1, .5).name("blending threshold");
     videoFolder.add(config.params.video, 'show').name("show").listen();
+    videoFolder.add(config.params.video, "hideObstructions").name("hide obstructions");
+    videoFolder.add(config.params.video, "hideObstructionThreshold", 0., 0.5).name("obstructions threshold");
 
     // lengthFactor: 1.5, stroke: .004, num: 40 
     const sparksFolder = visualizationsFolder.addFolder("Sparks");

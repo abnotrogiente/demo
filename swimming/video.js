@@ -271,19 +271,27 @@ class Video {
     out vec3 waterNormal;
     out vec3 sparkPlaneNormal;
     out vec3 sparkDirection;
+    out vec2 posScreen;
+
+    uniform float ratio_screen;
+    uniform float dx_screen;
 
     void main(void) {
         gl_Position = vec4(gl_Vertex.xz, 0., 1.);
+        gl_Position.x *= ratio_screen;
+
         waterNormal = (gl_ModelViewMatrix * vec4(0., 1., 0., 0.)).xyz;
         sparkPlaneNormal = (gl_ModelViewMatrix * vec4(-1., 0., 0., 0.)).xyz;
         sparkDirection = (gl_ModelViewMatrix * vec4(0., 0., 1., 0.)).xyz;
         vTextureCoord = gl_TexCoord.st;
+        posScreen = gl_Position.xy;
     }
 `, `
     in highp vec2 vTextureCoord;
     in vec3 waterNormal;
     in vec3 sparkPlaneNormal;
     in vec3 sparkDirection;
+    in vec2 posScreen;
     out vec4 fragColor;
 
     uniform sampler2D uSampler;
@@ -293,11 +301,50 @@ class Video {
     uniform float blendingThreshold;
     uniform float opacity;
     uniform float distanceFixed;
+    uniform bool hideObstructions;
+    uniform float hideObstructionThreshold;
 
     ` + sparksHelper + `` + swimmersHelperFunctions + /*glsl*/`
 
+    float cross2D(vec2 a, vec2 b) {
+        return a.x * b.y - a.y * b.x;
+    }
+
+    bool isOverPool(vec2 p) {
+        vec4 A = vec4(-poolSize.x/2., 0., poolSize.z/2., 1.);
+        vec4 B = vec4(-poolSize.x/2., 0., -poolSize.z/2., 1.);
+        vec4 C = vec4(poolSize.x/2., 0., -poolSize.z/2., 1.);
+        vec4 D = vec4(poolSize.x/2., 0., poolSize.z/2., 1.);
+
+        vec4 a_hom = gl_ModelViewProjectionMatrix*A;
+        vec4 b_hom = gl_ModelViewProjectionMatrix*B;
+        vec4 c_hom = gl_ModelViewProjectionMatrix*C;
+        vec4 d_hom = gl_ModelViewProjectionMatrix*D;
+
+        vec2 a = a_hom.xy / a_hom.w;
+        vec2 b = b_hom.xy / b_hom.w;
+        vec2 c = c_hom.xy / c_hom.w;
+        vec2 d = d_hom.xy / d_hom.w;
+
+
+        float c1 = cross2D(b-a, p-a);
+        float c2 = cross2D(c-b, p-b);
+        float c3 = cross2D(d-c, p-c);
+        float c4 = cross2D(a-d, p-d);
+
+        
+        return c1 <= 0. && c2 <= 0. && c3 <= 0. && c4 <= 0.;
+
+
+    }
+
     void main(void) {
         highp vec4 texelColor = texture(uSampler, vTextureCoord);
+        // if (max(max(texelColor.r, texelColor.g), texelColor.b) < .2){
+        //     fragColor = vec4(0., 0., 0., 0.);
+        //     return;
+        // }
+        
         vec3 waterColor = vec3(.294, .812, 1.);
         float r = opacity;
         if (thresholdBlending) {
@@ -305,6 +352,11 @@ class Video {
              length(texelColor.rgb) > 1.5 && texelColor.b > .1 + (texelColor.r + texelColor.g) * .5) r = 0.3 * opacity;
         }
         fragColor = vec4(texelColor.rgb, r);
+
+        if (hideObstructions && isOverPool(posScreen)){
+            if (max(max(texelColor.r, texelColor.g), texelColor.b) < hideObstructionThreshold) fragColor = vec4(0., 0., 0., 0.);
+            // return;
+        }
         //fragColor.a += 1. - r;
         if (!sparksEnabled) return;
         vec3 spark1 = sparks(gl_FragCoord.xy, vec3(2., 1., -poolSize.z / 2.), .1);
@@ -373,11 +425,12 @@ class Video {
         const H = this.gl.canvas.height;
         const W = 16 * H / 9;
         const x = (this.gl.canvas.width - W) / 2;
-        this.gl.viewport(x, 0, W, H);
+        // this.gl.viewport(x, 0, W, H);
 
         if (Swimmer.swimmersAttributesTexture) Swimmer.swimmersAttributesTexture.bind(1);
-        console.log("drawing video");
         this.shader.uniforms({
+            ratio_screen: W / this.gl.canvas.width,
+            dx_screen: x / this.gl.canvas.width,
             uSampler: 0,
             swimmersHelperFunctions: 1,
             iTime: config.getRaceTime(),
@@ -394,7 +447,9 @@ class Video {
             thresholdBlending: config.params.video.thresholdBlending,
             blendingThreshold: config.params.video.blendingThreshold,
             opacity: config.params.video.opacity,
-            distanceFixed: config.distanceFixed
+            distanceFixed: config.distanceFixed,
+            hideObstructions: config.params.video.hideObstructions,
+            hideObstructionThreshold: config.params.video.hideObstructionThreshold
         }).draw(this.mesh);
         this.gl.disable(this.gl.BLEND);
         this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
