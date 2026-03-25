@@ -30,6 +30,7 @@ var helperFunctions = `
   uniform vec2 flagCenter;
   uniform vec3 poolSize;
   uniform bool renderWater;
+  uniform bool cornerView;
   
   vec2 intersectCube(vec3 origin, vec3 ray, vec3 cubeMin, vec3 cubeMax) {
     vec3 tMin = (cubeMin - origin) / ray;
@@ -411,7 +412,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
       }
 
       void drawShadows(in vec2 projectedPosition, in vec2 swimmerPosition, in float altitude, inout vec3 color) {
-        if (!shadowEnabled || abs(altitude - (-.06)) < .18) return;
+        if (!cornerView && (!shadowEnabled || abs(altitude - (-.06)) < .18)) return;
         vec2 diff = (projectedPosition - swimmerPosition);
         vec2 diffNormalized = diff/shadowRadius;
         float distSq = dot(diffNormalized, diffNormalized);
@@ -419,7 +420,8 @@ function Renderer(gl, water, flagCenter, flagSize) {
         float altitudeAttenuation = min(1., abs(altitude));
         attenuation = 1.-(1.-attenuation)*altitudeAttenuation;
         color *= attenuation;
-        if (!showCircle) return;
+        if (!showCircle && !cornerView) return;
+        if(cornerView) altitudeAttenuation = 1.;
         distSq = dot(diff, diff);
         color += max(0.,1.-abs((shadowCircleRadius - distSq)/shadowCircleStroke)) * vec3(1., 1., 0.) * altitudeAttenuation;
       }
@@ -513,12 +515,14 @@ function Renderer(gl, water, flagCenter, flagSize) {
 
           float speed = getSwimmerSpeed(i);
           bool rightSide = hasFirstFinished ? false : speed >= 0.;
-          drawSwimmerLines(projectedPosition, swimmerPos, i, color);
           
+          drawSwimmerLines(projectedPosition, swimmerPos, i, color);
           drawRanks(projectedPosition, swimmerPos, i, rightSide, color);
+          if (shadowEnabled) drawShadows(projectedPosition, swimmerPos, swimmerAltitude, color);
+          // if (cornerView) continue;
+          
           drawFlags(position, swimmerPos, swimmerAltitude, getSwimmerNationality(i), rightSide, color);
           if (showSpeed || showFinishTimes) drawNumbers(position, swimmerPos, i, rightSide, color);
-          if (shadowEnabled) drawShadows(projectedPosition, swimmerPos, swimmerAltitude, color);
           colorWater(projectedPosition, swimmerPos, getColorValue(speed), color);
         }
       
@@ -830,6 +834,7 @@ Renderer.prototype.renderWater = function (water, sky, shadowParams) {
       showAreaConservedGrid: water.showAreaConservedGrid,
       wr: water.WR_position,
       swimmersNumber: config.swimmers.length,
+      cornerView: config.cornerView,
       showFlags: config.transitions.showFlags ? config.transitions.showFlags.opacity : config.params.visualizations.showFlags,
       showWR: config.params.visualizations.showWR,
       showSpeed: config.params.visualizations.showSpeed,

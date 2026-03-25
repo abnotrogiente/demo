@@ -55,7 +55,8 @@ class Config {
             swimmers: { showSpheres: true, useTracking: false },
             video: { thresholdBlending: false, blendingThreshold: .41, show: false, opacity: 1. },
             simulation: { optimized: false, waterDamping: .02, poolSize: new GL.Vector(4.0, 1.0, 4.0), buoyancyFactor: 1.1 },
-            quiver: { amplitudeFactor: 0.78, frequencyFactor: 1.2, amplitude: .1, omega: 2., waveLength: 1. }
+            quiver: { amplitudeFactor: 0.78, frequencyFactor: 1.2, amplitude: .1, omega: 2., waveLength: 1. },
+            cornerView: { show: true }
         };
 
         this.resolution = new GL.Vector(256, 256);
@@ -137,6 +138,7 @@ class Config {
         this.drawingFrameBuffer = this.gl.createFramebuffer();
         this.drawingTexture = this.gl.createTexture();
         this.resetDrawingTexture();
+        this.cornerView = false;
     }
 
     resetDrawingTexture() {
@@ -305,6 +307,18 @@ class Config {
         this.updateEventIndex();
         this.resetParams();
     }
+    showTexts(show) {
+        document.getElementById("h").hidden = !show;
+        if (!show) {
+            this.showCommands = !document.getElementById("commands").hidden;
+            document.getElementById("commands").hidden = true;
+            // this._gui.hide();
+        }
+        else {
+            if (this.showCommands) document.getElementById("commands").hidden = false;
+            // this._gui.show();
+        }
+    }
     startRace() {
         console.log("START RACE");
         this.setRaceTime(-3);
@@ -316,6 +330,7 @@ class Config {
         this.water.WR_position = 0;
         this.stopButton.hidden = false;
         this._clearChronoTexture(this.gl.canvas.width, this.gl.canvas.height, this.gl);
+        this.showTexts(false);
     }
     stopRace() {
         if (this.paused) this.play();
@@ -327,6 +342,7 @@ class Config {
 
         this.playButton.textContent = "play";
         this.stopButton.hidden = true;
+        this.showTexts(true);
     }
     pause() {
         this.paused = true;

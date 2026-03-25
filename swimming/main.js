@@ -511,14 +511,22 @@ window.onload = function () {
   }
 
   function drawCornerView() {
+    if (!Swimmer.raceHasStarted || !config.params.cornerView.show) return;
+    config.cornerView = true;
+
     gl.loadIdentity();
-    gl.translate(0, 0, -20);
+    gl.translate(0, 0, -35);
     gl.rotate(90, 1, 0, 0);
+    gl.rotate(-90, 0, 1, 0);
     gl.translate(0, 0.5, 0);
 
-
-    gl.viewport(0, 400, 16 * 500 / 9, 500);
+    const h = gl.canvas.height / 3;
+    const w = 16 * h / 9;
+    const x = 0;
+    const y = gl.canvas.height - h;
+    gl.viewport(x, y, w, h);
     renderer.renderWater(config.water, cubemap, config.params.visualizations.shadow);
+    renderer.renderSpheres(config.water);
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
     gl.loadIdentity();
@@ -527,6 +535,8 @@ window.onload = function () {
     gl.rotate(-config.angleX, 1, 0, 0);
     gl.rotate(-config.angleY, 0, 1, 0);
     gl.translate(0, 0.5, 0);
+
+    config.cornerView = false
   }
 
   function draw() {
@@ -549,6 +559,8 @@ window.onload = function () {
     gl.rotate(-config.angleY, 0, 1, 0);
     gl.translate(0, 0.5, 0);
 
+    // printCalib();
+
     gl.enable(gl.DEPTH_TEST);
     gl.disable(gl.BLEND);
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
@@ -563,7 +575,7 @@ window.onload = function () {
     drawChronoPhotography();
     gl.disable(gl.DEPTH_TEST);
 
-    // drawCornerView();
+    drawCornerView();
 
     config.water.addOrRemoveVisualizationWaves(false);
   }
