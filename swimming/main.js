@@ -529,6 +529,7 @@ window.onload = function () {
     // console.log("\n\n\n");
 
     gl.enable(gl.DEPTH_TEST);
+    gl.disable(gl.BLEND);
     renderer.sphereCenter = config.swimmers[0].body.center;
     renderer.sphereRadius = config.swimmers[0].body.radius;
     renderer.renderCube(config.water);

@@ -34,7 +34,6 @@ const createGUI = function (gl, reset) {
     visualizationsFolder.add(config.params.visualizations, "medalsModeBeforeFinish", ["none", "stars", "bright", "lanes"]).name('show potential medals').listen();
     visualizationsFolder.add(config.params.visualizations, "medalsModeAfterFinish", ["none", "stars", "bright", "lanes"]).name('show potential medals after finish').listen();
     visualizationsFolder.add(config.params.visualizations, "showSpeed").name('show speed').listen();
-    const ranksFolder = visualizationsFolder.addFolder("ranks");
     visualizationsFolder.add(config.params.visualizations, "showDivingDistance").name('show diving distance').listen();
     visualizationsFolder.add(config.params.visualizations.shadow, "enabled").name("show shadow");
     visualizationsFolder.add(config.params.visualizations, 'areaConservationEnabled', 'areaConservationEnabled').name('area conservation').listen();

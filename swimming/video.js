@@ -294,21 +294,9 @@ class Video {
     uniform float opacity;
     uniform float distanceFixed;
 
-    ` + sparksHelper + `` + swimmersHelperFunctions + `
-
-    
-    bool isInFixedPart(vec2 p) {
-        vec4 P1 = vec4(poolSize.x/2., 0., distanceFixed - poolSize.z / 2., 1.);
-        vec4 P2 = vec4(-poolSize.x/2., 0., distanceFixed - poolSize.z / 2., 1.);
-        vec2 p1 = (gl_ModelViewMatrix * P1).xy;
-        vec2 p2 = (gl_ModelViewMatrix * P2).xy;
-        vec2 d = p1 - p2;
-        vec2 n = vec2(-d.y, d.x);
-        return dot(p, n) <= 0.;
-    }
+    ` + sparksHelper + `` + swimmersHelperFunctions + /*glsl*/`
 
     void main(void) {
-        // if (distanceFixed > 1.) return;
         highp vec4 texelColor = texture(uSampler, vTextureCoord);
         vec3 waterColor = vec3(.294, .812, 1.);
         float r = opacity;
