@@ -499,6 +499,36 @@ window.onload = function () {
 
   }
 
+  function printCalib() {
+    console.log(config.translateX);
+    console.log(config.translateY);
+    console.log(config.zoomDistance);
+    console.log(config.angleX);
+    console.log(config.angleY);
+    console.log(config.angleZ);
+    console.log(config.params.fov);
+    console.log("\n\n\n");
+  }
+
+  function drawCornerView() {
+    gl.loadIdentity();
+    gl.translate(0, 0, -20);
+    gl.rotate(90, 1, 0, 0);
+    gl.translate(0, 0.5, 0);
+
+
+    gl.viewport(0, 400, 16 * 500 / 9, 500);
+    renderer.renderWater(config.water, cubemap, config.params.visualizations.shadow);
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+    gl.loadIdentity();
+    gl.translate(config.translateX, config.translateY, -config.zoomDistance);
+    gl.rotate(-config.angleZ, 0, 0, 1);
+    gl.rotate(-config.angleX, 1, 0, 0);
+    gl.rotate(-config.angleY, 0, 1, 0);
+    gl.translate(0, 0.5, 0);
+  }
+
   function draw() {
     // Change the light direction to the camera look vector when the L key is pressed
     if (GL.keys.L) {
@@ -519,17 +549,9 @@ window.onload = function () {
     gl.rotate(-config.angleY, 0, 1, 0);
     gl.translate(0, 0.5, 0);
 
-    // console.log(config.translateX);
-    // console.log(config.translateY);
-    // console.log(config.zoomDistance);
-    // console.log(config.angleX);
-    // console.log(config.angleY);
-    // console.log(config.angleZ);
-    // console.log(config.params.fov);
-    // console.log("\n\n\n");
-
     gl.enable(gl.DEPTH_TEST);
     gl.disable(gl.BLEND);
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     renderer.sphereCenter = config.swimmers[0].body.center;
     renderer.sphereRadius = config.swimmers[0].body.radius;
     renderer.renderCube(config.water);
@@ -540,6 +562,8 @@ window.onload = function () {
     config.renderVideo();
     drawChronoPhotography();
     gl.disable(gl.DEPTH_TEST);
+
+    // drawCornerView();
 
     config.water.addOrRemoveVisualizationWaves(false);
   }
