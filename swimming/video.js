@@ -295,6 +295,7 @@ class Video {
     out vec4 fragColor;
 
     uniform sampler2D uSampler;
+    uniform sampler2D screen;
     uniform bool sparksEnabled;
     uniform vec3 poolSize;
     uniform bool thresholdBlending;
@@ -357,6 +358,11 @@ class Video {
             if (max(max(texelColor.r, texelColor.g), texelColor.b) < hideObstructionThreshold) fragColor = vec4(0., 0., 0., 0.);
             // return;
         }
+
+        // vec4 backgroundCol = texture(screen, (posScreen+1.)/2.);
+        // if (backgroundCol.r > .6) {
+        //     fragColor = vec4(0., 0., 0., 1.);
+        // }
         //fragColor.a += 1. - r;
         if (!sparksEnabled) return;
         vec3 spark1 = sparks(gl_FragCoord.xy, vec3(2., 1., -poolSize.z / 2.), .1);
@@ -428,11 +434,14 @@ class Video {
         // this.gl.viewport(x, 0, W, H);
 
         if (Swimmer.swimmersAttributesTexture) Swimmer.swimmersAttributesTexture.bind(1);
+        // config.gl.activeTexture(config.gl.TEXTURE4);
+        // config.gl.bindTexture(config.gl.TEXTURE_2D, config.drawingTexture);
         this.shader.uniforms({
             ratio_screen: W / this.gl.canvas.width,
             dx_screen: x / this.gl.canvas.width,
             uSampler: 0,
             swimmersHelperFunctions: 1,
+            screen: 4,
             iTime: config.getRaceTime(),
             poolSize: [poolSize.x, poolSize.y, poolSize.z],
             iResolution: [this.gl.canvas.width, this.gl.canvas.height],

@@ -56,7 +56,8 @@ class Config {
             video: { thresholdBlending: false, blendingThreshold: .41, show: false, opacity: 1., hideObstructions: false, hideObstructionThreshold: .2 },
             simulation: { optimized: false, waterDamping: .02, poolSize: new GL.Vector(4.0, 1.0, 4.0), buoyancyFactor: 1.1 },
             quiver: { amplitudeFactor: 0.78, frequencyFactor: 1.2, amplitude: .1, omega: 2., waveLength: 1. },
-            cornerView: { show: true }
+            cornerView: { show: true },
+            chronoPhotography: { available: false }
         };
 
         this.resolution = new GL.Vector(256, 256);
@@ -135,14 +136,16 @@ class Config {
         this.renderCube = true;
         this.spheresRadiusCoeff = 1.;
         this.distanceFixed = 0.;
-        this.drawingFrameBuffer = this.gl.createFramebuffer();
+        this.chronoFrameBuffer = this.gl.createFramebuffer()
+        this.drawingFrameBuffer = null;
+        // this.drawingFrameBuffer = null;
         this.drawingTexture = this.gl.createTexture();
         this.resetDrawingTexture();
         this.cornerView = false;
     }
 
     resetDrawingTexture() {
-        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.drawingFrameBuffer);
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.chronoFrameBuffer);
 
         this.gl.bindTexture(this.gl.TEXTURE_2D, this.drawingTexture);
 

@@ -105,6 +105,13 @@ const createGUI = function (gl, reset) {
     cornerViewFolder.close();
     cornerViewFolder.add(config.params.cornerView, "show").name("show");
 
+    const chronoPhotographyFolder = gui.addFolder("chrono-photography");
+    chronoPhotographyFolder.close();
+    chronoPhotographyFolder.add(config.params.chronoPhotography, "available").name("available").onChange(() => {
+        if (config.params.chronoPhotography.available) config.drawingFrameBuffer = config.chronoFrameBuffer;
+        else config.drawingFrameBuffer = null;
+    });
+
     config._gui = gui;
 }
 

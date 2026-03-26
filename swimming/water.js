@@ -313,6 +313,10 @@ Water.prototype.addDrop = function (x, y, radius, strength) {
  * @returns 
  */
 Water.prototype.addOrRemoveVisualizationWaves = function (add) {
+  const speed = 2.155;
+  this.prev_WR_position = this.WR_position;
+  this.WR_position = config.getRaceTime() * speed;
+  if (this.WR_position > config.params.simulation.poolSize.z) this.WR_position = 2 * config.params.simulation.poolSize.z - this.WR_position;
   if (!this.visualizationWavesEnabled || !Swimmer.raceHasStarted) return;
   var this_ = this;
 
@@ -346,10 +350,6 @@ Water.prototype.addOrRemoveVisualizationWaves = function (add) {
 }
 
 Water.prototype.updateSpheres = function (dt) {
-  const speed = 2.155;
-  this.prev_WR_position = this.WR_position;
-  this.WR_position = config.getRaceTime() * speed;
-  if (this.WR_position > config.params.simulation.poolSize.z) this.WR_position = 2 * config.params.simulation.poolSize.z - this.WR_position;
   if (config.params.simulation.optimized) {
     Swimmer.attributes.draw();
 

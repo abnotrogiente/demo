@@ -111,7 +111,6 @@ const drawShader = new GL.Shader(`
 
 let textureA = new GL.Texture();
 let textureB = new GL.Texture();
-let drawingFrameBufferTexture = new GL.Texture();
 let init = false;
 let frameBuffer = null;
 

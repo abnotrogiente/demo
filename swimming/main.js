@@ -304,6 +304,7 @@ window.onload = function () {
           config.angleZ = Math.max(-89.999, Math.min(89.999, config.angleZ));
           break;
         }
+        console.log("updated angleY");
         config.angleY -= x - oldX;
         config.angleX -= y - oldY;
         config.angleX = Math.max(-89.999, Math.min(89.999, config.angleX));
@@ -572,7 +573,7 @@ window.onload = function () {
     if (config.params.swimmers.showSpheres) renderer.renderSpheres(config.water);
     // Swimmer.attributes.draw();
     config.renderVideo();
-    drawChronoPhotography();
+    if (config.params.chronoPhotography.available) drawChronoPhotography();
     gl.disable(gl.DEPTH_TEST);
 
     drawCornerView();
