@@ -81,7 +81,10 @@ const swimmersHelperFunctions = `
     float getRecordWave(vec2 coord) {
         float z = poolSize.z * coord.y;
         if (true || abs(z - wr) < 1.) {
-            return .2 * gaussian(z, wr, .4);
+            float amplitude = .2;
+            float g = amplitude * gaussian(z, wr, .25);
+            float w = exp(g - amplitude) - exp(-amplitude);
+            return w;
         }
         return 0.;
     }
