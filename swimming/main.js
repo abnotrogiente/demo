@@ -488,7 +488,7 @@ window.onload = function () {
     for (let swimmer of config.swimmers) swimmer.update(dt);
     config.water.updateSpheres(dt);
     for (let i = 0; i < config.params.numSteps; i++) {
-      config.water.stepSimulation();
+      config.water.stepSimulation(dt);
     }
 
     renderer.updateCaustics(config.water);

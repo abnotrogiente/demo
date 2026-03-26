@@ -76,6 +76,16 @@ const createGUI = function (gl, reset) {
     simulationFolder.add(config.params.simulation.poolSize, 'y', 1, 3).name('pool depth').onChange(function (value) { reset(); }).listen();
     simulationFolder.add(config.params.simulation, 'waterDamping', 0.005, 0.4).name('water damping').listen();
 
+    const foamFolder = simulationFolder.addFolder("foam");
+    foamFolder.close();
+    foamFolder.add(config.params.simulation.foam, "enabled").name("enabled");
+    foamFolder.add(config.params.simulation.foam, "velThreshold", 0., 15.).name("velocity threshold");
+    foamFolder.add(config.params.simulation.foam, "velMax", 0., 20.).name("max velocity");
+    foamFolder.add(config.params.simulation.foam, "dispersion", 0., .1).name("dispersion");
+    foamFolder.add(config.params.simulation.foam, "timeVariation", 0., 10.).name("time variation");
+    foamFolder.add(config.params.simulation.foam, "spaceVariation", 0., 100.).name("space variation");
+    foamFolder.add(config.params.simulation.foam, "attenuation", 0., .2).name("attenuation");
+
     const swimmersFolder = gui.addFolder("swimmers");
     swimmersFolder.close();
     swimmersFolder.add(config.params.swimmers, "showSpheres").name('show spheres').listen();
@@ -111,6 +121,8 @@ const createGUI = function (gl, reset) {
         if (config.params.chronoPhotography.available) config.drawingFrameBuffer = config.chronoFrameBuffer;
         else config.drawingFrameBuffer = null;
     });
+
+
 
     config._gui = gui;
 }

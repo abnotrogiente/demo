@@ -11,6 +11,7 @@ import { Sphere } from './sphere.js';
 import { Swimmer } from './swimmer.js';
 import { swimmersHelperFunctions } from './swimmersHelperFunctions.js';
 import { config } from './params.js';
+import { Foam } from './foam.js';
 
 // The data in the texture is (position.y, velocity.y, normal.x, normal.z)
 function Water(gl, resolution = null) {
@@ -18,6 +19,7 @@ function Water(gl, resolution = null) {
   this.gl = gl;
   this.visualizationWavesEnabled = true;
   this.sqrt_2_PI = Math.sqrt(2 * Math.PI);
+  this.foam = new Foam();
   var vertexShader = `
     out vec2 coord;
     uniform vec2 invPoolSizeVertex;
@@ -259,6 +261,7 @@ Water.prototype.resetTextures = function () {
   if (this.textureB) g.deleteTexture(this.textureB.id);
   this.textureA = new GL.Texture(this.W, this.H, { type: this.gl.FLOAT, filter: filter });
   this.textureB = new GL.Texture(this.W, this.H, { type: this.gl.FLOAT, filter: filter });
+  this.foam.resetTextures(this.W, this.H, this.textureA);
   this.areaConservationTexture = new GL.Texture(this.W, this.H, { type: this.gl.FLOAT, filter: filter });
   this.showAreaConservedGrid = false;
   this.showProjectionGrid = false;
@@ -396,7 +399,7 @@ Water.prototype.moveSphere = function (oldCenter, newCenter, radius) {
   this.textureB.swapWith(this.textureA);
 };
 
-Water.prototype.stepSimulation = function () {
+Water.prototype.stepSimulation = function (dt) {
   var this_ = this;
   this.textureB.drawTo(function () {
     this_.textureA.bind();
@@ -416,6 +419,8 @@ Water.prototype.stepSimulation = function () {
     }).draw(this_.plane);
   });
   this.textureB.swapWith(this.textureA);
+
+  if (config.params.simulation.foam.enabled) this.foam.updateFoam(dt);
 
   this.updateAreaConservation();
 };

@@ -188,8 +188,11 @@ function Renderer(gl, water, flagCenter, flagSize) {
       uniform sampler2D china;
       uniform vec2 flagSize;
 
+      uniform sampler2D foamTex;
+
       uniform float rendering;
 
+      uniform bool foamEnabled;
       uniform bool shadowEnabled;
       uniform float shadowRadius;
       uniform float shadowPower;
@@ -596,7 +599,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
           }
         }
         if (ray.y < 0.0) {
-          color *= waterColor;          
+          color *= waterColor;
         }
         return color;
       }
@@ -657,6 +660,13 @@ function Renderer(gl, water, flagCenter, flagSize) {
           vec3 refractedColor = getSurfaceRayColor(position, refractedRay, abovewaterColor, normal);
           
           fragColor = vec4(mix(refractedColor, reflectedColor, fresnel), 1.0);
+
+          if(!foamEnabled) return;
+
+          vec3 waterColor = abovewaterColor;
+          vec4 foamColor = vec4(vec3(.9), fragColor.a);
+          float foam = texture(foamTex, coord).r;
+          fragColor = mix(fragColor, foamColor, foam);
         `) + `
       }
     `);
@@ -801,6 +811,7 @@ Renderer.prototype.renderWater = function (water, sky, shadowParams) {
   this.causticTex.bind(3);
   this.franceTexture.bind(4); // TODO make the texture work
   this.chinaTexture.bind(8);
+  config.water.foam.foamTexNext.bind(9);
   this.lettersTexture.bind(7);
   water.areaConservationTexture.bind(5);
   const swimmersAttributesTexture = Swimmer.getAttributesTexture();
@@ -819,6 +830,7 @@ Renderer.prototype.renderWater = function (water, sky, shadowParams) {
       causticTex: 3,
       france: 4,
       china: 8,
+      foamTex: 9,
       areaConservationTexture: 5,
       swimmersAttributesTexture: 6,
       iChannel0: 7,
@@ -842,6 +854,7 @@ Renderer.prototype.renderWater = function (water, sky, shadowParams) {
       showFinishTimes: config.params.visualizations.showFinishTimes,
       time: config.getRaceTime(),
       seed: config.time,
+      foamEnabled: config.params.simulation.foam.enabled,
       shadowEnabled: shadowParams.enabled,
       shadowRadius: shadowParams.shadowRadius,
       shadowPower: shadowParams.shadowPower,
