@@ -235,6 +235,7 @@ class Config {
         this.currentScene = this.scenes[sceneName];
         if (this.currentScene) {
             const timeSliderContainer = document.getElementById("time-slider-container");
+            this.currentVideo = this.currentScene.videos[0];
             this.params.video.show = this.currentVideo.video ? true : false;
             this.params.swimmers.showSpheres = this.currentVideo.video ? false : true;
             timeSliderContainer.hidden = this.currentVideo.video ? false : true;
@@ -257,7 +258,6 @@ class Config {
             await this.currentScene.parseData(this.swimmers);
             this.swimmers.forEach(swimmer => swimmer.update(0));
             console.log("scene name : " + this.currentScene.title);
-            this.currentVideo = this.currentScene.videos[0];
             this.setCalibration(this.currentVideo.calibration);
             this.#setPoolSize(this.currentScene.poolSize);
             this.resolution = this.currentScene.waterResolution;
