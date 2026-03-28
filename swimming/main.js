@@ -304,7 +304,6 @@ window.onload = function () {
           config.angleZ = Math.max(-89.999, Math.min(89.999, config.angleZ));
           break;
         }
-        console.log("updated angleY");
         config.angleY -= x - oldX;
         config.angleX -= y - oldY;
         config.angleX = Math.max(-89.999, Math.min(89.999, config.angleX));
@@ -498,6 +497,8 @@ window.onload = function () {
     updateFrameRateHTML(dt);
     config.updateDemo(dt);
 
+    config.splashParticles.update(dt);
+
   }
 
   function printCalib() {
@@ -569,15 +570,18 @@ window.onload = function () {
     renderer.sphereRadius = config.swimmers[0].body.radius;
     renderer.renderCube(config.water);
     renderer.renderWater(config.water, cubemap, config.params.visualizations.shadow);
-    gl.enable(gl.DEPTH_TEST);
+    // gl.matrixMode(gl.PROJECTION);
+    // console.log("MVM : " + gl.projectionMatrix.m[0]);
     if (config.params.swimmers.showSpheres) renderer.renderSpheres(config.water);
     // Swimmer.attributes.draw();
     config.renderVideo();
     if (config.params.chronoPhotography.available) drawChronoPhotography();
     gl.disable(gl.DEPTH_TEST);
+    config.splashParticles.draw();
 
     drawCornerView();
 
     config.water.addOrRemoveVisualizationWaves(false);
+
   }
 };

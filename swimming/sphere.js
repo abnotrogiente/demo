@@ -24,13 +24,20 @@ class Sphere {
         this.followTarget = false;
     }
 
+    spawnSplashes() {
+        const diff = this.oldCenter.subtract(this.center);
+        const v_sq = diff.dot(diff);
+        if (this.center.x < 100 && Math.abs(this.center.y) <= this.radius) config.splashParticles.spawnSplash(this.center, this.velocity.length());
+    }
+
     /**
      * 
      * @param {float} dt 
      * @param {boolean} isSwimming 
-     */
+    */
     update(dt) {
         if (!this.moved) this.oldCenter = new GL.Vector(this.center.x, this.center.y, this.center.z);
+        this.velocity = this.center.subtract(this.oldCenter).multiply(1 / dt);
         this.moved = false;
         if (!this.cinematic) {
             const percentUnderWater = Math.max(0, Math.min(1, (this.radius - this.center.y) / (2 * this.radius)));
@@ -59,6 +66,7 @@ class Sphere {
             this.targetTime -= dt;
             if (this.targetTime < 0) this.targetPos = null;
         }
+
     }
 
     setTarget(position, time) {

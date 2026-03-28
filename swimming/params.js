@@ -4,6 +4,7 @@ import { Scene } from "./Scene";
 import { Swimmer } from "./swimmer";
 import { Water } from "./water";
 import { Video } from "./video";
+import { SplashParticles } from "./splash";
 
 function listToDict(L) {
     const dict = {};
@@ -146,6 +147,8 @@ class Config {
         this.drawingTexture = this.gl.createTexture();
         this.resetDrawingTexture();
         this.cornerView = false;
+
+        this.splashParticles = new SplashParticles(this.gl);
     }
 
     resetDrawingTexture() {

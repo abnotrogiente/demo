@@ -19,7 +19,9 @@ const armFrequency = 2;
 
 const TIME_KEY = "Temps (s)";
 const EVENT_KEY = "event";
-const DISTANCE_KEY = "eventX"; // "distance (m)"
+const Z_KEY = "eventX"; // "distance (m)"
+const X_KEY = "eventY";
+
 const FREQUENCY_KEY = "frequence (cylce/min)";
 
 
@@ -181,7 +183,7 @@ class Swimmer {
         while (this.data[this.currendDataIndex] && this.data[this.currendDataIndex][TIME_KEY] < config.getRaceTime()) this.currendDataIndex++;
         if (this.currendDataIndex + 1 < this.data.length) {
             if (this.currendDataIndex - 1 >= 0) {
-                const dist = parseFloat(this.data[this.currendDataIndex][DISTANCE_KEY]);
+                const dist = parseFloat(this.data[this.currendDataIndex][Z_KEY]);
                 let z = dist;
                 const D = config.params.simulation.poolSize.z;
                 if (dist > D) z = 2 * D - z;
@@ -239,10 +241,12 @@ class Swimmer {
             this.setDamping(this.data[this.currendDataIndex]);
 
             let nextDistanceTarget = null;
+            let nextXTarget = this.startingPoint.x;
             let nextEventTime = time;
             const nextData = this.data[this.currendDataIndex + 1];
             if (this.currendDataIndex + 1 < this.data.length) {
-                nextDistanceTarget = parseFloat(nextData[DISTANCE_KEY]);
+                nextDistanceTarget = parseFloat(nextData[Z_KEY]);
+                // if (nextData[X_KEY]) nextXTarget = parseFloat(nextData[X_KEY]);
                 // console.log("next distance target : " + nextDistanceTarget);
                 nextEventTime = parseFloat(nextData[TIME_KEY]);
             }
@@ -254,7 +258,7 @@ class Swimmer {
                 nextDistanceTarget = (this.body.center.z + D / 2 + nextDistanceTarget) / 2;
                 const event = {
                     [TIME_KEY]: nextEventTime,
-                    [DISTANCE_KEY]: nextDistanceTarget,
+                    [Z_KEY]: nextDistanceTarget,
                     [EVENT_KEY]: "under"
                 };
                 this.data.splice(this.currendDataIndex + 1, 0, event);
@@ -264,7 +268,7 @@ class Swimmer {
 
             if (nextDistanceTarget > D) nextDistanceTarget = 2 * D - nextDistanceTarget;
             nextDistanceTarget -= config.params.simulation.poolSize.z / 2;
-            const targetPos = new GL.Vector(this.startingPoint.x, y, nextDistanceTarget);
+            const targetPos = new GL.Vector(nextXTarget, y, nextDistanceTarget);
             if (this.currendDataIndex + 1 < this.data.length) {
                 this.body.setTarget(targetPos, nextEventTime - time);
             }
@@ -350,7 +354,10 @@ class Swimmer {
 
         this.handleTracking(raceTime);
 
-        for (let sphere of this.spheres) sphere.update(dt);
+        for (let sphere of this.spheres) {
+            sphere.update(dt);
+            sphere.spawnSplashes();
+        }
 
 
 
