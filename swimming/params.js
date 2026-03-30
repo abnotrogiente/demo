@@ -441,6 +441,9 @@ class Config {
         // gl.enable(gl.SCISSOR_TEST);
         // gl.scissor(0, 0, gl.canvas.width / 2, gl.canvas.height / 2);
     }
+    recalibrate() {
+        if (this.currentVideo) this.setCalibration(this.currentVideo.calibration);
+    }
     async launchDemo() {
         console.log("Launch demo");
         await this.setScene("100m freestyle");

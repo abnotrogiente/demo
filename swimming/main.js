@@ -438,6 +438,9 @@ window.onload = function () {
       config.setScene("100m freestyle").then(() => config.startRace());
       config._setPannelMinimized(true);
     }
+    else if (e.which == 'K'.charCodeAt(0)) {
+      config.recalibrate();
+    }
     else if (e.which == 40) { // down
       if (config.resolution.x > 129)
         config.resolution.x = Math.round(config.resolution.x / 2);
