@@ -488,6 +488,7 @@ window.onload = function () {
 
     // Update the water simulation and graphics
     for (let swimmer of config.swimmers) swimmer.update(dt);
+    config.updateFloaters(dt);
     config.water.updateSpheres(dt);
     for (let i = 0; i < config.params.numSteps; i++) {
       config.water.stepSimulation(dt);
@@ -575,7 +576,7 @@ window.onload = function () {
     renderer.renderWater(config.water, cubemap, config.params.visualizations.shadow);
     // gl.matrixMode(gl.PROJECTION);
     // console.log("MVM : " + gl.projectionMatrix.m[0]);
-    if (config.params.swimmers.showSpheres) renderer.renderSpheres(config.water);
+    renderer.renderSpheres(config.water);
     // Swimmer.attributes.draw();
     gl.disable(gl.DEPTH_TEST);
     if (config.params.visualizations.showStreaks || config.params.simulation.splashes.enabled) config.splashParticles.draw();
