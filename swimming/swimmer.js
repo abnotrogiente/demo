@@ -219,8 +219,8 @@ class Swimmer {
                 const freqMin = 50.;
                 let intensity = (freq - freqMin) / (freqMax - freqMin);
                 intensity = Math.max(Math.min(intensity, 1.), 0.);
-                const dampingMin = .01;
-                const dampingMax = .3;
+                const dampingMin = .015;
+                const dampingMax = .25;
                 this.waterDamping = dampingMin + (dampingMax - dampingMin) * (1. - intensity);
             }
         }
