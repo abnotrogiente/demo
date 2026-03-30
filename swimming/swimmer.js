@@ -212,14 +212,15 @@ class Swimmer {
     setDamping(eventData) {
         if (config.params.visualizations.customWaterPerturbation == config.params.visualizations.PARAMETER_CYCLES) {
             const freq = parseFloat(eventData[FREQUENCY_KEY]);
+            if (freq < 50) return;
             if (freq > 0) {
                 console.log("FREQ : " + freq);
                 const freqMax = 80.;
-                const freqMin = 35.;
+                const freqMin = 50.;
                 let intensity = (freq - freqMin) / (freqMax - freqMin);
                 intensity = Math.max(Math.min(intensity, 1.), 0.);
-                const dampingMin = .03;
-                const dampingMax = .22;
+                const dampingMin = .01;
+                const dampingMax = .3;
                 this.waterDamping = dampingMin + (dampingMax - dampingMin) * (1. - intensity);
             }
         }
@@ -362,6 +363,7 @@ class Swimmer {
         }
 
 
+        if (this.body.center.z > -config.params.simulation.poolSize.z / 2 + 20) return;
 
         if (Swimmer.raceHasStarted && !this.hasDove && this.body.center.y < 0 && this.body.oldCenter.y >= 0) {
             this.divingDistance = this.body.center.z + config.params.simulation.poolSize.z / 2;
