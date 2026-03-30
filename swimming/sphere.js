@@ -33,7 +33,7 @@ class Sphere {
         const splashPos = this.center.subtract(this.velocity.unit());
         splashPos.y = .15;
         if (config.params.simulation.splashes.enabled && this.center.x < 100 && Math.abs(this.center.y) <= this.radius) config.splashParticles.spawnSplash(splashPos, phi, Math.sqrt(v_sq), config.params.simulation.splashes.strengthThreshold);
-        if (config.params.visualizations.showStreaks && this.showStreak && this.velocity.length() > 0.01) config.splashParticles.spawnSplash(this.center, 0., this.velocity.length() / 5., 0, true);
+        if (config.params.visualizations.showStreaks && this.showStreak && this.velocity.length() > 0.01) config.splashParticles.spawnSplash(this.center, 0., (this.velocity.length() - 1.6) / 0.9, 0, true);
     }
 
     /**
