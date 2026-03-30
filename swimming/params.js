@@ -38,7 +38,7 @@ class Config {
             numSteps: 2, fov: 45,
             visualizations: {
                 enabled: true, showFlags: false, showWR: false, showSpeed: false, showDivingDistance: true,
-                showFinishTimes: false,
+                showFinishTimes: false, showStreaks: false,
                 customWaterPerturbation: "none",
                 waterColorParameter: "none", customParametersList: customParametersList, customParametersDict: customParametersDict,
                 PARAMETER_NONE: "none", PARAMETER_CYCLES: "cycle frequency", PARAMETER_SPEED: "speed", PARAMETER_ACCELERATION: "acceleration",
@@ -58,7 +58,8 @@ class Config {
             simulation: {
                 optimized: false, waterDamping: .02, poolSize: new GL.Vector(4.0, 1.0, 4.0), buoyancyFactor: 1.1,
                 // foam: { enabled: true, velThreshold: .5, velMax: 3., dispersion: 0.015 }
-                foam: { enabled: true, velThreshold: .5, velMax: 4., dispersion: 0.015, timeVariation: 2.5, spaceVariation: 8, attenuation: .015 }
+                foam: { enabled: true, velThreshold: .5, velMax: 4., dispersion: 0.015, timeVariation: 2.5, spaceVariation: 8, attenuation: .015 },
+                splashes: { enabled: true, strengthThreshold: 2. }
             },
             quiver: { amplitudeFactor: 0.78, frequencyFactor: 1.2, amplitude: .1, omega: 2., waveLength: 1. },
             cornerView: { show: true },
@@ -445,6 +446,7 @@ class Config {
         await this.setScene("100m freestyle");
         this.params.video.show = false;
         this.params.swimmers.showSpheres = true;
+        this.spheresRadiusCoeff = 1.;
         this.demoTime = 0;
         this.swimmers.forEach(swimmer => swimmer.body.move(AWAY));
         this.swimmersShown = 0;
@@ -455,7 +457,7 @@ class Config {
         this.params.visualizations.shadow.enabled = false;
         this.renderWater = false;
         this.translateX = 200;
-        this.parseConfigFile("./assets/vis-config-demo-2.json");
+        // this.parseConfigFile("./assets/vis-config-demo-2.json");
         this._gui.hide();
         document.getElementById("event-editor").hidden = true;
         document.getElementById("time-slider-container").hidden = true;
@@ -531,7 +533,7 @@ class Config {
             this.translateX = t_norm * this.currentVideo.calibration.tx + (1. - t_norm) * 200;
             // if (t >= poolSlidingTime) this.demoCalibrated = true;
         }
-        else if (!this.demoShowVideoTime) this.angleY += .4;
+        else if (!this.demoShowVideoTime) this.angleY += 20 * dt;
         if (!this.renderCube && t > .5) this.renderCube = true;
         const showWaterTime = 1.5;
         if (!this.renderWater && t > 1.5) {
@@ -547,7 +549,9 @@ class Config {
         const startMoveTime = 3;
         const startRaceTime = 5;
         if (!Swimmer.raceHasStarted && t >= startMoveTime && t < startRaceTime) {
+            this.params.simulation.splashes.enabled = false;
             this.swimmers.forEach(swimmer => {
+                swimmer.body.cinematic = true;
                 const p1 = new GL.Vector(swimmer.body.center.x, 0, 0);
                 const p2 = new GL.Vector(swimmer.body.center.x, 1, -this.params.simulation.poolSize.z / 2);
                 swimmer.body.move(this.#moveInterp(p1, p2, startMoveTime, startRaceTime, t));
@@ -555,6 +559,8 @@ class Config {
         }
         if (!Swimmer.raceHasStarted && t >= startRaceTime) {
             this.params.simulation.buoyancyFactor = 1.1;
+            this.params.simulation.splashes.enabled = true;
+            this.params.visualizations.shadow.enabled = true;
             this.startRace();
         }
 
@@ -572,8 +578,18 @@ class Config {
             console.log("opacity : " + this.params.video.opacity);
         }
         const spheresDisparitionDuration = 2.;
-        if (this.params.video.show && t > this.demoShowVideoTime + videoAppearDuration && t < this.demoShowVideoTime + videoAppearDuration + spheresDisparitionDuration) {
+        let sphereDisapearedTime = null;
+        if (this.demoShowVideoTime) sphereDisapearedTime = this.demoShowVideoTime + videoAppearDuration + spheresDisparitionDuration;
+        if (this.params.video.show && t > this.demoShowVideoTime + videoAppearDuration && t < sphereDisapearedTime) {
             this.spheresRadiusCoeff = 1. - (t - (this.demoShowVideoTime + videoAppearDuration)) / spheresDisparitionDuration;
+        }
+
+        let hideObstructionTime = null;
+        if (sphereDisapearedTime) hideObstructionTime = sphereDisapearedTime + .5;
+        const hideObstructionDuration = 2.;
+        if (hideObstructionTime && t > hideObstructionTime && t < hideObstructionTime + hideObstructionDuration) {
+            this.params.video.hideObstructions = true;
+            this.params.video.hideObstructionThreshold = (t - hideObstructionTime) / hideObstructionDuration * .5;
         }
 
     }

@@ -108,6 +108,7 @@ const swimmersHelperFunctions = `
         float attenuationDist = r_max;
         
         float duration = 1.5;
+        duration = 5.;
         float c =  cos(lambda * d - omega * timeSinceDiving);
         float attenuation = exp(-d / attenuationDist - timeSinceDiving / duration);
         bool condition = timeSinceDiving > d / frequency;

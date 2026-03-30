@@ -574,10 +574,10 @@ window.onload = function () {
     // console.log("MVM : " + gl.projectionMatrix.m[0]);
     if (config.params.swimmers.showSpheres) renderer.renderSpheres(config.water);
     // Swimmer.attributes.draw();
+    gl.disable(gl.DEPTH_TEST);
+    if (config.params.visualizations.showStreaks || config.params.simulation.splashes.enabled) config.splashParticles.draw();
     config.renderVideo();
     if (config.params.chronoPhotography.available) drawChronoPhotography();
-    gl.disable(gl.DEPTH_TEST);
-    config.splashParticles.draw();
 
     drawCornerView();
 

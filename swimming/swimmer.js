@@ -69,6 +69,7 @@ class Swimmer {
         const armRadius = .15;
 
         this.body = new Sphere(center, radius);
+        this.body.showStreak = true;
         this.leftArm = new Sphere(AWAY, armRadius);
         this.rightArm = new Sphere(AWAY, armRadius);
         this.leftFoot = new Sphere(AWAY, armRadius);
@@ -343,20 +344,21 @@ class Swimmer {
             this.currendDataIndex = 0;
         }
 
-        this.moveSpheresAway();
+        // this.moveSpheresAway();
 
         if (this.isSwimming) {
             if (!this.useTracking) this.body.addForce(this.force);
             if (this.body.center.y > -this.body.radius) {
                 this.moveSpheres(dt);
             }
+            else this.moveSpheresAway();
         }
 
         this.handleTracking(raceTime);
 
         for (let sphere of this.spheres) {
             sphere.update(dt);
-            sphere.spawnSplashes();
+            sphere.spawnSplashes(dt);
         }
 
 

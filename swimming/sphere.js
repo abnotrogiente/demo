@@ -22,12 +22,18 @@ class Sphere {
         this.radiusSquared = radius * radius;
         this.mesh = GL.Mesh.sphere({ detail: 10 });
         this.followTarget = false;
+        this.showStreak = false;
     }
 
-    spawnSplashes() {
-        const diff = this.oldCenter.subtract(this.center);
-        const v_sq = diff.dot(diff);
-        if (this.center.x < 100 && Math.abs(this.center.y) <= this.radius) config.splashParticles.spawnSplash(this.center, this.velocity.length());
+    spawnSplashes(dt) {
+        if (!config.params.simulation.splashes.enabled && !config.params.visualizations.showStreaks) return;
+        const speed = this.center.subtract(this.oldCenter).multiply(1. / dt);
+        const phi = speed.z > 0 ? -Math.PI / 2 : Math.PI / 2;
+        const v_sq = speed.dot(speed);
+        const splashPos = this.center.subtract(this.velocity.unit());
+        splashPos.y += .15;
+        if (config.params.simulation.splashes.enabled && this.center.x < 100 && Math.abs(this.center.y) <= this.radius) config.splashParticles.spawnSplash(splashPos, phi, Math.sqrt(v_sq) / 2, config.params.simulation.splashes.strengthThreshold);
+        if (config.params.visualizations.showStreaks && this.showStreak && this.velocity.length() > 0.01) config.splashParticles.spawnSplash(this.center, 0., this.velocity.length() / 5., 0, true);
     }
 
     /**
@@ -37,7 +43,6 @@ class Sphere {
     */
     update(dt) {
         if (!this.moved) this.oldCenter = new GL.Vector(this.center.x, this.center.y, this.center.z);
-        this.velocity = this.center.subtract(this.oldCenter).multiply(1 / dt);
         this.moved = false;
         if (!this.cinematic) {
             const percentUnderWater = Math.max(0, Math.min(1, (this.radius - this.center.y) / (2 * this.radius)));

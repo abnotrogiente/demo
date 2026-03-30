@@ -4,7 +4,8 @@
         "params": {
             "showFlags": true,
             "showWR": false,
-            "medalsModeAfterFinish": "lanes"
+            "medalsModeAfterFinish": "lanes",
+            "showStreaks": true
         },
         "transition": {
             "type": "dissolve",
@@ -15,7 +16,8 @@
         "distance": 20,
         "params": {
             "showFlags": false,
-            "showSpeed": true
+            "showSpeed": true,
+            "showStreaks": false
         },
         "transition": {
             "type": "dissolve",
@@ -34,6 +36,10 @@
         "params": {
             "showFlags": true,
             "showSpeed": false
+        },
+        "transition": {
+            "type": "dissolve",
+            "duration": 3
         }
     },
     {
@@ -48,6 +54,10 @@
             "showFlags": false,
             "showSpeed": true,
             "medalsModeBeforeFinish": "bright"
+        },
+        "transition": {
+            "type": "dissolve",
+            "duration": 3
         }
     },
     {
@@ -61,6 +71,10 @@
         "params": {
             "showFlags": true,
             "showSpeed": false
+        },
+        "transition": {
+            "type": "dissolve",
+            "duration": 3
         }
     },
     {

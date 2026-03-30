@@ -48,6 +48,7 @@ function createEventEditor(containerId) {
         { name: 'medalsModeBeforeFinish', type: 'select', options: ['none', 'stars', 'bright', 'lanes'] },
         { name: 'medalsModeAfterFinish', type: 'select', options: ['none', 'stars', 'bright', 'lanes'] },
         { name: 'rankSwimmerToggle', type: 'number', min: 1, max: 10 },
+        { name: 'showStreaks', type: 'boolean' },
         // { name: 'transition', type: 'select', options: ['none', 'dissolve'] }
     ];
 

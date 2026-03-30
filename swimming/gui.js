@@ -26,6 +26,7 @@ const createGUI = function (gl, reset) {
         if (el) el.style.display = v ? 'block' : 'none';
     });
     visualizationsFolder.add(config.params.visualizations, "showFlags").name('show flags').listen();
+    visualizationsFolder.add(config.params.visualizations, "showStreaks").name('show streaks').listen();
     visualizationsFolder.add(config.params.visualizations, "showWR").name('show world record').listen();
     visualizationsFolder.add(config.params.visualizations, "showSwimmersLines", config.params.visualizations.swimmersLinesList).name('show neighbours lines').listen();
     visualizationsFolder.add(config.params.visualizations, "swimmersLinesMode", config.params.visualizations.swimmersLinesModeList).name('show neighbours lines').listen();
@@ -69,7 +70,7 @@ const createGUI = function (gl, reset) {
     shadowFolder.add(config.params.visualizations.shadow, "circleStroke", .1, .5).name("circle stroke");
 
     const simulationFolder = gui.addFolder("Simulation");
-    simulationFolder.close();
+    // simulationFolder.close();
     simulationFolder.add(config.params.simulation, "optimized").name("optimized").listen();
     simulationFolder.add(config.params.simulation.poolSize, 'x', 1, 25).name('pool width').onChange(function (value) { reset(); }).listen();
     simulationFolder.add(config.params.simulation.poolSize, 'z', 1, 50).name('pool height').onChange(function (value) { reset(); }).listen();
@@ -85,6 +86,11 @@ const createGUI = function (gl, reset) {
     foamFolder.add(config.params.simulation.foam, "timeVariation", 0., 10.).name("time variation");
     foamFolder.add(config.params.simulation.foam, "spaceVariation", 0., 100.).name("space variation");
     foamFolder.add(config.params.simulation.foam, "attenuation", 0., .2).name("attenuation");
+
+    const splashFolder = simulationFolder.addFolder("splash");
+    // splashFolder.close();
+    splashFolder.add(config.params.simulation.splashes, "enabled").name("enabled");
+    splashFolder.add(config.params.simulation.splashes, "strengthThreshold", 0.1, 10.).name("strength threshold");
 
     const swimmersFolder = gui.addFolder("swimmers");
     swimmersFolder.close();
