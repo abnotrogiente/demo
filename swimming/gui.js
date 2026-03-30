@@ -70,7 +70,7 @@ const createGUI = function (gl, reset) {
     shadowFolder.add(config.params.visualizations.shadow, "circleStroke", .1, .5).name("circle stroke");
 
     const simulationFolder = gui.addFolder("Simulation");
-    // simulationFolder.close();
+    simulationFolder.close();
     simulationFolder.add(config.params.simulation, "optimized").name("optimized").listen();
     simulationFolder.add(config.params.simulation.poolSize, 'x', 1, 25).name('pool width').onChange(function (value) { reset(); }).listen();
     simulationFolder.add(config.params.simulation.poolSize, 'z', 1, 50).name('pool height').onChange(function (value) { reset(); }).listen();
@@ -88,7 +88,7 @@ const createGUI = function (gl, reset) {
     foamFolder.add(config.params.simulation.foam, "attenuation", 0., .2).name("attenuation");
 
     const splashFolder = simulationFolder.addFolder("splash");
-    // splashFolder.close();
+    splashFolder.close();
     splashFolder.add(config.params.simulation.splashes, "enabled").name("enabled");
     splashFolder.add(config.params.simulation.splashes, "strengthThreshold", 0.1, 10.).name("strength threshold");
 
