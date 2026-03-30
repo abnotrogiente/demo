@@ -56,12 +56,12 @@ const fragmentShaderSource = /*glsl*/ `#version 300 es
         // fade with life
         alpha *= vLife;
 
-        if (altitude < 0. && vColor > 0.01) alpha /= -altitude*10.;
+        if (altitude < 0. && vColor > 0.01) alpha /= (1.-altitude)*2.;
 
-        if (vColor < 0.01 && altitude < 0.) alpha /= (1.-altitude)*10.;
+        if (vColor < 0.01 && altitude < 0.) alpha /= (1.-altitude)*4.;
 
         if (vLife > 1.) alpha = 0.;
-        fragColor = vec4(col, alpha/2.);
+        fragColor = vec4(col, alpha);
     }
 
 `
