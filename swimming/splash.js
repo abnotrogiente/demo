@@ -56,7 +56,7 @@ const fragmentShaderSource = /*glsl*/ `#version 300 es
         // fade with life
         alpha *= vLife;
 
-        if (altitude < 0.) alpha /= -altitude*10.;
+        if (altitude < 0. && vColor > 0.01) alpha /= -altitude*10.;
 
         if (vLife > 1.) alpha = 0.;
         fragColor = vec4(col, alpha);
@@ -144,13 +144,13 @@ class SplashParticles {
             // const phiVariation = 2 * Math.PI;
             // const phi = phi0 + (Math.random() - 0.5) * phiVariation;
 
-            // const speed = (0.5 + Math.random());
-            const speed = Math.sqrt(strength) * (0.5 + Math.random());
+            const speed = (0.5 + Math.random());
+            // const speed = strength * (0.5 + Math.random());
 
             const vel = new GL.Vector(
-                Math.sin(theta) * Math.cos(phi) * speed * 0.5,
+                Math.sin(theta) * Math.cos(phi) * speed,
                 Math.cos(theta) * speed,
-                Math.sin(theta) * Math.sin(phi) * speed * 0.5
+                Math.sin(theta) * Math.sin(phi) * speed
             );
 
 
