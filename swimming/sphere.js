@@ -37,10 +37,11 @@ class Sphere {
         splashPos.y = .15;
         if (!config.isSceneSynchronizedSwimming() && config.params.simulation.splashes.enabled && this.center.x < 100 && Math.abs(this.center.y) <= this.radius) config.splashParticles.spawnSplash(splashPos, phi, Math.sqrt(v_sq), config.params.simulation.splashes.strengthThreshold, {});
         let streakColor = (this.velocity.length() - 1.6) / 0.9;
+        const particleOptions = { fixed: true };
         if (config.isSceneSynchronizedSwimming()) {
-
+            particleOptions.shrinking = 0.1;
         }
-        if (config.params.visualizations.showStreaks && this.showStreak && this.velocity.length() > 0.01) config.splashParticles.spawnSplash(this.center, 0., streakColor, 0, { fixed: true });
+        if (config.params.visualizations.showStreaks && this.showStreak && this.velocity.length() > 0.01) config.splashParticles.spawnSplash(this.center, 0., streakColor, 0, particleOptions);
     }
 
     /**

@@ -582,7 +582,7 @@ window.onload = function () {
     // Swimmer.attributes.draw();
     gl.disable(gl.DEPTH_TEST);
     const particlesOption = {};
-    if (config.isSceneSynchronizedSwimming()) particlesOption.showStreaks = false;
+    // if (config.isSceneSynchronizedSwimming()) particlesOption.showStreaks = false;
     if (config.params.visualizations.showStreaks || config.params.simulation.splashes.enabled) config.splashParticles.draw(particlesOption);
     config.renderVideo();
     if (config.params.chronoPhotography.available) drawChronoPhotography();

@@ -32,6 +32,7 @@ const vertexShaderSource = /*glsl*/ `#version 300 es
         vLife = life;
         vColor = min(color, 1.);
         altitude = pos.y;
+        vFixed = isFixed;
     }
 
 `
@@ -63,11 +64,12 @@ const fragmentShaderSource = /*glsl*/ `#version 300 es
         float alpha = smoothstep(0.5, 0.0, d);
 
         // fade with life
-        alpha *= vLife;
+        if(vFixed < .1) alpha *= vLife;
+        else alpha *= pow(vLife, 10.);
 
-        if (altitude < 0. && vFixed != 0.) alpha /= (1.-altitude)*2.;
+        if (altitude < 0. && vFixed >.1) alpha /= (1.-altitude)*2.;
 
-        if (altitude < 0. && vFixed == 0.) alpha /= (1.-altitude)*4.;
+        if (altitude < 0. && vFixed < .1) alpha /= (1.-altitude)*4.;
 
         if (vLife > 1.) alpha = 0.;
         fragColor = vec4(col, alpha);
@@ -80,30 +82,31 @@ const GRAVITY = -9.8;
 const DAMPING = .01;
 
 class Particle {
-    constructor(pos, vel, fixed, color = new GL.Vector(1., 1., 1.)) {
+    constructor(pos, vel, fixed, color, shrinking = 1) {
         this.pos = pos;   // vec2 or vec3
         this.vel = vel;
         this.fixed = fixed;
         this.color = color;
         this.life = 1.0;
         this.size = Math.random() * 0.05 + 0.02;
+        this.shrinking = shrinking
     }
 
     update(dt) {
 
         if (this.fixed) {
-            this.life -= dt * .15;
+            this.life -= dt * .15 * this.shrinking;
             return;
         }
 
-        this.life -= dt * 1.5;
+        this.life -= dt * 1.5 * this.shrinking;
 
         this.vel.y += GRAVITY * dt;
         this.pos = this.pos.add(this.vel.multiply(dt));
 
         this.vel = this.vel.multiply(1. - DAMPING);
 
-        this.size *= (1. - DAMPING);
+        this.size *= (1. - DAMPING * this.shrinking);
 
         // lifetime
 
@@ -130,16 +133,16 @@ class SplashParticles {
         this.initPrograms();
     }
 
-    spawnSplash(pos, phi0, strength, strengthThreshold, { fixed = false, color = new GL.Vector(1., 1., 1.), speed0 = 1, maxParticles = 10 }) {
+    spawnSplash(pos, phi0, strength, strengthThreshold, { fixed = false, color = new GL.Vector(1., 1., 1.), speed0 = 1, maxParticles = 10, shrinking = null }) {
         // console.log("spawn splashes : " + strength);
         // const basePos = gridToWorld(i, j);
-
+        let s = shrinking ? shrinking : 1
         if (fixed) {
             const vel = new GL.Vector(0., 0., 0.);
             const color = new GL.Vector(strength, 0., 1. - strength);
             color.multiply(1. / color.max());
-            const p = new Particle(pos, vel, fixed, color);
-            p.life = 1.1;
+            const p = new Particle(pos, vel, fixed, color, s);
+            p.life += s * .1;
             this.particles.push(p);
             return;
         }
@@ -167,7 +170,7 @@ class SplashParticles {
             );
 
 
-            this.particles.push(new Particle(pos, vel, fixed, color));
+            this.particles.push(new Particle(pos, vel, fixed, color, s));
         }
         // console.log("spawn splash : " + this.particles.length);
     }
