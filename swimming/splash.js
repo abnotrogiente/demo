@@ -11,6 +11,7 @@ const vertexShaderSource = /*glsl*/ `#version 300 es
     out vec3 vColor;
     out float altitude;
     out float vFixed;
+    out float vSize;
 
     uniform mat4 MVM;
     uniform mat4 projection;
@@ -24,7 +25,7 @@ const vertexShaderSource = /*glsl*/ `#version 300 es
         // gl_Position = vec4(0., 0., 0., 1.);
         gl_PointSize = size * 5000. / -posInView.z;
 
-        if (isFixed > 0.) gl_PointSize = 500. / -posInView.z;
+        // if (isFixed > 0.) gl_PointSize = 500. / -posInView.z;
 
         if (isFixed > 0. && !showStreaks) gl_PointSize = 0.;
         if (isFixed == 0. && !showSplashes) gl_PointSize = 0.;
@@ -33,6 +34,7 @@ const vertexShaderSource = /*glsl*/ `#version 300 es
         vColor = min(color, 1.);
         altitude = pos.y;
         vFixed = isFixed;
+        vSize = size;
     }
 
 `
@@ -43,6 +45,7 @@ const fragmentShaderSource = /*glsl*/ `#version 300 es
     in vec3 vColor;
     in float altitude;
     in float vFixed;
+    in float vSize;
 
     out vec4 fragColor;
 
@@ -63,6 +66,8 @@ const fragmentShaderSource = /*glsl*/ `#version 300 es
         // soft circle
         float alpha = smoothstep(0.5, 0.0, d);
 
+        if (vSize >= .3) alpha *= 2.; 
+
         // fade with life
         if(vFixed < .1) alpha *= vLife;
         else alpha *= pow(vLife, 10.);
@@ -82,13 +87,13 @@ const GRAVITY = -9.8;
 const DAMPING = .01;
 
 class Particle {
-    constructor(pos, vel, fixed, color, shrinking = 1) {
+    constructor(pos, vel, fixed, color, { shrinking = 1, size = null }) {
         this.pos = pos;   // vec2 or vec3
         this.vel = vel;
         this.fixed = fixed;
         this.color = color;
         this.life = 1.0;
-        this.size = Math.random() * 0.05 + 0.02;
+        this.size = size ? size : Math.random() * 0.05 + 0.02;
         this.shrinking = shrinking
     }
 
@@ -133,16 +138,17 @@ class SplashParticles {
         this.initPrograms();
     }
 
-    spawnSplash(pos, phi0, strength, strengthThreshold, { fixed = false, color = new GL.Vector(1., 1., 1.), speed0 = 1, maxParticles = 10, shrinking = null }) {
+    spawnSplash(pos, phi0, strength, strengthThreshold, { fixed = false, color = new GL.Vector(1., 1., 1.), speed0 = 1, maxParticles = 10, shrinking = null, size = null }) {
         // console.log("spawn splashes : " + strength);
         // const basePos = gridToWorld(i, j);
-        let s = shrinking ? shrinking : 1
+        let shrk = shrinking !== null ? shrinking : 1
         if (fixed) {
             const vel = new GL.Vector(0., 0., 0.);
-            const color = new GL.Vector(strength, 0., 1. - strength);
-            color.multiply(1. / color.max());
-            const p = new Particle(pos, vel, fixed, color, s);
-            p.life += s * .1;
+            const col = color ? color : new GL.Vector(strength, 0., 1. - strength);
+            if (color === null) col.multiply(1. / col.max());
+            const s = size ? size : .1;
+            const p = new Particle(pos, vel, fixed, col, { shrinking: shrk, size: s });
+            p.life += shrk * .1;
             this.particles.push(p);
             return;
         }
@@ -170,7 +176,7 @@ class SplashParticles {
             );
 
 
-            this.particles.push(new Particle(pos, vel, fixed, color, s));
+            this.particles.push(new Particle(pos, vel, fixed, color, { shrinking: shrk }));
         }
         // console.log("spawn splash : " + this.particles.length);
     }

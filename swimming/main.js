@@ -503,6 +503,8 @@ window.onload = function () {
 
     config.splashParticles.update(dt);
 
+    console.log("time  : " + config.getRaceTime());
+
   }
 
   function printCalib() {
@@ -583,8 +585,8 @@ window.onload = function () {
     gl.disable(gl.DEPTH_TEST);
     const particlesOption = {};
     // if (config.isSceneSynchronizedSwimming()) particlesOption.showStreaks = false;
-    if (config.params.visualizations.showStreaks || config.params.simulation.splashes.enabled) config.splashParticles.draw(particlesOption);
     config.renderVideo();
+    if (config.params.visualizations.showStreaks || config.params.simulation.splashes.enabled) config.splashParticles.draw(particlesOption);
     if (config.params.chronoPhotography.available) drawChronoPhotography();
 
     drawCornerView();

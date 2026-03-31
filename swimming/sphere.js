@@ -41,6 +41,11 @@ class Sphere {
         if (config.isSceneSynchronizedSwimming()) {
             particleOptions.shrinking = 0.1;
         }
+        else {
+            const col = new GL.Vector(streakColor, 0., 1. - streakColor);
+            col.multiply(1. / col.max());
+            particleOptions.color = col;
+        }
         if (config.params.visualizations.showStreaks && this.showStreak && this.velocity.length() > 0.01) config.splashParticles.spawnSplash(this.center, 0., streakColor, 0, particleOptions);
     }
 

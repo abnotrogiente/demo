@@ -287,8 +287,9 @@ class Swimmer {
             const currentEvent = this.data[this.currendDataIndex][EVENT_KEY];
             if (currentEvent == "figure") {
                 console.log("FIGURE");
-                config.splashParticles.spawnSplash(this.body.center, null, 10000., null, { color: new GL.Vector(1., 1., 0.), speed0: 10., maxParticles: 300 });
-                ;
+                config.splashParticles.spawnSplash(this.body.center, null, 10000., null, { color: new GL.Vector(1., 1., 0.), speed0: 5., maxParticles: 300 });
+                config.splashParticles.spawnSplash(this.body.center, null, 1., null, { fixed: true, color: new GL.Vector(1., 1., 0.), maxParticles: 1, size: 0.5, shrinking: 0 });
+
             }
             if (currentEvent == "enter" || currentEvent == "turn" && nextData[EVENT_KEY] != "under") {
                 nextEventTime = (time + nextEventTime) / 2;
