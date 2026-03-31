@@ -248,13 +248,21 @@ class Swimmer {
             const nextData = this.data[this.currendDataIndex + 1];
             if (this.currendDataIndex + 1 < this.data.length) {
                 nextDistanceTarget = parseFloat(nextData[Z_KEY]);
-                // if (nextData[X_KEY]) nextXTarget = parseFloat(nextData[X_KEY]);
+                if (config.isSceneSynchronizedSwimming()) {
+                    nextDistanceTarget = config.params.simulation.poolSize.z - nextDistanceTarget * 30 / 25;
+                    if (nextData[X_KEY]) nextXTarget = parseFloat(nextData[X_KEY]) - config.params.simulation.poolSize.x / 2;
+                }
                 // console.log("next distance target : " + nextDistanceTarget);
                 nextEventTime = parseFloat(nextData[TIME_KEY]);
             }
             const D = config.params.simulation.poolSize.z;
             let y = -this.body.radius / 2;
             const currentEvent = this.data[this.currendDataIndex][EVENT_KEY];
+            if (currentEvent == "figure") {
+                console.log("FIGURE");
+                config.splashParticles.spawnSplash(this.body.center, null, 10000., null, { color: new GL.Vector(1., 1., 0.), speed0: 10., maxParticles: 300 });
+                ;
+            }
             if (currentEvent == "enter" || currentEvent == "turn" && nextData[EVENT_KEY] != "under") {
                 nextEventTime = (time + nextEventTime) / 2;
                 nextDistanceTarget = (this.body.center.z + D / 2 + nextDistanceTarget) / 2;
@@ -349,7 +357,7 @@ class Swimmer {
 
         if (this.isSwimming) {
             if (!this.useTracking) this.body.addForce(this.force);
-            if (this.body.center.y > -this.body.radius) {
+            if (this.body.center.y > -this.body.radius && !config.isSceneSynchronizedSwimming()) {
                 this.moveSpheres(dt);
             }
             else this.moveSpheresAway();

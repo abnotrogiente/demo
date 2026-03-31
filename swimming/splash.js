@@ -4,14 +4,19 @@ const vertexShaderSource = /*glsl*/ `#version 300 es
     in vec3 pos;
     in float life;
     in float size;
-    in float color;
+    in vec3 color;
+    in float isFixed;
 
     out float vLife;
-    out float vColor;
+    out vec3 vColor;
     out float altitude;
+    out float vFixed;
 
     uniform mat4 MVM;
     uniform mat4 projection;
+    uniform bool showStreaks;
+    uniform bool showSplashes;
+
 
     void main() {
         vec4 posInView = MVM * vec4(pos, 1.);
@@ -19,7 +24,10 @@ const vertexShaderSource = /*glsl*/ `#version 300 es
         // gl_Position = vec4(0., 0., 0., 1.);
         gl_PointSize = size * 5000. / -posInView.z;
 
-        if (color > .01) gl_PointSize = 500. / -posInView.z;
+        if (isFixed > 0.) gl_PointSize = 500. / -posInView.z;
+
+        if (isFixed > 0. && !showStreaks) gl_PointSize = 0.;
+        if (isFixed == 0. && !showSplashes) gl_PointSize = 0.;
 
         vLife = life;
         vColor = min(color, 1.);
@@ -31,8 +39,9 @@ const fragmentShaderSource = /*glsl*/ `#version 300 es
     precision mediump float;
 
     in float vLife;
-    in float vColor;
+    in vec3 vColor;
     in float altitude;
+    in float vFixed;
 
     out vec4 fragColor;
 
@@ -41,11 +50,11 @@ const fragmentShaderSource = /*glsl*/ `#version 300 es
     }
 
     void main() {
-        vec3 col = vec3(1., 1., 1.);
-        if (vColor > 0.01) {
-            col = vec3(vColor, 0., 1. - vColor);
-            col /= max3(col);
-        }
+        vec3 col = vColor;
+        // if (isFixed) {
+        //     col = vec3(vColor, 0., 1. - vColor);
+        //     col /= max3(col);
+        // }
         vec2 uv = gl_PointCoord - 0.5;
 
         float d = length(uv);
@@ -56,9 +65,9 @@ const fragmentShaderSource = /*glsl*/ `#version 300 es
         // fade with life
         alpha *= vLife;
 
-        if (altitude < 0. && vColor > 0.01) alpha /= (1.-altitude)*2.;
+        if (altitude < 0. && vFixed != 0.) alpha /= (1.-altitude)*2.;
 
-        if (vColor < 0.01 && altitude < 0.) alpha /= (1.-altitude)*4.;
+        if (altitude < 0. && vFixed == 0.) alpha /= (1.-altitude)*4.;
 
         if (vLife > 1.) alpha = 0.;
         fragColor = vec4(col, alpha);
@@ -71,7 +80,7 @@ const GRAVITY = -9.8;
 const DAMPING = .01;
 
 class Particle {
-    constructor(pos, vel, fixed, color = 0) {
+    constructor(pos, vel, fixed, color = new GL.Vector(1., 1., 1.)) {
         this.pos = pos;   // vec2 or vec3
         this.vel = vel;
         this.fixed = fixed;
@@ -121,19 +130,21 @@ class SplashParticles {
         this.initPrograms();
     }
 
-    spawnSplash(pos, phi0, strength, strengthThreshold, fixed = false) {
+    spawnSplash(pos, phi0, strength, strengthThreshold, { fixed = false, color = new GL.Vector(1., 1., 1.), speed0 = 1, maxParticles = 10 }) {
         // console.log("spawn splashes : " + strength);
         // const basePos = gridToWorld(i, j);
 
         if (fixed) {
             const vel = new GL.Vector(0., 0., 0.);
-            const p = new Particle(pos, vel, fixed, strength);
+            const color = new GL.Vector(strength, 0., 1. - strength);
+            color.multiply(1. / color.max());
+            const p = new Particle(pos, vel, fixed, color);
             p.life = 1.1;
             this.particles.push(p);
             return;
         }
 
-        const count = Math.min(10, strength * 20);
+        const count = Math.min(maxParticles, strength * 20);
 
         for (let k = 0; k < count; k++) {
             const theta = (Math.random() - .5) * Math.PI; // upward hemisphere
@@ -146,7 +157,7 @@ class SplashParticles {
             // const phiVariation = 2 * Math.PI;
             // const phi = phi0 + (Math.random() - 0.5) * phiVariation;
 
-            const speed = (0.5 + Math.random());
+            const speed = speed0 * (0.5 + Math.random());
             // const speed = strength * (0.5 + Math.random());
 
             const vel = new GL.Vector(
@@ -156,7 +167,7 @@ class SplashParticles {
             );
 
 
-            this.particles.push(new Particle(pos, vel, fixed));
+            this.particles.push(new Particle(pos, vel, fixed, color));
         }
         // console.log("spawn splash : " + this.particles.length);
     }
@@ -210,7 +221,7 @@ class SplashParticles {
         this.program = this.buildProgram(vertexShaderSource, fragmentShaderSource);
     }
 
-    draw(showStreaks) {
+    draw({ showStreaks = true, showSplashes = true }) {
         const gl = this.gl;
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -220,7 +231,7 @@ class SplashParticles {
         const data = [];
         this.particles.forEach(particle => {
             const pos = particle.pos;
-            data.push(pos.x, pos.y, pos.z, particle.life, particle.size, particle.color);
+            data.push(pos.x, pos.y, pos.z, particle.life, particle.size, particle.color.x, particle.color.y, particle.color.z, particle.fixed);
         });
         gl.bindBuffer(gl.ARRAY_BUFFER, this.particleBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.DYNAMIC_DRAW);
@@ -237,6 +248,12 @@ class SplashParticles {
         const PM = new Float32Array(gl.projectionMatrix.m);
         gl.uniformMatrix4fv(projection_location, true, PM);
 
+        const showStreaksLocation = gl.getUniformLocation(this.program, "showStreaks");
+        gl.uniform1i(showStreaksLocation, showStreaks);
+
+        const showSplashesLocation = gl.getUniformLocation(this.program, "showSplashes");
+        gl.uniform1i(showSplashesLocation, showSplashes);
+
         const posLocation = gl.getAttribLocation(this.program, "pos");
 
         const lifeLocation = gl.getAttribLocation(this.program, "life");
@@ -245,11 +262,13 @@ class SplashParticles {
 
         const colorLocation = gl.getAttribLocation(this.program, "color");
 
+        const fixedLocation = gl.getAttribLocation(this.program, "isFixed");
+
         const type = gl.FLOAT;
         const normalize = false;
 
         const sizeof_float = 4;
-        const stride = 6 * sizeof_float;
+        const stride = 9 * sizeof_float;
         let offset = 0;
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.particleBuffer);
@@ -266,8 +285,12 @@ class SplashParticles {
         gl.enableVertexAttribArray(sizeLocation);
 
         offset = 5 * sizeof_float;
-        gl.vertexAttribPointer(colorLocation, 1, type, normalize, stride, offset);
+        gl.vertexAttribPointer(colorLocation, 3, type, normalize, stride, offset);
         gl.enableVertexAttribArray(colorLocation);
+
+        offset = 8 * sizeof_float;
+        gl.vertexAttribPointer(fixedLocation, 1, type, normalize, stride, offset);
+        gl.enableVertexAttribArray(fixedLocation);
 
         gl.drawArrays(gl.POINTS, 0, this.particles.length);
 

@@ -78,7 +78,7 @@ class Config {
         this.originalVisParams = JSON.parse(JSON.stringify(this.params.visualizations));
         delete this.originalVisParams.shadow;
         delete this.originalVisParams.sparks;
-        this.useConfigFile = true;
+        this.useConfigFile = false;
         this.time = 0;
         /**@type {Swimmer[]} */
         this.swimmers = [];
@@ -124,7 +124,7 @@ class Config {
             }
         );
         const calibration2 = new Calibration({ tx: -1.32, ty: .4, zoom: 32.41, ax: -18, ay: -291.5, az: 1, fov: 42.8 });
-        synchronizedSwimmingScene.addVideo(new Video(this.gl, "synchronized-swimming.mp4", calibration2, 17.5));
+        synchronizedSwimmingScene.addVideo(new Video(this.gl, "synchronized-swimming.mp4", calibration2, 0));
 
 
         /**@type {Scene[]} */
@@ -155,6 +155,13 @@ class Config {
 
         /**@type {Sphere[]} */
         this.floaters = [];
+
+        this.showTimeline = true;
+    }
+
+    hideEditorPanel(v) {
+        const el = document.getElementById('event-editor');
+        if (el) el.style.display = v ? 'block' : 'none';
     }
 
     resetDrawingTexture() {
@@ -268,6 +275,10 @@ class Config {
         // this.floaters.forEach(floater => floater.update(dt));
     }
 
+    isSceneSynchronizedSwimming() {
+        return this.currentScene.title == "synchronized swimming";
+    }
+
 
     async setScene(sceneName) {
         console.log("SET SCENE : " + sceneName);
@@ -312,6 +323,10 @@ class Config {
             this._reset();
 
             this.params.simulation.optimized = this.currentVideo.video ? true : false;
+
+            this.useConfigFile = !this.isSceneSynchronizedSwimming();
+
+            this._setPannelMinimized(this.currentScene.title != "100m freestyle");
 
         }
 
@@ -371,7 +386,8 @@ class Config {
     }
     startRace() {
         console.log("START RACE");
-        this.setRaceTime(-3);
+        if (this.currentVideo.videoStartTime >= 3.) this.setRaceTime(-3);
+        else this.setRaceTime(0);
         if (this.currentVideo.video) this.currentVideo.video.play();
         this.swimmers.forEach(swimmer => swimmer.startRace());
         Swimmer.raceHasStarted = true;
@@ -381,6 +397,9 @@ class Config {
         this.stopButton.hidden = false;
         this._clearChronoTexture(this.gl.canvas.width, this.gl.canvas.height, this.gl);
         this.showTexts(false);
+
+        if (this.isSceneSynchronizedSwimming()) this.params.visualizations.showStreaks = true;
+        console.log("show streaks : " + this.params.visualizations.showStreaks);
     }
     stopRace() {
         if (this.paused) this.play();

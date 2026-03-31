@@ -20,10 +20,8 @@ const createGUI = function (gl, reset) {
     // });
     visualizationsFolder.add(config, "useConfigFile").name('use configuration file');
     // toggle event editor (timeline) visibility
-    const timelineToggle = { showTimeline: true };
-    visualizationsFolder.add(timelineToggle, "showTimeline").name('show event timeline').onChange((v) => {
-        const el = document.getElementById('event-editor');
-        if (el) el.style.display = v ? 'block' : 'none';
+    visualizationsFolder.add(config, "showTimeline").name('show event timeline').listen().onChange((v) => {
+        config.hideEditorPanel(v);
     });
     visualizationsFolder.add(config.params.visualizations, "showFlags").name('show flags').listen();
     visualizationsFolder.add(config.params.visualizations, "showStreaks").name('show streaks').listen();

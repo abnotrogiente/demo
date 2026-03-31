@@ -532,6 +532,8 @@ window.onload = function () {
     const y = gl.canvas.height - h;
     gl.viewport(x, y, w, h);
     renderer.renderWater(config.water, cubemap, config.params.visualizations.shadow);
+    if (config.params.visualizations.showStreaks || config.params.simulation.splashes.enabled) config.splashParticles.draw({});
+
     renderer.renderSpheres(config.water);
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
@@ -579,7 +581,9 @@ window.onload = function () {
     renderer.renderSpheres(config.water);
     // Swimmer.attributes.draw();
     gl.disable(gl.DEPTH_TEST);
-    if (config.params.visualizations.showStreaks || config.params.simulation.splashes.enabled) config.splashParticles.draw();
+    const particlesOption = {};
+    if (config.isSceneSynchronizedSwimming()) particlesOption.showStreaks = false;
+    if (config.params.visualizations.showStreaks || config.params.simulation.splashes.enabled) config.splashParticles.draw(particlesOption);
     config.renderVideo();
     if (config.params.chronoPhotography.available) drawChronoPhotography();
 
