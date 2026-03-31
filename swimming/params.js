@@ -38,7 +38,7 @@ class Config {
         this.params = {
             numSteps: 2, fov: 45,
             visualizations: {
-                enabled: true, showFlags: false, showWR: false, showSpeed: false, showDivingDistance: true,
+                enabled: true, showFlags: false, showWR: false, showSpeed: false, showDivingDistance: false,
                 showFinishTimes: false, showStreaks: false,
                 customWaterPerturbation: "none",
                 waterColorParameter: "none", customParametersList: customParametersList, customParametersDict: customParametersDict,
@@ -489,11 +489,13 @@ class Config {
             });
         }
     }
-    chronoPhotography() {
+    chronoPhotography({ circle = false }) {
         console.log("shoot");
         this.distanceFixed = this.swimmers[0].getDistanceTraveled();
         console.log("distance fixed : " + this.distanceFixed);
-        this._fixTexture();
+        this._fixTexture(circle);
+        // if (!circle) this._fixTexture();
+        // else this.chronoPhotoCircleTime = this.time + .2;
         // fixTexture();
 
         // gl.enable(gl.SCISSOR_TEST);

@@ -39,7 +39,7 @@ class Sphere {
         let streakColor = (this.velocity.length() - 1.6) / 0.9;
         const particleOptions = { fixed: true };
         if (config.isSceneSynchronizedSwimming()) {
-            particleOptions.shrinking = 0.1;
+            particleOptions.shrinking = 0.02;
         }
         else {
             const col = new GL.Vector(streakColor, 0., 1. - streakColor);

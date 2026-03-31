@@ -285,12 +285,7 @@ class Swimmer {
             const D = config.params.simulation.poolSize.z;
             let y = -this.body.radius / 2;
             const currentEvent = this.data[this.currendDataIndex][EVENT_KEY];
-            if (currentEvent == "figure") {
-                console.log("FIGURE");
-                config.splashParticles.spawnSplash(this.body.center, null, 10000., null, { color: new GL.Vector(1., 1., 0.), speed0: 5., maxParticles: 300 });
-                config.splashParticles.spawnSplash(this.body.center, null, 1., null, { fixed: true, color: new GL.Vector(1., 1., 0.), maxParticles: 1, size: 0.5, shrinking: 0 });
 
-            }
             if (currentEvent == "enter" || currentEvent == "turn" && nextData[EVENT_KEY] != "under") {
                 nextEventTime = (time + nextEventTime) / 2;
                 nextDistanceTarget = (this.body.center.z + D / 2 + nextDistanceTarget) / 2;
@@ -311,6 +306,13 @@ class Swimmer {
                 this.body.setTarget(targetPos, nextEventTime - time);
             }
             else this.body.setTarget(null);
+            if (currentEvent == "figure") {
+                console.log("FIGURE");
+                config.splashParticles.spawnSplash(targetPos, null, 10000., null, { speed0: 4., maxParticles: 400 });
+                config.chronoPhotography({ circle: true });
+                // config.splashParticles.spawnSplash(this.body.center, null, 1., null, { fixed: true, color: new GL.Vector(1., 1., 0.), maxParticles: 1, size: 0.5, shrinking: 0 });
+
+            }
 
             if (currentEvent == "cycle") {
                 const currentCycleTime = parseFloat(this.data[this.currendDataIndex][TIME_KEY]);
@@ -400,6 +402,8 @@ class Swimmer {
 
 
         if (this.body.center.z > -config.params.simulation.poolSize.z / 2 + 20) return;
+
+        if (config.isSceneSynchronizedSwimming()) return;
 
         if (Swimmer.raceHasStarted && !this.hasDove && this.body.center.y < 0 && this.body.oldCenter.y >= 0) {
             this.divingDistance = this.body.center.z + config.params.simulation.poolSize.z / 2;

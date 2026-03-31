@@ -44,7 +44,7 @@ const createGUI = function (gl, reset) {
     videoFolder.close();
     videoFolder.add(config.params.video, "opacity").name("opacity").listen();
     videoFolder.add(config.params.video, "thresholdBlending").name("threshold blending").listen();
-    videoFolder.add(config.params.video, "blendingThreshold", .1, .5).name("blending threshold");
+    videoFolder.add(config.params.video, "blendingThreshold", .1, 1.5).name("blending threshold");
     videoFolder.add(config.params.video, 'show').name("show").listen();
     videoFolder.add(config.params.video, "hideObstructions").name("hide obstructions");
     videoFolder.add(config.params.video, "hideObstructionThreshold", 0., 0.5).name("obstructions threshold");

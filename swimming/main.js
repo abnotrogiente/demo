@@ -432,7 +432,7 @@ window.onload = function () {
       else config.stopDemo();
     }
     else if (e.which == 'Q'.charCodeAt(0)) {
-      config.chronoPhotography();
+      config.chronoPhotography({});
     }
     else if (e.which == 'R'.charCodeAt(0)) {
       config.setScene("100m freestyle").then(() => config.startRace());
@@ -502,8 +502,6 @@ window.onload = function () {
     config.updateDemo(dt);
 
     config.splashParticles.update(dt);
-
-    console.log("time  : " + config.getRaceTime());
 
   }
 
@@ -585,8 +583,8 @@ window.onload = function () {
     gl.disable(gl.DEPTH_TEST);
     const particlesOption = {};
     // if (config.isSceneSynchronizedSwimming()) particlesOption.showStreaks = false;
-    config.renderVideo();
     if (config.params.visualizations.showStreaks || config.params.simulation.splashes.enabled) config.splashParticles.draw(particlesOption);
+    config.renderVideo();
     if (config.params.chronoPhotography.available) drawChronoPhotography();
 
     drawCornerView();
