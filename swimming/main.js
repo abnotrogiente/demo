@@ -532,7 +532,7 @@ window.onload = function () {
     const y = gl.canvas.height - h;
     gl.viewport(x, y, w, h);
     renderer.renderWater(config.water, cubemap, config.params.visualizations.shadow);
-    if (config.params.visualizations.showStreaks || config.params.simulation.splashes.enabled) config.splashParticles.draw({});
+    if (config.isSceneSynchronizedSwimming() && (config.params.visualizations.showStreaks || config.params.simulation.splashes.enabled)) config.splashParticles.draw({});
 
     renderer.renderSpheres(config.water);
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
