@@ -157,6 +157,13 @@ class Config {
         this.floaters = [];
 
         this.showTimeline = true;
+
+        // this.params.simulation.foam.velThreshold = 0.;
+        // this.params.simulation.foam.velMax = 2.2;
+        // this.params.simulation.foam.dispersion = 0.0025;
+        // this.params.simulation.foam.timeVariation = 0.3;
+        // this.params.simulation.foam.spaceVariation = 8;
+        // this.params.simulation.foam.attenuation = 0.;
     }
 
     hideEditorPanel(v) {
@@ -398,7 +405,16 @@ class Config {
         this._clearChronoTexture(this.gl.canvas.width, this.gl.canvas.height, this.gl);
         this.showTexts(false);
 
-        if (this.isSceneSynchronizedSwimming()) this.params.visualizations.showStreaks = true;
+        // if (this.isSceneSynchronizedSwimming()) this.params.visualizations.showStreaks = true;
+        if (this.isSceneSynchronizedSwimming()) {
+            this.params.simulation.foam.velThreshold = 0.;
+            this.params.simulation.foam.velMax = 2.2;
+            this.params.simulation.foam.dispersion = 0.0025;
+            this.params.simulation.foam.timeVariation = 0.3;
+            this.params.simulation.foam.spaceVariation = 8;
+            this.params.simulation.foam.attenuation = 0.;
+
+        }
         console.log("show streaks : " + this.params.visualizations.showStreaks);
     }
     stopRace() {
