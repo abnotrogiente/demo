@@ -438,6 +438,9 @@ window.onload = function () {
       config.setScene("100m freestyle").then(() => config.startRace());
       config._setPannelMinimized(true);
     }
+    else if (e.which == 'M'.charCodeAt(0)) {
+      config.setMVPMI();
+    }
     else if (e.which == 'K'.charCodeAt(0)) {
       config.recalibrate();
     }

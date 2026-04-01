@@ -158,6 +158,7 @@ class Config {
 
         this.showTimeline = true;
 
+        this.MVPMI = null;
     }
 
     hideEditorPanel(v) {
@@ -278,6 +279,16 @@ class Config {
 
     isSceneSynchronizedSwimming() {
         return this.currentScene.title == "synchronized swimming";
+    }
+
+    setMVPMI() {
+        const MVM = this.gl.modelviewMatrix;
+        const PM = this.gl.projectionMatrix;
+
+        const MVPM = PM.multiply(MVM);
+
+        this.MVPMI = MVPM.inverse();
+        console.log("MVPMI set");
     }
 
 
