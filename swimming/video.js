@@ -282,7 +282,7 @@ class Video {
         // vec4 posAbsolute = gl_ModelViewProjectionMatrixInverse * vec4(gl_Vertex.xz, 0., 1.);
         // gl_Position = gl_ModelViewProjectionMatrix * posAbsolute;
         gl_Position = vec4(gl_Vertex.xz, 0., 1.);
-        // gl_Position.x *= ratio_screen;
+        gl_Position.x *= ratio_screen;
 
         waterNormal = (gl_ModelViewMatrix * vec4(0., 1., 0., 0.)).xyz;
         sparkPlaneNormal = (gl_ModelViewMatrix * vec4(-1., 0., 0., 0.)).xyz;
