@@ -57,6 +57,7 @@ class Config {
             swimmers: { showSpheres: true, useTracking: false },
             video: { thresholdBlending: false, blendingThreshold: .41, show: false, opacity: 1., hideObstructions: false, hideObstructionThreshold: .2 },
             simulation: {
+                heightLimit: .04,
                 showFloaters: false,
                 optimized: false, waterDamping: .02, poolSize: new GL.Vector(4.0, 1.0, 4.0), buoyancyFactor: 1.1,
                 // foam: { enabled: true, velThreshold: .5, velMax: 3., dispersion: 0.015 }
