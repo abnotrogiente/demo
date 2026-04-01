@@ -506,7 +506,7 @@ window.onload = function () {
 
     config.splashParticles.update(dt);
 
-    config.bubleSpheres.forEach(bubble => bubble.update(dt));
+    config.bubbleSpheres.forEach(bubble => bubble.update(dt));
 
   }
 
