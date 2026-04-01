@@ -38,7 +38,7 @@ class Config {
         this.params = {
             numSteps: 2, fov: 45,
             visualizations: {
-                enabled: true, showFlags: false, showWR: false, showSpeed: false, showDivingDistance: false,
+                enabled: true, showFlags: false, showWR: false, showSpeed: false, showDivingDistance: true,
                 showFinishTimes: false, showStreaks: false,
                 customWaterPerturbation: "none",
                 waterColorParameter: "none", customParametersList: customParametersList, customParametersDict: customParametersDict,
@@ -159,6 +159,9 @@ class Config {
         this.showTimeline = true;
 
         this.MVPMI = null;
+
+        /**@type {Sphere[]} */
+        this.bubbleSpheres = [];
     }
 
     hideEditorPanel(v) {
