@@ -19,6 +19,9 @@ import { createEventEditor } from './eventEditor.js';
 import { Calibration } from './calibration.js';
 import { Water } from './water.js';
 import { drawChronoPhotography } from './chronophotography.js';
+import { ArrayBufferTarget, Muxer } from 'webm-muxer';
+
+const offlineRendering = false;
 
 
 function text2html(text) {
@@ -124,7 +127,7 @@ window.onload = function () {
     gl.matrixMode(gl.MODELVIEW);
 
     config.resetDrawingTexture();
-    draw();
+    if (!offlineRendering) draw();
   }
 
   document.body.appendChild(gl.canvas);
@@ -225,7 +228,99 @@ window.onload = function () {
     prevTime = nextTime;
     requestAnimationFrame(animate);
   }
-  requestAnimationFrame(animate);
+  if (!offlineRendering) requestAnimationFrame(animate);
+
+  async function renderOffline(gl, canvas) {
+
+    const target = new ArrayBufferTarget();
+
+    const muxer = new Muxer({
+      target,
+      video: {
+        codec: "V_VP9",
+        width: canvas.width,
+        height: canvas.height
+      }
+    });
+
+    const encoder = new VideoEncoder({
+      output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+      error: console.error
+    });
+
+    const fps = 60;
+    const frameDuration = 1_000_000 / fps;
+
+    encoder.configure({
+      codec: "vp09.00.10.08",
+      width: canvas.width,
+      height: canvas.height,
+      framerate: fps,
+      bitrate: 10_000_000
+    });
+
+    const videoDuration = 40;
+
+    const totalFrames = videoDuration * fps;
+
+    // config.launchDemo();
+
+    const batchSize = 100; // e.g., 10 seconds at 30fps
+    for (let batchStart = 0; batchStart < totalFrames; batchStart += batchSize) {
+      const batchEnd = Math.min(batchStart + batchSize, totalFrames);
+
+      for (let frame = batchStart; frame < batchEnd; frame++) {
+        const time = frame / fps;
+
+        update(1 / fps);
+        draw(time);
+
+        gl.finish();
+
+        const bitmap = await createImageBitmap(canvas);
+
+        const videoFrame = new VideoFrame(bitmap, {
+          timestamp: Math.round(frame * frameDuration)
+        });
+
+        encoder.encode(videoFrame, {
+          keyFrame: frame % fps === 0
+        });
+
+        videoFrame.close();
+        bitmap.close();
+      }
+      // release GPU resources
+
+
+      await encoder.flush();
+
+      gl.flush();
+      await new Promise(resolve => setTimeout(resolve, 10)); // give browser breathing room
+    }
+    muxer.finalize();
+
+    const blob = new Blob([target.buffer], { type: "video/webm" });
+
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "output.webm";
+    a.click();
+
+
+  }
+
+  if (offlineRendering) {
+    gl.canvas.width = 3840;
+    gl.canvas.height = 2160;
+
+    console.log("before rendering");
+    renderOffline(gl, gl.canvas);
+    console.log("after rendering");
+
+  }
 
   window.onresize = onresize;
 
