@@ -555,6 +555,14 @@ class Config {
         // this.stopButton.hidden = true;
         // this.renderCube = false;
         // this.setCalibration(new Calibration({}));
+
+        this.texts = [
+            { time: 2, text: "pool", pauseDuration: 2 },
+            { time: 3, text: "spheres", pauseDuration: 2 },
+            { time: 5, text: "begin race", pauseDuration: 2 },
+            { time: 6, text: "transition", pauseDuration: 4 }
+        ];
+        this.currentText = this.texts.shift();
     }
     stopDemo() {
         this.playingDemo = false;
@@ -612,8 +620,24 @@ class Config {
     }
     updateDemo(dt) {
         if (!this.playingDemo) return;
+        if (this.demoPaused) {
+            this.demoPauseTime += dt;
+            if (this.demoPauseTime > this.currentText.pauseDuration) {
+                this.demoPaused = false;
+                this.play();
+                this.currentText = this.texts.shift();
+                document.getElementById("demo-text").innerText = '';
+            }
+            else return;
+        }
         const t = this.demoTime;
         this.demoTime += dt;
+        if (this.currentText && this.demoTime > this.currentText.time) {
+            this.demoPaused = true;
+            this.demoPauseTime = 0.;
+            this.pause();
+            document.getElementById("demo-text").innerText = this.currentText.text;
+        }
         const beginShowSwimmersTime = 2.;
         const poolSlidingTime = 1.;
         if (t <= poolSlidingTime) {

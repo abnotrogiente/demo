@@ -221,10 +221,9 @@ window.onload = function () {
   var prevTime = new Date().getTime();
   function animate() {
     var nextTime = new Date().getTime();
-    if (!config.paused) {
-      update((nextTime - prevTime) / 1000);
-      draw(nextTime);
-    }
+    update((nextTime - prevTime) / 1000);
+    draw(nextTime);
+
     prevTime = nextTime;
     requestAnimationFrame(animate);
   }
@@ -571,6 +570,8 @@ window.onload = function () {
   // config.setScene("100m freestyle");
 
   function update(dt) {
+    config.updateDemo(dt);
+    if (config.paused) return;
     if (dt > 1) return;
     frame += dt * 2;
 
@@ -597,7 +598,7 @@ window.onload = function () {
     config.updateParams();
     slider.value = config.getRaceTime();
     updateFrameRateHTML(dt);
-    config.updateDemo(dt);
+
 
     config.splashParticles.update(dt);
 
