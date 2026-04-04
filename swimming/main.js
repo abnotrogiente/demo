@@ -82,14 +82,14 @@ function reset() {
   renderer.reset();
 
   const dx = config.params.simulation.poolSize.x / numSwimmers;
-  let x = config.params.simulation.poolSize.x / 2 - dx / 2;
+  let x = -config.params.simulation.poolSize.x / 2 + dx / 2;
   let i = 0;
   for (let swimmer of config.swimmers) {
     swimmer.body.center.x = x;
     swimmer.startingPoint.x = x;
     // swimmer.parseData("./assets/race-data/" + i + ".csv");
     i++;
-    x -= dx;
+    x += dx;
   }
 }
 
