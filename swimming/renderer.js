@@ -885,7 +885,7 @@ Renderer.prototype.renderWater = function (water, sky, shadowParams) {
 Renderer.prototype.renderSpheres = function (water) {
   const spheres = [];
   if (config.params.swimmers.showSpheres) config.swimmers.forEach(swimmer => swimmer.spheres.forEach(sphere => spheres.push(sphere)));
-  if (config.params.simulation.showFloaters) config.floaters.forEach(floater => spheres.push(floater));
+  if (!config.params.video.show && !config.hideFloaters) config.floaters.forEach(floater => spheres.push(floater));
   config.bubbleSpheres.forEach(bubble => spheres.push(bubble));
   for (let sphere of spheres) {
     this.renderSphere(water, sphere);

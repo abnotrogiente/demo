@@ -58,7 +58,6 @@ class Config {
             video: { thresholdBlending: false, blendingThreshold: .41, show: false, opacity: 1., hideObstructions: false, hideObstructionThreshold: .2 },
             simulation: {
                 heightLimit: .04,
-                showFloaters: false,
                 optimized: false, waterDamping: .02, poolSize: new GL.Vector(4.0, 1.0, 4.0), buoyancyFactor: 1.1,
                 // foam: { enabled: true, velThreshold: .5, velMax: 3., dispersion: 0.015 }
                 foam: { enabled: true, velThreshold: .35, velMax: 3.5, dispersion: 0.015, timeVariation: 2.5, spaceVariation: 25, attenuation: .015 },
@@ -563,6 +562,8 @@ class Config {
             { time: 6, text: "transition", pauseDuration: 4 }
         ];
         this.currentText = this.texts.shift();
+
+        this.hideFloaters = true;
     }
     stopDemo() {
         this.playingDemo = false;
@@ -650,6 +651,7 @@ class Config {
         const showWaterTime = 1.5;
         if (!this.renderWater && t > 1.5) {
             this.renderWater = true;
+            this.hideFloaters = false;
 
         }
         if (t > showWaterTime && t < showWaterTime + .5) {

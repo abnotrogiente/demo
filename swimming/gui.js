@@ -71,7 +71,6 @@ const createGUI = function (gl, reset) {
     const simulationFolder = gui.addFolder("Simulation");
     simulationFolder.close();
     // simulationFolder.add(config.params.simulation, "heightLimit", 0.01, 0.25).name("height limit").listen();
-    simulationFolder.add(config.params.simulation, "showFloaters").name("show floaters").listen();
     simulationFolder.add(config.params.simulation, "optimized").name("optimized").listen();
     simulationFolder.add(config.params.simulation.poolSize, 'x', 1, 25).name('pool width').onChange(function (value) { reset(); }).listen();
     simulationFolder.add(config.params.simulation.poolSize, 'z', 1, 50).name('pool height').onChange(function (value) { reset(); }).listen();
