@@ -144,8 +144,10 @@ class Config {
         this.renderCube = true;
         this.spheresRadiusCoeff = 1.;
         this.distanceFixed = 0.;
-        this.chronoFrameBuffer = this.gl.createFramebuffer()
+        this.chronoFrameBuffer = this.gl.createFramebuffer();
         this.drawingFrameBuffer = null;
+        this.drawingFameBufferB = this.gl.createFramebuffer();
+        this.drawingTextureB = this.gl.createTexture();
         // this.drawingFrameBuffer = null;
         this.drawingTexture = this.gl.createTexture();
         this.resetDrawingTexture();
@@ -162,6 +164,8 @@ class Config {
 
         /**@type {Sphere[]} */
         this.bubbleSpheres = [];
+
+        this.classicalOverlayEnabled = false;
     }
 
     hideEditorPanel(v) {
@@ -197,6 +201,21 @@ class Config {
             this.gl.RENDERBUFFER,
             depthBuffer
         );
+
+
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.drawingFameBufferB);
+
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.drawingTextureB);
+
+        this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, width, height, 0,
+            this.gl.RGBA, this.gl.UNSIGNED_BYTE, null);
+
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
+
+        this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, this.gl.COLOR_ATTACHMENT0,
+            this.gl.TEXTURE_2D, this.drawingTextureB, 0);
+
+
         this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
     }
 
@@ -528,16 +547,22 @@ class Config {
     recalibrate() {
         if (this.currentVideo) this.setCalibration(this.currentVideo.calibration);
     }
-    async launchDemo() {
-        console.log("Launch demo");
-        await this.setScene("100m freestyle");
+    updateVideoForOfflineRendering() {
+        this.setRaceTime(this.getRaceTime());
+    }
+    #prepareDemoSecondPart() {
+        this.stopRace();
+        this.parseConfigFile("./assets/vis-config.json");
+        this.classicalOverlayEnabled = false;
+        // await this.setScene("100m freestyle");
         this.params.video.show = false;
         this.params.swimmers.showSpheres = true;
         this.spheresRadiusCoeff = 1.;
-        this.demoTime = 0;
+
+
         this.swimmers.forEach(swimmer => swimmer.body.move(AWAY));
         this.swimmersShown = 0;
-        this.playingDemo = true;
+
         // this.params.swimmers.useTracking = false;
         this.useGravity(true);
         this.params.simulation.buoyancyFactor = 1.5;
@@ -545,25 +570,52 @@ class Config {
         this.renderWater = false;
         this.translateX = 200;
         // this.parseConfigFile("./assets/vis-config-demo-2.json");
-        this._gui.hide();
-        document.getElementById("event-editor").hidden = true;
-        document.getElementById("time-slider-container").hidden = true;
-        document.getElementById("h").hidden = true;
+
         // this.angleY = this.currentVideo.calibration.ay + 360;
         // this.playButton.hidden = true;
         // this.stopButton.hidden = true;
         // this.renderCube = false;
         // this.setCalibration(new Calibration({}));
 
-        this.texts = [
-            { time: 2, text: "pool", pauseDuration: 2 },
-            { time: 3, text: "spheres", pauseDuration: 2 },
-            { time: 5, text: "begin race", pauseDuration: 2 },
-            { time: 6, text: "transition", pauseDuration: 4 }
-        ];
-        this.currentText = this.texts.shift();
+
 
         this.hideFloaters = true;
+    }
+    async launchDemo() {
+
+
+        this.playingDemo = true;
+
+        this.parseConfigFile("./assets/vis-config-classical-overlay.json");
+        this.params.chronoPhotography.available = true;
+        this.drawingFrameBuffer = this.chronoFrameBuffer;
+        console.log("Launch demo");
+        await this.setScene("100m freestyle");
+        this._gui.hide();
+        document.getElementById("event-editor").hidden = true;
+        document.getElementById("time-slider-container").hidden = true;
+        document.getElementById("h").hidden = true;
+        this.demoTime = -15;
+
+        this.classicalOverlayEnabled = true;
+        this.params.video.show = true;
+        this.startRace();
+        this.params.visualizations.showDivingDistance = false;
+        this.params.visualizations.shadow.enabled = false;
+        // this.params.chronoPhotography.available = true;
+
+        this.demoEvents = [
+            { time: -15, text: "The current approach", duration: 2 },
+            { time: -6, text: "overlay", duration: 2, action: () => this.showOverlayPlane = true, pause: true },
+            { time: -6, text: "draw flags on overlay", duration: 2, action: () => this.params.visualizations.showFlags = true, pause: true },
+            { time: -3, text: "draw only visualizations", duration: 2, action: () => this.showOverlayPlane = false, pause: true },
+            { time: 0, text: "Our method", duration: 2, action: () => this.showOverlayPlane = false, pause: true },
+            { time: 1.2, text: "pool", duration: 1, pause: false },
+            { time: 3, text: "spheres", duration: 1.5, pause: false },
+            { time: 4.5, text: "begin race", duration: 1 },
+            { time: 6, text: "transition", duration: 2, pause: true }
+        ];
+        this.currentDemoEvent = this.demoEvents.shift();
     }
     stopDemo() {
         this.playingDemo = false;
@@ -591,7 +643,7 @@ class Config {
             const x0 = -width / 2 + width / 20;
             const x = x0 + nextSwimmerIdx * width / 10;
             const swimmer = this.swimmers[nextSwimmerIdx];
-            swimmer.body.move(new GL.Vector(x, .5, 0));
+            swimmer.body.move(new GL.Vector(swimmer.body.initCenter.x, .5, 0));
             this.swimmersShown++;
         }
     }
@@ -621,24 +673,35 @@ class Config {
     }
     updateDemo(dt) {
         if (!this.playingDemo) return;
-        if (this.demoPaused) {
-            this.demoPauseTime += dt;
-            if (this.demoPauseTime > this.currentText.pauseDuration) {
-                this.demoPaused = false;
+        if (this.demoEventDisplayed) {
+            this.demoEventDuration += dt;
+            if (this.demoEventDuration > this.currentDemoEvent.duration) {
+                this.demoEventDisplayed = false;
                 this.play();
-                this.currentText = this.texts.shift();
+                this.currentDemoEvent = this.demoEvents.shift();
                 document.getElementById("demo-text").innerText = '';
             }
-            else return;
+            else if (this.currentDemoEvent.pause) return;
         }
-        const t = this.demoTime;
         this.demoTime += dt;
-        if (this.currentText && this.demoTime > this.currentText.time) {
-            this.demoPaused = true;
-            this.demoPauseTime = 0.;
-            this.pause();
-            document.getElementById("demo-text").innerText = this.currentText.text;
+        const t = this.demoTime;
+        console.log("demo time : " + this.demoTime);
+        console.log("demo event time : " + this.currentDemoEvent);
+        if (!this.demoEventDisplayed && this.currentDemoEvent && this.demoTime > this.currentDemoEvent.time) {
+            console.log("START DEMO EVENT");
+            this.demoEventDisplayed = true;
+            this.demoEventDuration = 0.;
+            if (this.currentDemoEvent.pause) this.pause();
+            document.getElementById("demo-text").innerText = this.currentDemoEvent.text;
+            if (this.currentDemoEvent.action) this.currentDemoEvent.action();
         }
+        if (this.demoTime >= 0 && !this.demoSecondPartStarted) {
+            this.#prepareDemoSecondPart();
+            this.demoSecondPartStarted = true;
+        }
+
+        if (!this.demoSecondPartStarted) return;
+
         const beginShowSwimmersTime = 2.;
         const poolSlidingTime = 1.;
         if (t <= poolSlidingTime) {
@@ -711,6 +774,7 @@ class Config {
 
 const config = new Config();
 config.parseConfigFile("./assets/vis-config.json");
+// config.parseConfigFile("./assets/vis-config-classical-overlay.json");
 
 
 export { config, AWAY };

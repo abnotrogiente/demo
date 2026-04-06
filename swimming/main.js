@@ -86,6 +86,7 @@ function reset() {
   let i = 0;
   for (let swimmer of config.swimmers) {
     swimmer.body.center.x = x;
+    swimmer.body.initCenter = swimmer.body.center.clone();
     swimmer.startingPoint.x = x;
     // swimmer.parseData("./assets/race-data/" + i + ".csv");
     i++;
@@ -258,7 +259,7 @@ window.onload = function () {
       bitrate: 10_000_000
     });
 
-    const videoDuration = 40;
+    const videoDuration = 10;
 
     const totalFrames = videoDuration * fps;
 
@@ -271,8 +272,10 @@ window.onload = function () {
       for (let frame = batchStart; frame < batchEnd; frame++) {
         const time = frame / fps;
 
+        config.updateVideoForOfflineRendering();
         update(1 / fps);
         draw(time);
+
 
         gl.finish();
 
@@ -588,9 +591,9 @@ window.onload = function () {
     // Update the water simulation and graphics
     for (let swimmer of config.swimmers) swimmer.update(dt);
     config.updateFloaters(dt);
-    config.water.updateSpheres(dt);
+    if (!config.classicalOverlayEnabled) config.water.updateSpheres(dt);
     for (let i = 0; i < config.params.numSteps; i++) {
-      config.water.stepSimulation(dt);
+      if (!config.classicalOverlayEnabled) config.water.stepSimulation(dt);
     }
 
     renderer.updateCaustics(config.water);
@@ -618,7 +621,7 @@ window.onload = function () {
   }
 
   function drawCornerView() {
-    if (!Swimmer.raceHasStarted || !config.params.cornerView.show) return;
+    if (!Swimmer.raceHasStarted || !config.params.cornerView.show || config.classicalOverlayEnabled) return;
     config.cornerView = true;
 
     gl.loadIdentity();
@@ -684,9 +687,10 @@ window.onload = function () {
     gl.disable(gl.DEPTH_TEST);
     const particlesOption = {};
     // if (config.isSceneSynchronizedSwimming()) particlesOption.showStreaks = false;
-    if (config.params.visualizations.showStreaks || config.params.simulation.splashes.enabled) config.splashParticles.draw(particlesOption);
+    if (!config.classicalOverlayEnabled &&
+      (config.params.visualizations.showStreaks || config.params.simulation.splashes.enabled)) config.splashParticles.draw(particlesOption);
     config.renderVideo();
-    if (config.params.chronoPhotography.available) drawChronoPhotography();
+    if (config.drawingFrameBuffer !== null) drawChronoPhotography();
 
     drawCornerView();
 

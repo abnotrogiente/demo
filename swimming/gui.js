@@ -79,7 +79,7 @@ const createGUI = function (gl, reset) {
 
     const foamFolder = simulationFolder.addFolder("foam");
     foamFolder.close();
-    foamFolder.add(config.params.simulation.foam, "enabled").name("enabled");
+    foamFolder.add(config.params.simulation.foam, "enabled").name("enabled").listen();
     foamFolder.add(config.params.simulation.foam, "velThreshold", 0., 15.).name("velocity threshold");
     foamFolder.add(config.params.simulation.foam, "velMax", 0., 20.).name("max velocity");
     foamFolder.add(config.params.simulation.foam, "dispersion", 0., .1).name("dispersion");

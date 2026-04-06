@@ -204,6 +204,9 @@ function Renderer(gl, water, flagCenter, flagSize) {
       uniform float medalsModeBeforeFinish;
       uniform float medalsModeAfterFinish;
 
+      uniform bool classicalOverlayEnabled;
+      uniform float showOverlayPlane;
+
       uniform float heightLimit;
 
       uniform float seed;
@@ -240,7 +243,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
       const vec3[] colorRankDict = vec3[](GOLD, SILVER, BRONZE); 
       
       
-      ` + swimmersHelperFunctions + textHelperFunctions + `
+      ` + swimmersHelperFunctions + textHelperFunctions + /*glsl*/`
       makeStrF(printSpeed) _num_ __ _m _DIV _s _endNum
       makeStrF(printTime) _num_ __ _s _endNum
 
@@ -300,6 +303,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
       }
 
       void distort(inout vec2 pos, vec2 swimmerPos, in float intensity) {
+        if (classicalOverlayEnabled) return;
         float distFactor = intensity / 2.;
         // pos.x += perlin(pos.xy + swimmerPos, 3., seed*.0000005) * distFactor;
         // pos.y += perlin(pos.yx + swimmerPos, 3., seed*.0000005) * distFactor;
@@ -504,6 +508,11 @@ function Renderer(gl, water, flagCenter, flagSize) {
       void drawVisualizations(in vec2 position, inout vec3 color) {
         vec2 projectedPosition = position;
         vec2 coord = position / poolSize.xz + .5;
+        if (classicalOverlayEnabled && showOverlayPlane > 0.01){
+          vec3 overlayColor  = vec3(1.);
+          if (min(fract(position.y), fract(position.x)) <= .1) overlayColor *= 0.;
+          color = showOverlayPlane * overlayColor + (1. - showOverlayPlane) * color;
+        }
         bool hasFirstFinished = getSwimmerFinishTime(0) > 0.1;
         if (showDivingDistance) drawDivingRipples(coord, color);
         for (int i = 0; i < 10; i++) {
@@ -530,7 +539,6 @@ function Renderer(gl, water, flagCenter, flagSize) {
           if (showSpeed || showFinishTimes) drawNumbers(position, swimmerPos, i, rightSide, color);
           colorWater(projectedPosition, swimmerPos, getColorValue(speed), color);
         }
-      
       }
 
       vec3 toonRendering(vec3 normal, vec3 ray) {
@@ -607,18 +615,22 @@ function Renderer(gl, water, flagCenter, flagSize) {
       }
 
 
-      vec3 getSurfaceRayColor(vec3 origin, vec3 ray, vec3 waterColor, vec3 normal) {
+      vec4 getSurfaceRayColor(vec3 origin, vec3 ray, vec3 waterColor, vec3 normal) {
         vec3 color;
         if (int(rendering) == RENDERING_REALISTIC) color = realisticRendering(origin, ray, waterColor);
         else if (int(rendering) == RENDERING_HEIGHT_FIELD) color = heightFieldRendering(origin.y);
         else if (int(rendering) == RENDERING_LAMBERT) color = lambertRendering(normal);
         else if (int(rendering) == RENDERING_TOON) color = toonRendering(normal, ray);
         
-        if (bool(showFlags) || showWR || int(medalsModeAfterFinish) != MEDALS_NONE || int(medalsModeBeforeFinish) != MEDALS_NONE || showSpeed || showDivingDistance) drawVisualizations(origin.xz, color);
-          
+        vec3 colorBefore = color;
+        if (bool(showOverlayPlane) || bool(showFlags) || showWR || int(medalsModeAfterFinish) != MEDALS_NONE || int(medalsModeBeforeFinish) != MEDALS_NONE || showSpeed || showDivingDistance) drawVisualizations(origin.xz, color);
+        float alpha = 1.;
+        if (length(color - colorBefore) >= .04) {
+          alpha = 0.;
+        }
           
         
-        return color;
+        return vec4(color, alpha);
       }
       
       void main() {
@@ -649,19 +661,22 @@ function Renderer(gl, water, flagCenter, flagSize) {
           vec3 refractedRay = refract(incomingRay, normal, IOR_WATER / IOR_AIR);
           float fresnel = mix(0.5, 1.0, pow(1.0 - dot(normal, -incomingRay), 3.0));
           
-          vec3 reflectedColor = getSurfaceRayColor(position, reflectedRay, underwaterColor, normal);
-          vec3 refractedColor = getSurfaceRayColor(position, refractedRay, vec3(1.0), normal) * vec3(0.8, 1.0, 1.1);
+          vec4 reflectedColor = getSurfaceRayColor(position, reflectedRay, underwaterColor, normal);
+          vec4 refractedColor = getSurfaceRayColor(position, refractedRay, vec3(1.0), normal) * vec4(0.8, 1.0, 1.1, 1.);
           
-          fragColor = vec4(mix(reflectedColor, refractedColor, (1.0 - fresnel) * length(refractedRay)), 1.0);
+          fragColor = mix(reflectedColor, refractedColor, (1.0 - fresnel) * length(refractedRay));
         ` : /* above water */ `
           vec3 reflectedRay = reflect(incomingRay, normal);
           vec3 refractedRay = refract(incomingRay, normal, IOR_AIR / IOR_WATER);
           float fresnel = mix(0.25, 1.0, pow(1.0 - dot(normal, -incomingRay), 3.0));
           
-          vec3 reflectedColor = getSurfaceRayColor(position, reflectedRay, abovewaterColor, normal);
-          vec3 refractedColor = getSurfaceRayColor(position, refractedRay, abovewaterColor, normal);
+          vec4 reflectedColor = getSurfaceRayColor(position, reflectedRay, abovewaterColor, normal);
+          vec4 refractedColor = getSurfaceRayColor(position, refractedRay, abovewaterColor, normal);
           
-          fragColor = vec4(mix(refractedColor, reflectedColor, fresnel), 1.0);
+          fragColor = mix(refractedColor, reflectedColor, fresnel);
+
+          if (reflectedColor.a <.1) fragColor.a = 0.;
+          // return;
 
           // if (info.r > heightLimit) fragColor = vec4(1., 0., 0., 1.);
 
@@ -872,7 +887,9 @@ Renderer.prototype.renderWater = function (water, sky, shadowParams) {
       medalsModeAfterFinish: Math.round(config.params.visualizations.medalsModesDict[config.params.visualizations.medalsModeAfterFinish]),
       rendering: config.params.visualizations.renderingDict[config.params.visualizations.rendering].value,
       heightLimit: config.params.simulation.heightLimit,
-      waterColorParameter: config.params.visualizations.customParametersDict[config.params.visualizations.waterColorParameter].value
+      waterColorParameter: config.params.visualizations.customParametersDict[config.params.visualizations.waterColorParameter].value,
+      classicalOverlayEnabled: config.classicalOverlayEnabled,
+      showOverlayPlane: config.showOverlayPlane ? config.showOverlayPlane : 0
     }).draw(water.plane);
   }
   this.gl.disable(this.gl.CULL_FACE);
