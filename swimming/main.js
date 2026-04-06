@@ -21,7 +21,7 @@ import { Water } from './water.js';
 import { drawChronoPhotography } from './chronophotography.js';
 import { ArrayBufferTarget, Muxer } from 'webm-muxer';
 
-const offlineRendering = false;
+const offlineRendering = true;
 
 
 function text2html(text) {
@@ -259,7 +259,7 @@ window.onload = function () {
       bitrate: 10_000_000
     });
 
-    const videoDuration = 10;
+    const videoDuration = 60;
 
     const totalFrames = videoDuration * fps;
 
@@ -272,8 +272,8 @@ window.onload = function () {
       for (let frame = batchStart; frame < batchEnd; frame++) {
         const time = frame / fps;
 
-        config.updateVideoForOfflineRendering();
         update(1 / fps);
+        await config.updateVideoForOfflineRendering();
         draw(time);
 
 
@@ -317,6 +317,10 @@ window.onload = function () {
   if (offlineRendering) {
     gl.canvas.width = 3840;
     gl.canvas.height = 2160;
+
+    if (config.currentVideo) {
+      config.setRaceTime(0);
+    }
 
     console.log("before rendering");
     renderOffline(gl, gl.canvas);

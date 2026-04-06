@@ -539,8 +539,29 @@ class Video {
         }
     }
 
-    setTime(t) {
-        if (this.copyVideo) this.video.currentTime = t;
+    async setTime(t) {
+        if (!this.copyVideo) return;
+        if (Math.abs(this.video.currentTime - t) < 1e-6) return;
+
+        const video = this.video;
+        let resolveFrame;
+        const frameReady = new Promise(resolve => {
+            resolveFrame = resolve;
+        });
+
+        video.currentTime = t;
+
+        if (video.requestVideoFrameCallback) {
+            video.requestVideoFrameCallback(() => resolveFrame());
+        } else {
+            const onSeeked = () => {
+                video.removeEventListener('seeked', onSeeked);
+                resolveFrame();
+            };
+            video.addEventListener('seeked', onSeeked, { once: true });
+        }
+
+        await frameReady;
     }
 
 

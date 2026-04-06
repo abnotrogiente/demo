@@ -547,8 +547,10 @@ class Config {
     recalibrate() {
         if (this.currentVideo) this.setCalibration(this.currentVideo.calibration);
     }
-    updateVideoForOfflineRendering() {
-        this.setRaceTime(this.getRaceTime());
+    async updateVideoForOfflineRendering() {
+        if (this.currentVideo && this.currentVideo.video) {
+            await this.currentVideo.setTime(this.time);
+        }
     }
     #prepareDemoSecondPart() {
         this.stopRace();
