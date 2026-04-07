@@ -915,12 +915,12 @@ Renderer.prototype.renderSpheres = function (water) {
  * @param {Sphere} sphere 
  */
 Renderer.prototype.renderSphere = function (water, sphere) {
-  water.textureA.bind(1);
-  this.causticTex.bind(2);
+  water.textureA.bind(0);
+  this.causticTex.bind(1);
   this.sphereShader.uniforms({
     light: this.lightDir,
-    water: 1,
-    causticTex: 2,
+    water: 0,
+    causticTex: 1,
     sphereCenter: [sphere.center.x, sphere.center.y, sphere.center.z],
     sphereRadius: sphere.radius * config.spheresRadiusCoeff,
     poolSize: [config.params.simulation.poolSize.x, config.params.simulation.poolSize.y, config.params.simulation.poolSize.z],
