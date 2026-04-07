@@ -233,12 +233,16 @@ function Renderer(gl, water, flagCenter, flagSize) {
       // Color declarations
       #define RED     vec3( 1,.3,.4)
       #define GREEN   vec3(.2, 1,.4)
-      #define BLUE    vec3(.2,.8, 1)
+      // #define BLUE    vec3(.2,.8, 1)
       #define RAINBOW abs(cos(uv.x + vec3(5,6,1)))
 
       #define GOLD    vec3(1., 1., 0.)
       #define SILVER  vec3(.8, .8, .8)
       #define BRONZE  vec3(.75, .54, .44)
+
+      #define PINK (vec3(241., 171., 201.) / 255.)
+      #define BLUE (vec3(35., 147., 205.) / 255.)
+      #define YELLOW (vec3(217., 196., 122.) / 255.)
 
       const vec3[] colorRankDict = vec3[](GOLD, SILVER, BRONZE); 
       
@@ -289,15 +293,25 @@ function Renderer(gl, water, flagCenter, flagSize) {
 
 
       void drawWorldRecordLine(in vec2 position, inout vec3 color) {
-        if (abs(position.y + poolSize.z / 2. - wr) < .05) color = vec3(1., 1., 0.); 
+        if (abs(position.y + poolSize.z / 2. - wr) < .05) color = YELLOW; 
+      }
+
+      void maximiseColor(out vec3 c) {
+        float m = max(c.r, max(c.g, c.b));
+        c /= m;
       }
 
       void drawDivingRipples(in vec2 coord, inout vec3 color) {
-        vec3 divingWave = getDivingWaves(coord);
+        vec4 divingWave = getDivingWaves(coord);
         bool toDraw = divingWave.z > 0.;
         float blending = divingWave.y;
+
+        float intensity = divingWave.w;
+        vec3 rippleColor = intensity * PINK + (1. - intensity) * BLUE;
+        maximiseColor(rippleColor);
+
         if (toDraw) {
-          color = (1. - blending) * color + blending * vec3(0., 1., 0.);
+          color = (1. - blending) * color + blending * rippleColor;
         }
       
       }
@@ -432,7 +446,8 @@ function Renderer(gl, water, flagCenter, flagSize) {
         if (!showCircle && !cornerView) return;
         if(cornerView) altitudeAttenuation = 1.;
         distSq = dot(diff, diff);
-        color += max(0.,1.-abs((shadowCircleRadius - distSq)/shadowCircleStroke)) * vec3(1., 1., 0.) * altitudeAttenuation;
+        float intensity = max(0.,1.-abs((shadowCircleRadius - distSq)/shadowCircleStroke)) * altitudeAttenuation;
+        color = intensity * YELLOW + (1. - intensity) * color;
       }
 
       void drawLine(in vec2 projectedPosition, in vec2 swimmerPosition, in int swimmerRank, in vec3 lineColor, inout vec3 color) {

@@ -21,7 +21,7 @@ import { Water } from './water.js';
 import { drawChronoPhotography } from './chronophotography.js';
 import { ArrayBufferTarget, Muxer } from 'webm-muxer';
 
-const offlineRendering = true;
+const offlineRendering = false;
 
 
 function text2html(text) {
@@ -248,7 +248,7 @@ window.onload = function () {
       error: console.error
     });
 
-    const fps = 60;
+    const fps = 40;
     const frameDuration = 1_000_000 / fps;
 
     encoder.configure({
@@ -259,7 +259,7 @@ window.onload = function () {
       bitrate: 10_000_000
     });
 
-    const videoDuration = 60;
+    const videoDuration = 92;
 
     const totalFrames = videoDuration * fps;
 
@@ -693,6 +693,7 @@ window.onload = function () {
     config.water.updateNormals();
 
     gl.clearColor(.1, .2, .5, 1);
+    gl.clearColor(.94 / 1.5, .92 / 1.5, .84 / 1.5, 1);
     gl.bindFramebuffer(gl.FRAMEBUFFER, config.drawingFrameBuffer);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.loadIdentity();
