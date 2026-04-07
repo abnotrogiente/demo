@@ -279,9 +279,36 @@ window.onload = function () {
 
         gl.finish();
 
-        const bitmap = await createImageBitmap(canvas);
+        const canvasBitmap = await createImageBitmap(canvas);
 
-        const videoFrame = new VideoFrame(bitmap, {
+        // Create composite canvas
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        const ctx = tempCanvas.getContext('2d');
+
+        // Draw WebGL canvas first
+        ctx.drawImage(canvasBitmap, 0, 0);
+
+        // Draw specific HTML elements centered
+        ctx.fillStyle = 'white';
+        ctx.font = '55px Arial';
+        ctx.textAlign = 'center';
+
+        const demoText = document.getElementById('demo-text');
+        if (demoText) {
+          ctx.fillText(`${demoText.innerText}`, canvas.width / 2, canvas.height / 10);
+        }
+
+        // Draw other overlay text as needed
+        const commands = document.getElementById('commands');
+        if (commands && !commands.hidden) {
+          ctx.fillText(commands.innerText, canvas.width / 2, canvas.height / 2 + 40);
+        }
+
+        const compositeFrame = await createImageBitmap(tempCanvas);
+
+        const videoFrame = new VideoFrame(compositeFrame, {
           timestamp: Math.round(frame * frameDuration)
         });
 
@@ -289,8 +316,8 @@ window.onload = function () {
           keyFrame: frame % fps === 0
         });
 
-        videoFrame.close();
-        bitmap.close();
+        compositeFrame.close();
+        canvasBitmap.close();
       }
       // release GPU resources
 
