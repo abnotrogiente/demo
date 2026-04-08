@@ -256,10 +256,10 @@ window.onload = function () {
       width: canvas.width,
       height: canvas.height,
       framerate: fps,
-      bitrate: 16_000_000
+      bitrate: 19_000_000
     });
 
-    const videoDuration = 145;
+    const videoDuration = 126; // 126
 
     const totalFrames = videoDuration * fps;
 
@@ -271,6 +271,7 @@ window.onload = function () {
 
       for (let frame = batchStart; frame < batchEnd; frame++) {
         const time = frame / fps;
+        console.log("render offline time : " + time);
 
         update(1 / fps);
         await config.updateVideoForOfflineRendering();
@@ -287,6 +288,13 @@ window.onload = function () {
         tempCanvas.height = canvas.height;
         const ctx = tempCanvas.getContext('2d');
 
+        function fillMultilineText(context, text, x, y, lineHeight) {
+          const lines = text.split(/\r?\n/);
+          for (let i = 0; i < lines.length; i++) {
+            context.fillText(lines[i], x, y + i * lineHeight);
+          }
+        }
+
         // Draw WebGL canvas first
         ctx.drawImage(canvasBitmap, 0, 0);
 
@@ -294,16 +302,17 @@ window.onload = function () {
         ctx.fillStyle = 'white';
         ctx.font = 'bold 55px Arial';
         ctx.textAlign = 'center';
+        const lineHeight = 60;
 
         const demoText = document.getElementById('demo-text');
         if (demoText) {
-          ctx.fillText(`${demoText.innerText}`, canvas.width / 2, canvas.height / 4);
+          fillMultilineText(ctx, demoText.innerText, canvas.width / 2, canvas.height / 4, lineHeight);
         }
 
         // Draw other overlay text as needed
         const commands = document.getElementById('commands');
         if (commands && !commands.hidden) {
-          ctx.fillText(commands.innerText, canvas.width / 2, canvas.height / 2 + 40);
+          fillMultilineText(ctx, commands.innerText, canvas.width / 2, canvas.height / 2 + 40, lineHeight);
         }
 
         const compositeFrame = await createImageBitmap(tempCanvas);
@@ -661,7 +670,7 @@ window.onload = function () {
     gl.rotate(-90, 0, 1, 0);
     gl.translate(0, 0.5, 0);
 
-    const h = gl.canvas.height / 3;
+    const h = gl.canvas.height / 4;
     const w = 16 * h / 9;
     const x = 0;
     const y = gl.canvas.height - h;
@@ -703,7 +712,7 @@ window.onload = function () {
     gl.rotate(-config.angleY, 0, 1, 0);
     gl.translate(0, 0.5, 0);
 
-    printCalib();
+    // printCalib();
 
     gl.enable(gl.DEPTH_TEST);
     gl.disable(gl.BLEND);

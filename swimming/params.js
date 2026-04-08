@@ -294,16 +294,16 @@ class Config {
         const z0 = -poolSize.z / 2;
         const x0 = -poolSize.x / 2;
 
-        const green = new GL.Vector(0., 1., 0.);
-        const yellow = new GL.Vector(1., 1., 0.);
-        const blue = new GL.Vector(0., 0.5, 1.);
-        const red = new GL.Vector(1., 0., 0.);
+        const green = new GL.Vector(0., 1. / 2, 0.);
+        const yellow = new GL.Vector(1. / 2, 1. / 2, 0.);
+        const blue = new GL.Vector(0., 0.5 / 2, 1. / 2);
+        const red = new GL.Vector(1. / 2, 0., 0.);
         const colors = [green, blue, blue, yellow, yellow, yellow, blue, blue, green];
         for (let i = 1; i < 10; i++) {
             for (let j = 0; j < floatersPerLine; j++) {
                 const center = new GL.Vector(x0 + i * laneSize, 0., z0 + floaterRadius + j * 2 * floaterRadius);
                 let color = colors[i - 1];
-                if (Math.abs(center.z) >= 20. || Math.abs(center.z) <= .5 || Math.abs(Math.abs(center.z) - 10.) <= .25) color = new GL.Vector(1, 0, 0);
+                if (Math.abs(center.z) >= 20. || Math.abs(center.z) <= .5 || Math.abs(Math.abs(center.z) - 10.) <= .25) color = red;
                 this.floaters.push(new Sphere(center, floaterRadius, color, 2.5));
             }
         }
@@ -563,7 +563,6 @@ class Config {
     async updateVideoForOfflineRendering() {
         if (this.currentVideo && this.currentVideo.video) {
             if (this.time < 0 || this.time > this.currentVideo.video.duration) return;
-            console.log("this.time : " + this.time);
             await this.currentVideo.setTime(this.time);
         }
     }
@@ -681,8 +680,7 @@ class Config {
         // this.params.chronoPhotography.available = true;
 
         this.demoEvents = [
-            { time: 0, text: "Situated Water-Based Visual Effects for Sports Video Augmentation", duration: 3, pause: true },
-            { time: 0, text: "Submission to IEEE Vis 2026 #1528", duration: 2.5, pause: true },
+            { time: 0, text: "Situated Water-Based Visual Effects for Sports Video Augmentation \n Submission to IEEE Vis 2026 #1528", duration: 4, pause: true },
             {
                 time: 0, text: "Reproduction of the current TV approach", duration: 2, action: () => {
                     this.params.video.show = true;
@@ -692,18 +690,19 @@ class Config {
             { time: 8, text: "Currently they use an overlay projection plan.", duration: 2, action: () => this.showOverlayPlane = true, pause: false },
             { time: 10, text: "Then the flags are drawn on the overlay.", duration: 2, action: () => this.params.visualizations.showFlags = true, pause: false },
             { time: 12, text: "The overlay is transparent where nothing is drawn.", duration: 3, action: () => this.showOverlayPlane = false, pause: false },
-            { time: 16, text: "Our method", duration: 5, action: () => this.#prepareDemoPart2(), pause: false },
+            { time: 16, text: "Our method", duration: 3, action: () => this.#prepareDemoPart2(), pause: false },
+            { time: 4, text: "We use water-based visual effects to amplify swimming race data", duration: 5, pause: false },
             { time: 15, text: "Method breakdown", duration: 3, action: () => this.#prepareDemoPart3(), pause: true },
             { time: 0.5, text: "Evan Wallace's WebGL water", duration: 3.5, pause: false },
             { time: 4, text: "nothing", duration: 0, action: () => this.#prepareDemoPart4(), pause: false },
-            { time: 0, text: "Adapted this for swimming", duration: 2, action: () => this.showOverlayPlane = false, pause: true },
-            { time: .5, text: "pool", duration: 1, pause: false },
-            { time: 1.5, text: "water", duration: 1, pause: false },
-            { time: 2.5, text: "floaters", duration: 1, action: () => this.hideFloaters = false, pause: false },
-            { time: 3.5, text: "spheres", duration: 2, pause: false },
-            { time: 6., text: "begin race", duration: 1 },
+            { time: 0, text: "We adapted to swimming", duration: 2, action: () => this.showOverlayPlane = false, pause: true },
+            { time: .5, text: "Pool", duration: 1, pause: false },
+            { time: 1.5, text: "Water", duration: 1, pause: false },
+            { time: 2.5, text: "Floaters", duration: 1, action: () => this.hideFloaters = false, pause: false },
+            { time: 3.5, text: "Spheres", duration: 2, pause: false },
+            { time: 6., text: "Let\' start a swimming race", duration: 1 },
             {
-                time: 7.5, text: "transition", duration: 2.5, pause: true, calib: new Calibration({
+                time: 7.5, text: "Flag appear with water-based transition", duration: 2.5, pause: true, calib: new Calibration({
                     tx: 16.9,
                     ty: 6.9,
                     zoom: 20.5,
@@ -735,18 +734,18 @@ class Config {
                     fov: 39.98
                 })
             },
-            { time: 15.7, text: "speeds", duration: 1.5, pause: false },
+            { time: 15.7, text: "Speeds", duration: 1.5, pause: false },
             { time: 17.2, text: "First swimmers lines", duration: 1.5, pause: false },
             { time: 18.7, text: "Potential medals", duration: 1.5, pause: false },
             { time: 20.2, text: "World record line", duration: 1.5, pause: false },
             // { time: 16, text: "World record line", duration: 2, pause: false },
-            { time: 22.5, text: "Adding video but keeping the virtual water", duration: 2, pause: false },
+            { time: 22.5, text: "Embedding in the original swimming race video", duration: 2, pause: false },
             { time: 24.5, text: "Hiding spheres", duration: 2.5, pause: false },
             { time: 27, text: "Hiding obstructions", duration: 2, pause: false },
             { time: 28.5, text: "Corner view from above", duration: 2, action: () => this.params.cornerView.show = true, pause: false },
             { time: 33.5, text: "Transferring to synchronized swimming", duration: 20, action: () => this.#prepareDemoPart5(), pause: false },
             { time: 27.5, text: "Artificially enhanced foam to draw the trajectory", duration: 2, pause: false },
-            { time: 30.2, text: "Splashes to emphasize an event", duration: 2, pause: true },
+            { time: 30.1, text: "Splashes to emphasize an event", duration: 2, pause: true },
         ];
         this.currentDemoEvent = this.demoEvents.shift();
     }
@@ -809,10 +808,11 @@ class Config {
         if (this.demoEventDisplayed) {
             this.demoEventDuration += dt;
             if (this.currentDemoEvent.calib) {
-                const halfDuration = this.currentDemoEvent.duration / 2;
+                const duration = this.currentDemoEvent.duration;
                 let intensity;
-                if (this.demoEventDuration <= halfDuration) intensity = this.demoEventDuration / halfDuration;
-                else intensity = 1 - (this.demoEventDuration - halfDuration) / halfDuration;
+                if (this.demoEventDuration < duration / 6 || this.demoEventDuration > 5 * duration / 6) intensity = 0.;
+                else if (this.demoEventDuration <= duration / 2) intensity = (this.demoEventDuration - duration / 6) / (duration / 3);
+                else intensity = 1 - (this.demoEventDuration - duration / 2) / (duration / 3);
                 if (!this.demoShowVideoTime) this.demoSavedCalib.ay += 15 * dt;
                 this.setCalibration(this.demoSavedCalib.interpolate(this.currentDemoEvent.calib, intensity, .33));
             }
@@ -854,7 +854,7 @@ class Config {
 
         // }
         const t = this.demoTime;
-        console.log("demo time : " + t);
+        // console.log("demo time : " + t);
         if (!this.demoPart3Started || this.demoPart5Started) return;
         const showWaterTime = 1.5;
         const beginShowSwimmersTime = 3.5;
