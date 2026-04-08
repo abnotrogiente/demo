@@ -153,7 +153,6 @@ class Swimmer {
     }
 
     swim(start) {
-        console.log("START SWIM");
         this.hasReacted = start;
         this.isSwimming = start;
         this.finishTime = 0;

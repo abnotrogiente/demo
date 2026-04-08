@@ -248,7 +248,7 @@ window.onload = function () {
       error: console.error
     });
 
-    const fps = 40;
+    const fps = 50;
     const frameDuration = 1_000_000 / fps;
 
     encoder.configure({
@@ -256,10 +256,10 @@ window.onload = function () {
       width: canvas.width,
       height: canvas.height,
       framerate: fps,
-      bitrate: 10_000_000
+      bitrate: 16_000_000
     });
 
-    const videoDuration = 92;
+    const videoDuration = 145;
 
     const totalFrames = videoDuration * fps;
 
@@ -292,12 +292,12 @@ window.onload = function () {
 
         // Draw specific HTML elements centered
         ctx.fillStyle = 'white';
-        ctx.font = '55px Arial';
+        ctx.font = 'bold 55px Arial';
         ctx.textAlign = 'center';
 
         const demoText = document.getElementById('demo-text');
         if (demoText) {
-          ctx.fillText(`${demoText.innerText}`, canvas.width / 2, canvas.height / 10);
+          ctx.fillText(`${demoText.innerText}`, canvas.width / 2, canvas.height / 4);
         }
 
         // Draw other overlay text as needed
@@ -703,7 +703,7 @@ window.onload = function () {
     gl.rotate(-config.angleY, 0, 1, 0);
     gl.translate(0, 0.5, 0);
 
-    // printCalib();
+    printCalib();
 
     gl.enable(gl.DEPTH_TEST);
     gl.disable(gl.BLEND);
