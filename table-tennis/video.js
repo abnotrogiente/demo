@@ -194,11 +194,13 @@ export class Video {
 
             // Left arm
             const leftArm = riggedPose.LeftUpperArm;
+            leftArm.z = -leftArm.z;
             const leftForeArm = riggedPose.LeftLowerArm;
+            leftForeArm.z = -leftForeArm.z;
 
             // rigRotation(this.bones.leftShoulder, leftArm, 0.8, 0.3, 'arm');
-            // rigRotation(this.bones.leftUpperArm, leftArm, 0.9, 0.3, 'arm');
-            // rigRotation(this.bones.leftLowerArm, leftForeArm, 1.0, 0.25, 'arm');
+            rigRotation(this.bones.leftUpperArm, leftArm, 0.9, 0.3, 'arm');
+            rigRotation(this.bones.leftLowerArm, leftForeArm, 1.0, 0.25, 'arm');
 
             // Right arm
             const rightArm = riggedPose.RightUpperArm;
@@ -206,7 +208,7 @@ export class Video {
 
             // rigRotation(this.bones.rightShoulder, rightArm, 0.8, 0.3, 'arm');
             rigRotation(this.bones.rightUpperArm, rightArm, 0.9, 0.3, 'arm');
-            // rigRotation(this.bones.rightLowerArm, rightForeArm, 1.0, 0.25, 'arm');
+            rigRotation(this.bones.rightLowerArm, rightForeArm, 1.0, 0.25, 'arm');
 
             // Legs
             // rigRotation(this.bones.leftUpperLeg, riggedPose.LeftUpperLeg, 0.9, 0.2, 'leg');
