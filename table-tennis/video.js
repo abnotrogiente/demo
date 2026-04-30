@@ -221,14 +221,14 @@ export class Video {
             const scale = 1.5; // tweak this
 
             //TODO enable hips movements in the future
-            // this.bones.hips.position.lerp(
-            //     new Vector3(
-            //         riggedPose.Hips.position.x * scale,
-            //         riggedPose.Hips.position.y * scale,
-            //         -riggedPose.Hips.position.z * scale
-            //     ),
-            //     0.3
-            // );
+            this.bones.hips.position.lerp(
+                new Vector3(
+                    riggedPose.Hips.position.x * scale,
+                    riggedPose.Hips.position.z * scale,
+                    -riggedPose.Hips.position.y * scale + 1
+                ),
+                0.3
+            );
 
             // this.player.skinnedMesh.updateMatrixWorld(true);
             // this.player.skeleton.calculateInverses();
