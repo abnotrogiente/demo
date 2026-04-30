@@ -224,7 +224,7 @@ export class Video {
             this.bones.hips.position.lerp(
                 new Vector3(
                     riggedPose.Hips.position.x * scale,
-                    riggedPose.Hips.position.z * scale,
+                    riggedPose.Hips.position.z * scale + 2,
                     -riggedPose.Hips.position.y * scale + 1
                 ),
                 0.3
