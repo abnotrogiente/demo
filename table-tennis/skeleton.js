@@ -1,4 +1,4 @@
-import { Bone, Scene, Skeleton, SkeletonHelper, Vector3, WebGLRenderer } from "three";
+import { Bone, Quaternion, Scene, Skeleton, SkeletonHelper, SkinnedMesh, Vector3, WebGLRenderer } from "three";
 import { GLTFLoader } from "three/examples/jsm/Addons.js";
 
 
@@ -28,12 +28,23 @@ const trackingBone2MeshBone = {
     right_foot: "mixamorigRightFoot",
 };
 
+/**
+ * 
+ * @param {SkinnedMesh} skinnedMesh 
+ * @returns 
+ */
 function getBoneMap(skinnedMesh) {
     const bones = {};
+    let i = 0;
     skinnedMesh.skeleton.bones.forEach(b => {
+        console.log("bone name : " + b.name);
         bones[b.name] = b;
+        i++;
+        // b.position.copy(b.worldToLocal(new Vector3(2, 2, 2)))
     });
+    console.log("num bones : " + i);
     return bones;
+
 }
 
 // Project a 3D position to 2D screen coordinates
@@ -72,6 +83,7 @@ export class Players {
         this.camera = camera;
         this.scene = scene;
         this.renderer = renderer;
+
     }
 
 
@@ -98,7 +110,7 @@ export class Players {
             this.player = gltf.scene;
 
             if (this.player) {
-                this.scene.add(this.player);
+                // this.scene.add(this.player);
 
                 let skinnedMesh = null;
 
@@ -114,7 +126,8 @@ export class Players {
                 }
 
                 // Attach your skeleton root if needed
-                this.player.add(this.skeletons[0][0]);
+                // this.player.add(this.skeletons[0][0]);
+                this.boneMap = getBoneMap(skinnedMesh);
 
                 // Bind correctly
                 // skinnedMesh.bind(new Skeleton(this.skeletons[0]));
@@ -123,23 +136,88 @@ export class Players {
                 console.log("Load FAILED.");
             }
 
-            gltf.scene.traverse((obj) => {
-                if (obj.isSkinnedMesh) {
-                    const skeleton = obj.skeleton;
 
-                    let bonesstr = "";
-                    skeleton.bones.forEach(bone => {
-
-                        bonesstr += `Bone: ${bone.name}, Parent: ${bone.parent?.name || "none"}`
-
-                    });
-                    console.log(bonesstr);
-                }
-            });
         }
 
         loadData();
     }
+
+    // applyPose() {
+    //     if (!this.boneMap) return;
+    //     for (const [id, name] of Object.entries(this.meta.keypoint_id2name)) {
+    //         const mixamoName = trackingBone2MeshBone[name];
+    //         if (!mixamoName) continue;
+
+    //         /**@type {Bone} */
+    //         const bone = this.boneMap[mixamoName];
+    //         if (!bone) continue;
+
+    //         const kp = this.skeletons[0][id].position;
+    //         if (!kp) continue;
+
+    //         // Example: set position (root only usually)
+    //         if (name === "root") {
+    //             bone.position.set(kp.x, kp.y, kp.z);
+    //             bone.position.copy(bone.worldToLocal(new Vector3(kp.x, kp.y, kp.z)));
+    //             console.log("MOVED");
+    //         }
+    //     }
+    // }
+
+    #alignBoneToDirection(bone, dir, strength = 1.0) {
+        if (!bone) return;
+
+        // ⚠️ IMPORTANT: Mixamo bones usually point along +Y
+        const forward = new Vector3(0, 1, 0);
+
+        const quat = new Quaternion().setFromUnitVectors(forward, dir);
+        bone.quaternion.slerp(quat, strength);
+    }
+
+
+    // --- MAIN RETARGET FUNCTION --------------------------------------------
+
+    applyPose() {
+
+        // 1. Move root (hips)
+        const rootKP = this.skeletons[0][0];
+        if (!this.boneMap) return;
+        if (rootKP && this.boneMap["mixamorigHips"]) {
+
+            /**@type {Bone} */
+            const root = this.boneMap["mixamorigHips"];
+            root.position.copy(root.worldToLocal(new Vector3(
+                rootKP.x,
+                rootKP.y,
+                rootKP.z
+            )));
+        }
+
+        // 2. Apply rotations from links
+        this.meta.skeleton_links.forEach(([a, b]) => {
+
+            const nameA = this.meta.keypoint_id2name[a];
+            const nameB = this.meta.keypoint_id2name[b];
+
+            const boneName = trackingBone2MeshBone[nameA];
+            if (!boneName) return;
+
+            const bone = this.boneMap[boneName];
+            if (!bone) return;
+
+            const kpA = this.skeletons[0][a];
+            const kpB = this.skeletons[0][b];
+            if (!kpA || !kpB) return;
+
+            const posA = kpA.position;
+            const posB = kpB.position;
+
+            const dir = new Vector3().subVectors(posB, posA).normalize();
+
+            this.#alignBoneToDirection(bone, dir, 0.7);
+        });
+    }
+
 
     /**
      * Update both skeletons to the given frame index
@@ -153,6 +231,7 @@ export class Players {
                 this.#updateSkeletonPose(this.skeletons[i], instances[i].keypoints);
             }
         }
+        this.applyPose();
     }
 
     /**
@@ -162,7 +241,7 @@ export class Players {
      */
     #updateSkeletonPose(bones, keypoints) {
         for (let i = 0; i < bones.length; i++) {
-            this.#updateLabel(bones[i]);
+            // this.#updateLael(bones[i]);
             const [x, y, z] = keypoints[i];
             if (i == 0) bones[i].position.set(x, z, y);
             else bones[i].position.copy(new Vector3(x, z, y).sub(bones[0].position));

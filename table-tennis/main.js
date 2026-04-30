@@ -27,6 +27,9 @@ import {
 
 
 import { Physics } from './physics';
+import { Players } from './skeleton';
+import { Player } from './player';
+import { Video } from './video';
 
 
 
@@ -78,29 +81,39 @@ const table = physics.createBox({
     friction: .6     // higher friction (grip)
 });
 
-const ground = physics.createBox({
-    dimensions: new Vector3(20, .2, 20),
-})
+// const ground = physics.createBox({
+//     dimensions: new Vector3(20, .2, 20),
+// })
 
 const roomGeometry = new BoxGeometry(20, 3, 20);
 const roomMaterial = new MeshStandardMaterial({ side: BackSide });
 const room = new Mesh(roomGeometry, roomMaterial);
-room.position.y = 1.5;
-// scene.add(room);
+// room.position.y = 1.5;
+scene.add(room);
 
 const cubeGeometry = new BoxGeometry();
 const cubeMaterial = new MeshStandardMaterial();
 const cube = new Mesh(cubeGeometry, cubeMaterial);
-scene.add(cube);
+// scene.add(cube);
 
 const ball = physics.createSphere({
     position: new Vector3(0, 1.3, 0),
     radius: 0.01381,
     color: 0xfe7000,
-    mass: 0.003,
+    mass: 0.0027,
     restitution: .9, // very bouncy
     friction: .2     // low friction (slides easily)
 });
+
+// const players = new Players(camera, scene, renderer);
+// await players.init();
+const player = new Player();
+await player.init(scene);
+
+const video = new Video(player);
+await video.init();
+
+//TODO importer assets gltf
 
 
 async function parseCsv(source) {
@@ -128,7 +141,7 @@ async function parseCsv(source) {
 
 const calibration_fps = 25;
 const calibrations = await parseCsv("./assets/cam_cal_filtered.csv");
-console.log("calibrations : " + JSON.stringify(calibrations));
+// console.log("calibrations : " + JSON.stringify(calibrations));
 
 
 function updateCalibration(elapsedTime) {
@@ -136,22 +149,23 @@ function updateCalibration(elapsedTime) {
     // console.log("calib index : " + calibIndex);
     const calib = calibrations[calibIndex];
     if (!calib || calib["f"] == 0) return;
-    const t = new Vector3(parseFloat(calib["tvec_z"]), -parseFloat(calib["tvec_y"]) + 6, parseFloat(calib["tvec_x"]));
-    const r = new Vector3(parseFloat(calib["rvec_z"]), -parseFloat(calib["rvec_y"]), parseFloat(calib["rvec_x"]));
+    const t = new Vector3(parseFloat(calib["tvec_y"]), parseFloat(calib["tvec_z"]) + 6, parseFloat(calib["tvec_x"]));
+    const r = new Vector3(parseFloat(calib["rvec_y"]), parseFloat(calib["rvec_z"]), parseFloat(calib["rvec_x"]));
 
-    console.log("ERROR : " + calib["error"]);
+    // console.log("ERROR : " + calib["error"]);
     // camera.position.copy(t);
     // camera.setRotationFromEuler(new Euler(r.x, r.y, r.z));
 
     // camera.setFocalLength(parseFloat(calib["f"]) / 100);
-    camera.position.copy(t);
-    camera.setRotationFromEuler(new Euler(r.x, r.y, r.z, "ZYX"));
-    camera.fov = 2 * Math.atan(1280 / (2 * parseFloat(calib["f"]))) * 360 / (2 * Math.PI);
-    camera.updateProjectionMatrix();
-
+    cameraDebug.position.copy(t);
+    cameraDebug.setRotationFromEuler(new Euler(r.x, r.y, r.z, "ZXY"));
+    cameraDebug.fov = 2 * Math.atan(1280 / (2 * parseFloat(calib["f"]))) * 360 / (2 * Math.PI);
+    cameraDebug.updateProjectionMatrix();
     cameraDebug.updateMatrixWorld();
     cameraDebug.updateProjectionMatrix();
     helper.update();
+
+    // players.update(calibIndex);
 }
 
 
@@ -166,6 +180,7 @@ const animation = () => {
     const elapsed = clock.getElapsedTime();
 
     updateCalibration(elapsed);
+    video.detectFrame();
 
     // can be used in shaders: uniforms.u_time.value = elapsed;
 

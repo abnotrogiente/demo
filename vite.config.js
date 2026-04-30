@@ -20,8 +20,10 @@ for (let i = 1; i <= 8; i++) copies.push({ src: "swimming/assets/race-data/" + i
 
 export default defineConfig({
     base: "/demo/",
+    assetsInclude: ["**/*.wasm"],
     clearScreen: false,
     optimizeDeps: {
+        exclude: ["ammojs-typed"],
         esbuildOptions: {
             supported: {
                 'top-level-await': true
@@ -39,7 +41,8 @@ export default defineConfig({
                 main: resolve(__dirname, 'index.html'),
                 demo1: resolve(__dirname, 'demo1/index.html'),
                 square: resolve(__dirname, 'square/index.html'),
-                swimming: resolve(__dirname, 'swimming/index.html')
+                swimming: resolve(__dirname, 'swimming/index.html'),
+                'table-tennis': resolve(__dirname, 'table-tennis/index.html')
                 // ajoute autant de démos que nécessaire
             }
         },
