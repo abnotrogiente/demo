@@ -39,7 +39,7 @@ export class Player {
     async init(scene) {
         const loader = new GLTFLoader().setPath('assets/');
 
-        const gltf = await loader.loadAsync('Soldier.glb'); // ✅ THIS is what you want
+        const gltf = await loader.loadAsync('caracter.glb'); // ✅ THIS is what you want
 
         this.scene = gltf.scene;
 

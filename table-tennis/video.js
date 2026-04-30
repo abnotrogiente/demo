@@ -12,26 +12,20 @@ import { Pose } from "kalidokit";
  * @param {string} type - Joint type: 'arm', 'leg', 'spine', 'hip'
  * @returns 
  */
-function rigRotation(bone, rotation, dampener = 1, lerpAmount = 0.3, type = 'default') {
-    if (!bone) return;
+function rigRotation(bone, rotation, dampener = 1, lerpAmount = 0.7) {
+    if (!bone || !rotation) return;
 
-    // Different joint types need different axis handling due to scene transformation
-    // The scene is rotated by Math.PI on Y and -Math.PI/2 on X
-    let x = rotation.x * dampener;
-    let y = rotation.z * dampener;
-    let z = rotation.y * dampener;
+    console.log("x : " + rotation.x);
+    console.log("y : " + rotation.y);
+    console.log("z : " + rotation.z);
+    console.log("\n\n");
+    const euler = new Euler(
+        rotation.z * dampener, // GOOD
+        rotation.x * dampener,
+        rotation.y * dampener, // GOOD
+        "YZX" // YXZ cht // ZYX en cvrt
+    );
 
-    // // Invert Y-axis for arms to fix cross-body rotation
-    // if (type === 'arm') {
-    //     y = -y;
-    // }
-
-    // // Invert Z-axis for legs to prevent folding inward
-    // if (type === 'leg') {
-    //     z = -z;
-    // }
-
-    const euler = new Euler(x, y, z, "XZY");
     const quat = new Quaternion().setFromEuler(euler);
 
     bone.quaternion.slerp(quat, lerpAmount);
@@ -46,27 +40,31 @@ export class Video {
         this.player = player;
         const skeleton = player.skeleton;
         this.bones = {
-            hips: skeleton.getBoneByName("mixamorigHips"),
+            hips: skeleton.getBoneByName("pelvis_01"),
 
-            spine: skeleton.getBoneByName("mixamorigSpine"),
-            spine1: skeleton.getBoneByName("mixamorigSpine1"),
-            spine2: skeleton.getBoneByName("mixamorigSpine2"),
+            spine: skeleton.getBoneByName("spine_02"),
+            chest: skeleton.getBoneByName("chest_03"),
+            neck: skeleton.getBoneByName("neck_04"),
+            head: skeleton.getBoneByName("head_05"),
 
-            leftShoulder: skeleton.getBoneByName("mixamorigLeftShoulder"),
-            leftUpperArm: skeleton.getBoneByName("mixamorigLeftArm"),
-            leftLowerArm: skeleton.getBoneByName("mixamorigLeftForeArm"),
+            leftShoulder: skeleton.getBoneByName("shoulder_left_06"),
+            leftUpperArm: skeleton.getBoneByName("upper_arm_left_07"),
+            leftLowerArm: skeleton.getBoneByName("forearm_left_08"),
+            leftHand: skeleton.getBoneByName("hand_left_09"),
 
-            rightShoulder: skeleton.getBoneByName("mixamorigRightShoulder"),
-            rightUpperArm: skeleton.getBoneByName("mixamorigRightArm"),
-            rightLowerArm: skeleton.getBoneByName("mixamorigRightForeArm"),
+            rightShoulder: skeleton.getBoneByName("shoulder_right_013"),
+            rightUpperArm: skeleton.getBoneByName("upper_arm_right_014"),
+            rightLowerArm: skeleton.getBoneByName("forearm_right_015"),
+            rightHand: skeleton.getBoneByName("hand_right_016"),
 
-            leftUpperLeg: skeleton.getBoneByName("mixamorigLeftUpLeg"),
-            leftLowerLeg: skeleton.getBoneByName("mixamorigLeftLeg"),
+            leftUpperLeg: skeleton.getBoneByName("thigh_left_020"),
+            leftLowerLeg: skeleton.getBoneByName("shinL_021"),
+            leftFoot: skeleton.getBoneByName("foot_left_022"),
 
-            rightUpperLeg: skeleton.getBoneByName("mixamorigRightUpLeg"),
-            rightLowerLeg: skeleton.getBoneByName("mixamorigRightLeg"),
+            rightUpperLeg: skeleton.getBoneByName("thigh_right_023"),
+            rightLowerLeg: skeleton.getBoneByName("shinR_024"),
+            rightFoot: skeleton.getBoneByName("foot_right_025"),
         };
-
         this.connections = [
             [11, 13], [13, 15], // left arm
             [12, 14], [14, 16], // right arm
@@ -81,7 +79,7 @@ export class Video {
     }
 
     async init() {
-        const stream = await this.getCameraStream(true);
+        const stream = await this.getCameraStream(false);
         this.webcamVideo = document.createElement('video');
         this.webcamVideo.srcObject = stream;
         this.webcamVideo.playsInline = true;
@@ -114,9 +112,9 @@ export class Video {
         this.canvas_2D.style.left = "0";
 
 
-        this.player.scene.rotation.y = Math.PI; // flip front direction
-        this.player.scene.rotation.x = -Math.PI / 2;
-        this.player.scene.position.y += 1;
+        // this.player.scene.rotation.y = Math.PI; // flip front direction
+        // this.player.scene.rotation.x = Math.PI / 2;
+        // this.player.scene.position.y += 1;
     }
 
     drawLandmarks(landmarks) {
@@ -190,33 +188,32 @@ export class Video {
             // console.log("riggedPose: \n" + JSON.stringify(riggedPose));
 
             // Spine rotations (apply to hierarchy from base to top)
-            rigRotation(this.bones.hips, riggedPose.Hips.rotation, 0.8, 0.3);
-            rigRotation(this.bones.spine, riggedPose.Spine, 0.9, 0.3);
-            rigRotation(this.bones.spine1, riggedPose.Spine, 0.5, 0.3);
-            rigRotation(this.bones.spine2, riggedPose.Spine, 0.3, 0.3);
+            // rigRotation(this.bones.hips, riggedPose.Hips.rotation, 0.8, 0.3);
+            // rigRotation(this.bones.spine, riggedPose.Spine, 0.9, 0.3);
+            // rigRotation(this.bones.chest, riggedPose.Spine, 0.3, 0.3);
 
             // Left arm
             const leftArm = riggedPose.LeftUpperArm;
             const leftForeArm = riggedPose.LeftLowerArm;
 
-            rigRotation(this.bones.leftShoulder, leftArm, 0.8, 0.3, 'arm');
-            rigRotation(this.bones.leftUpperArm, leftArm, 0.9, 0.3, 'arm');
-            rigRotation(this.bones.leftLowerArm, leftForeArm, 1.0, 0.25, 'arm');
+            // rigRotation(this.bones.leftShoulder, leftArm, 0.8, 0.3, 'arm');
+            // rigRotation(this.bones.leftUpperArm, leftArm, 0.9, 0.3, 'arm');
+            // rigRotation(this.bones.leftLowerArm, leftForeArm, 1.0, 0.25, 'arm');
 
             // Right arm
             const rightArm = riggedPose.RightUpperArm;
             const rightForeArm = riggedPose.RightLowerArm;
 
-            rigRotation(this.bones.rightShoulder, rightArm, 0.8, 0.3, 'arm');
+            // rigRotation(this.bones.rightShoulder, rightArm, 0.8, 0.3, 'arm');
             rigRotation(this.bones.rightUpperArm, rightArm, 0.9, 0.3, 'arm');
-            rigRotation(this.bones.rightLowerArm, rightForeArm, 1.0, 0.25, 'arm');
+            // rigRotation(this.bones.rightLowerArm, rightForeArm, 1.0, 0.25, 'arm');
 
             // Legs
-            rigRotation(this.bones.leftUpperLeg, riggedPose.LeftUpperLeg, 0.9, 0.2, 'leg');
-            rigRotation(this.bones.leftLowerLeg, riggedPose.LeftLowerLeg, 1.0, 0.2, 'leg');
+            // rigRotation(this.bones.leftUpperLeg, riggedPose.LeftUpperLeg, 0.9, 0.2, 'leg');
+            // rigRotation(this.bones.leftLowerLeg, riggedPose.LeftLowerLeg, 1.0, 0.2, 'leg');
 
-            rigRotation(this.bones.rightUpperLeg, riggedPose.RightUpperLeg, 0.9, 0.2, 'leg');
-            rigRotation(this.bones.rightLowerLeg, riggedPose.RightLowerLeg, 1.0, 0.2, 'leg');
+            // rigRotation(this.bones.rightUpperLeg, riggedPose.RightUpperLeg, 0.9, 0.2, 'leg');
+            // rigRotation(this.bones.rightLowerLeg, riggedPose.RightLowerLeg, 1.0, 0.2, 'leg');
 
             // Position (scaled!)
             const scale = 1.5; // tweak this
@@ -231,7 +228,7 @@ export class Video {
             //     0.3
             // );
 
-            this.player.skinnedMesh.updateMatrixWorld(true);
+            // this.player.skinnedMesh.updateMatrixWorld(true);
             // this.player.skeleton.calculateInverses();
 
             // landmarks3D.forEach(point => {
