@@ -96,14 +96,22 @@ const cubeMaterial = new MeshStandardMaterial();
 const cube = new Mesh(cubeGeometry, cubeMaterial);
 // scene.add(cube);
 
+const radius = 0.01381;
 const ball = physics.createSphere({
     position: new Vector3(0, 1.3, 0),
-    radius: 0.01381,
+    radius: radius,
     color: 0xfe7000,
     mass: 0.0027,
     restitution: .9, // very bouncy
     friction: .2     // low friction (slides easily)
 });
+
+const tracked_ball = new Mesh(
+    new SphereGeometry(radius * 2),
+    new MeshStandardMaterial({ color: 0xfe7000 })
+);
+tracked_ball.position.y = 1.5;
+scene.add(tracked_ball);
 
 // const players = new Players(camera, scene, renderer);
 // await players.init();
@@ -141,11 +149,19 @@ async function parseCsv(source) {
 
 const calibration_fps = 25;
 const calibrations = await parseCsv("./assets/cam_cal_filtered.csv");
+const ball_positions = await parseCsv("./assets/ball_traj_3D.csv");
 // console.log("calibrations : " + JSON.stringify(calibrations));
 
 
 function updateCalibration(elapsedTime) {
     const calibIndex = Math.floor(elapsedTime * calibration_fps);
+
+    const traj = ball_positions[calibIndex % 290];
+    // console.log("z : " + traj["z\r"]);
+    const z = parseFloat(traj["z\r"]);
+    tracked_ball.position.set(traj["x"], z + tableDimensions.altitude, traj["y"]);
+
+
     // console.log("calib index : " + calibIndex);
     const calib = calibrations[calibIndex];
     if (!calib || calib["f"] == 0) return;
@@ -164,6 +180,8 @@ function updateCalibration(elapsedTime) {
     cameraDebug.updateMatrixWorld();
     cameraDebug.updateProjectionMatrix();
     helper.update();
+
+
 
     // players.update(calibIndex);
 }
