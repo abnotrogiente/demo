@@ -24,6 +24,8 @@
     "esbuild": "^0.25.0"
   },
   "dependencies": {
+    "@mediapipe/tasks-vision": "^0.10.35",
+    "kalidokit": "^1.1.5",
     "three": "^0.173.0",
     "webm-muxer": "^5.1.4"
   }
