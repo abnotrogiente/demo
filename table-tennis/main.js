@@ -27,8 +27,8 @@ import {
 
 
 import { Physics } from './physics';
-import { Players } from './skeleton';
-import { Player } from './player';
+// import { Players } from './skeleton';
+import { Players } from './players';
 import { Video } from './video';
 
 
@@ -73,7 +73,7 @@ const tableDimensions = {
 };
 
 const table = physics.createBox({
-    position: new Vector3(0, tableDimensions.altitude, 0),
+    position: new Vector3(0, 0, 0),
     // rotation: new Quaternion(0., 0., .02, 1.),
     dimensions: new Vector3(tableDimensions.depth, tableDimensions.height, tableDimensions.width),
     color: 0x0030FF,
@@ -88,7 +88,7 @@ const table = physics.createBox({
 const roomGeometry = new BoxGeometry(20, 3, 20);
 const roomMaterial = new MeshStandardMaterial({ side: BackSide });
 const room = new Mesh(roomGeometry, roomMaterial);
-// room.position.y = 1.5;
+room.position.y = 1.5 - tableDimensions.altitude;
 scene.add(room);
 
 const cubeGeometry = new BoxGeometry();
@@ -115,11 +115,12 @@ scene.add(tracked_ball);
 
 // const players = new Players(camera, scene, renderer);
 // await players.init();
-const player = new Player();
-await player.init(scene);
 
-const video = new Video(player);
+const video = new Video();
 await video.init();
+
+const players = new Players(video, scene);
+await players.init(scene);
 
 //TODO importer assets gltf
 
@@ -159,7 +160,7 @@ function updateCalibration(elapsedTime) {
     const traj = ball_positions[calibIndex % 290];
     // console.log("z : " + traj["z\r"]);
     const z = parseFloat(traj["z\r"]);
-    tracked_ball.position.set(traj["x"], z + tableDimensions.altitude, traj["y"]);
+    tracked_ball.position.set(traj["x"], z, traj["y"]);
 
 
     // console.log("calib index : " + calibIndex);
@@ -198,7 +199,7 @@ const animation = () => {
     const elapsed = clock.getElapsedTime();
 
     updateCalibration(elapsed);
-    video.detectFrame();
+    players.detectFrame();
 
     // can be used in shaders: uniforms.u_time.value = elapsed;
 
