@@ -15,15 +15,15 @@ import { Pose } from "kalidokit";
 function rigRotation(bone, rotation, dampener = 1, lerpAmount = 0.7) {
     if (!bone || !rotation) return;
 
-    console.log("x : " + rotation.x);
-    console.log("y : " + rotation.y);
-    console.log("z : " + rotation.z);
-    console.log("\n\n");
+    // console.log("x : " + rotation.x);
+    // console.log("y : " + rotation.y);
+    // console.log("z : " + rotation.z);
+    // console.log("\n\n");
     const euler = new Euler(
         rotation.z * dampener, // GOOD
         rotation.x * dampener,
         rotation.y * dampener, // GOOD
-        "YZX" // YXZ cht // ZYX en cvrt
+        "YZX" // FINAL YZX // YXZ cht // ZYX en cvrt
     );
 
     const quat = new Quaternion().setFromEuler(euler);
@@ -79,7 +79,7 @@ export class Video {
     }
 
     async init() {
-        const stream = await this.getCameraStream(false);
+        const stream = await this.getCameraStream(true);
         this.webcamVideo = document.createElement('video');
         this.webcamVideo.srcObject = stream;
         this.webcamVideo.playsInline = true;
@@ -182,6 +182,7 @@ export class Video {
                 video: HTMLVideoElement
             });
 
+            let x, y, z;
             const skeleton = this.player.skeleton;
 
             // --- APPLY ROTATIONS ---
@@ -211,6 +212,12 @@ export class Video {
             rigRotation(this.bones.rightLowerArm, rightForeArm, 1.0, 0.25, 'arm');
 
             // Legs
+            const lul_w = riggedPose.LeftUpperLeg;
+            x = lul_w.y * 0;
+            y = -lul_w.z;
+            z = -lul_w.x + 3.14;
+            const lul = new Vector3(x, y, z);
+            rigRotation(this.bones.leftUpperLeg, lul, 0.9, 0.2, 'leg');
             // rigRotation(this.bones.leftUpperLeg, riggedPose.LeftUpperLeg, 0.9, 0.2, 'leg');
             // rigRotation(this.bones.leftLowerLeg, riggedPose.LeftLowerLeg, 1.0, 0.2, 'leg');
 
@@ -224,7 +231,7 @@ export class Video {
             this.bones.hips.position.lerp(
                 new Vector3(
                     riggedPose.Hips.position.x * scale,
-                    riggedPose.Hips.position.z * scale + 2,
+                    riggedPose.Hips.position.z * scale + 3, // +3
                     -riggedPose.Hips.position.y * scale + 1
                 ),
                 0.3
