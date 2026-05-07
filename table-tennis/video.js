@@ -28,8 +28,13 @@ export class Video {
 
     }
 
-    async init() {
-        const stream = await this.getCameraStream(false);
+    async init(useMock = false) {
+        if (this.webcamVideo) {
+            this.webcamVideo.pause();
+            this.webcamVideo.removeAttribute("src");
+        }
+        this.useMock = useMock;
+        const stream = await this.getCameraStream(useMock);
         this.webcamVideo = document.createElement('video');
         this.webcamVideo.srcObject = stream;
         this.webcamVideo.playsInline = true;

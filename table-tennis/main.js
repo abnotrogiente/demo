@@ -32,25 +32,7 @@ import { Players } from './players';
 import { Video } from './video';
 // import CV from "@techstark/opencv-js"
 import { CV_Helper } from './cv';
-
-
-// function waitForOpenCV() {
-//     return new Promise((resolve) => {
-//         // If already initialized, resolve immediately
-//         if (CV && CV.Mat) {
-//             resolve(CV);
-//         } else {
-//             CV.onRuntimeInitialized = () => {
-//                 resolve();
-//             };
-//         }
-//     });
-// }
-
-
-
-
-
+import { initUI } from './uiWindow';
 
 
 
@@ -157,7 +139,7 @@ console.log("after cv init");
 // await initCV(video.webcamVideo);
 
 
-
+initUI(video, players);
 
 
 

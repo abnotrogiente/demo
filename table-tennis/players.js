@@ -177,19 +177,13 @@ export class Players {
     async init(scene) {
 
         console.log("test0");
-        const vision = await FilesetResolver.forVisionTasks(
+        this.vision = await FilesetResolver.forVisionTasks(
             "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm"
         );
 
         console.log("test1");
-        this.poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
-            baseOptions: {
-                modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task",
-                delegate: "GPU" // THIS enables GPU
-            },
-            runningMode: "VIDEO",
-            numPoses: 1
-        });
+        this.numPose = 1;
+        await this.setNumPoseDetected(this.numPose);
 
         console.log("test2");
         this.canvas_2D = document.createElement("canvas");
@@ -231,6 +225,21 @@ export class Players {
             throw new Error("No SkinnedMesh found in GLB");
         }
 
+    }
+
+    async setNumPoseDetected(num) {
+        if (num <= 0) {
+            console.warn("Incorrect number of pose for detection");
+            return;
+        }
+        this.poseLandmarker = await PoseLandmarker.createFromOptions(this.vision, {
+            baseOptions: {
+                modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task",
+                delegate: "GPU" // THIS enables GPU
+            },
+            runningMode: "VIDEO",
+            numPoses: num
+        });
     }
 
 
