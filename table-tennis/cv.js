@@ -38,14 +38,14 @@ export class CV_Helper {
         document.body.appendChild(this.cvCanvas);
         // const ctx = this.cvCanvas.getContext("2d");
 
-        const width = video_src.videoWidth;
-        const height = video_src.videoHeight;
-        video_src.height = height;
-        video_src.width = width;
+        this.width = video_src.videoWidth;
+        this.height = video_src.videoHeight;
+        video_src.height = this.height;
+        video_src.width = this.width;
 
 
-        this.cvCanvas.width = width / 2;
-        this.cvCanvas.height = height / 2;
+        this.cvCanvas.width = this.width / 2;
+        this.cvCanvas.height = this.height / 2;
 
         this.cvCanvas.style.zIndex = 9998;
 
@@ -56,12 +56,13 @@ export class CV_Helper {
         this.ctx_video = videoCanvas.getContext("2d");
 
 
-        this.width = this.cvCanvas.width;
-        this.height = this.cvCanvas.height;
+        // this.width = this.cvCanvas.width;
+        // this.height = this.cvCanvas.height;
         this.src = new CV.Mat(this.height, this.width, CV.CV_8UC4);
         this.gray = new CV.Mat(this.height, this.width, CV.CV_8UC4);
         this.hsv = new CV.Mat(this.height, this.width, CV.CV_8UC3);
         this.mask = new CV.Mat(this.height, this.width, CV.CV_8UC4);
+        this.dst = new CV.Mat(this.cvCanvas.height, this.cvCanvas.width, CV.CV_8UC4);
 
         this.lowerOrange = new CV.Scalar(5, 150, 150, 255);
         this.upperOrange = new CV.Scalar(25, 255, 255, 255);
@@ -71,17 +72,20 @@ export class CV_Helper {
         // this.upperOrange = [25, 255, 255];
         this.kernel = CV.Mat.ones(3, 3, CV.CV_8U);
 
+        this.cap = new CV.VideoCapture(video_src);
+
     }
 
     processFrame() {
         try {
 
-            this.ctx_video.drawImage(this.video_src, 0, 0, this.width, this.height);
+            // this.ctx_video.drawImage(this.video_src, 0, 0, this.width, this.height);
 
-            let img = this.ctx_video.getImageData(0, 0, this.width, this.height);
-            this.src.data.set(img.data);
-            CV.cvtColor(this.src, this.gray, CV.COLOR_RGBA2GRAY);
-            // CV.imshow(this.cvCanvas, this.gray);
+            // let img = this.ctx_video.getImageData(0, 0, this.width, this.height);
+            // this.src.data.set(img.data);
+            // CV.cvtColor(this.src, this.gray, CV.COLOR_RGBA2GRAY);
+            // // CV.imshow(this.cvCanvas, this.gray);
+            this.cap.read(this.src);
             this.trackBall();
 
 
@@ -155,7 +159,7 @@ export class CV_Helper {
             }
 
             // Ignore small contours
-            if (maxArea > 100) {
+            if (maxArea > 0) {
 
                 let circle = CV.minEnclosingCircle(largestContour);
 
@@ -231,7 +235,8 @@ export class CV_Helper {
 
 
         // Display result
-        CV.imshow(this.cvCanvas, this.src);
+        CV.resize(this.src, this.dst, this.dst.size(), 0, 0, CV.INTER_NEAREST);
+        CV.imshow(this.cvCanvas, this.dst);
 
     }
 
