@@ -30,6 +30,28 @@ import { Physics } from './physics';
 // import { Players } from './skeleton';
 import { Players } from './players';
 import { Video } from './video';
+// import CV from "@techstark/opencv-js"
+import { CV_Helper } from './cv';
+
+
+// function waitForOpenCV() {
+//     return new Promise((resolve) => {
+//         // If already initialized, resolve immediately
+//         if (CV && CV.Mat) {
+//             resolve(CV);
+//         } else {
+//             CV.onRuntimeInitialized = () => {
+//                 resolve();
+//             };
+//         }
+//     });
+// }
+
+
+
+
+
+
 
 
 
@@ -71,6 +93,8 @@ const tableDimensions = {
     altitude: 0.76,
     netHeight: 0.1525
 };
+
+//TODO Z should point to the score 
 
 const table = physics.createBox({
     position: new Vector3(0, 0, 0),
@@ -116,11 +140,26 @@ scene.add(tracked_ball);
 // const players = new Players(camera, scene, renderer);
 // await players.init();
 
+// await waitForOpenCV();
 const video = new Video();
 await video.init();
 
 const players = new Players(video, scene);
+console.log("before players init");
 await players.init(scene);
+console.log("after players init");
+
+
+const cvHelper = new CV_Helper();
+console.log("before cv init");
+await cvHelper.init(video.webcamVideo);
+console.log("after cv init");
+// await initCV(video.webcamVideo);
+
+
+
+
+
 
 //TODO importer assets gltf
 
@@ -192,6 +231,7 @@ const clock = new Clock();
 
 // Main loop
 const animation = () => {
+    console.log("enter animation");
 
     renderer.setAnimationLoop(animation); // requestAnimationFrame() replacement, compatible with XR 
 
@@ -200,6 +240,9 @@ const animation = () => {
 
     updateCalibration(elapsed);
     players.detectFrame();
+    cvHelper.processFrame();
+    // cvHelper.calibrate();
+    // processFrame();
 
     // can be used in shaders: uniforms.u_time.value = elapsed;
 

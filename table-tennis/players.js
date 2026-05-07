@@ -176,19 +176,22 @@ export class Players {
      */
     async init(scene) {
 
+        console.log("test0");
         const vision = await FilesetResolver.forVisionTasks(
             "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm"
         );
 
+        console.log("test1");
         this.poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
             baseOptions: {
                 modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task",
                 delegate: "GPU" // THIS enables GPU
             },
             runningMode: "VIDEO",
-            numPoses: 2
+            numPoses: 1
         });
 
+        console.log("test2");
         this.canvas_2D = document.createElement("canvas");
         this.ctx_2D = this.canvas_2D.getContext("2d");
 
@@ -199,6 +202,7 @@ export class Players {
         this.canvas_2D.style.position = "absolute";
         this.canvas_2D.style.top = "0";
         this.canvas_2D.style.left = "0";
+        this.canvas_2D.style.zIndex = 9999;
 
 
         ///////////////////////////////////////////////////////////////
@@ -261,7 +265,7 @@ export class Players {
 
 
     drawLandmarks2D(landmarks) {
-
+        // return;
         // draw lines
         this.ctx_2D.strokeStyle = "lime";
         this.ctx_2D.lineWidth = 2;

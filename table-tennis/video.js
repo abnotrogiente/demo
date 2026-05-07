@@ -1,3 +1,23 @@
+
+// async function getOpenCv() {
+//     /**@type {CV} */
+//     let cv;
+//     CV
+//     if (cvModule instanceof Promise) {
+//         cv = await cvModule;
+//     } else {
+//         if (cvModule.Mat) {
+//             cv = cvModule;
+//         } else {
+//             await new Promise((resolve) => {
+//                 cvModule.onRuntimeInitialized = () => resolve();
+//             });
+//             cv = cvModule;
+//         }
+//     }
+//     return { cv };
+// }
+
 export class Video {
     /**
      * 
@@ -9,7 +29,7 @@ export class Video {
     }
 
     async init() {
-        const stream = await this.getCameraStream(true);
+        const stream = await this.getCameraStream(false);
         this.webcamVideo = document.createElement('video');
         this.webcamVideo.srcObject = stream;
         this.webcamVideo.playsInline = true;
@@ -24,6 +44,7 @@ export class Video {
         if (useMock) {
             const video = document.createElement('video');
             video.src = './assets/rally.mp4';
+            // video.src = '../swimming/swimming-race.mp4';
             video.loop = true;
             video.muted = true;
             await video.play();
@@ -32,5 +53,7 @@ export class Video {
 
         return navigator.mediaDevices.getUserMedia({ video: true });
     }
+
+
 
 }
