@@ -1,3 +1,4 @@
+import { CV_Helper } from "./cv";
 import { Players } from "./players";
 import { Video } from "./video";
 
@@ -5,8 +6,9 @@ import { Video } from "./video";
  * 
  * @param {Players} players 
  * @param {Video} video 
+ * @param {CV_Helper} cvHelper 
  */
-export function initUI(video, players) {
+export function initUI(video, players, cvHelper) {
     const windowEl = document.getElementById("uiWindow");
     const resizeHandle = document.getElementById("resizeHandle");
     const minimizeBtn = document.getElementById("minimizeBtn");
@@ -58,9 +60,11 @@ export function initUI(video, players) {
 
     const videoSelect = document.getElementById("video-select");
     videoSelect.value = video.useMock ? "Video" : "WebCam";
-    videoSelect.addEventListener("change", () => {
+    videoSelect.addEventListener("change", async () => {
         const value = videoSelect.value;
         const useMock = value === "Video";
-        video.init(useMock);
+        await video.init(useMock);
+        players.setVideo(video);
+        cvHelper.init(video.webcamVideo);
     })
 }

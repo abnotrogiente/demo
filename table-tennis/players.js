@@ -186,18 +186,8 @@ export class Players {
         await this.setNumPoseDetected(this.numPose);
 
         console.log("test2");
-        this.canvas_2D = document.createElement("canvas");
-        this.ctx_2D = this.canvas_2D.getContext("2d");
 
-        this.canvas_2D.width = this.video.webcamVideo.videoWidth / 2;
-        this.canvas_2D.height = this.video.webcamVideo.videoHeight / 2;
-
-        document.body.appendChild(this.canvas_2D);
-        this.canvas_2D.style.position = "absolute";
-        this.canvas_2D.style.top = "0";
-        this.canvas_2D.style.left = "0";
-        this.canvas_2D.style.zIndex = 9999;
-
+        this.setVideo(this.video);
 
         ///////////////////////////////////////////////////////////////
         //LOAD MODEL/////////////////////////////////////////////////
@@ -240,6 +230,24 @@ export class Players {
             runningMode: "VIDEO",
             numPoses: num
         });
+    }
+
+    setVideo(video) {
+        if (this.canvas_2D) {
+            document.body.removeChild(this.canvas_2D);
+        }
+        this.video = video;
+        this.canvas_2D = document.createElement("canvas");
+        this.ctx_2D = this.canvas_2D.getContext("2d");
+
+        this.canvas_2D.width = this.video.webcamVideo.videoWidth / 2;
+        this.canvas_2D.height = this.video.webcamVideo.videoHeight / 2;
+
+        document.body.appendChild(this.canvas_2D);
+        this.canvas_2D.style.position = "absolute";
+        this.canvas_2D.style.top = "0";
+        this.canvas_2D.style.left = "0";
+        this.canvas_2D.style.zIndex = 9999;
     }
 
 

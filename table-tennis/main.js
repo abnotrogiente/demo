@@ -139,7 +139,7 @@ console.log("after cv init");
 // await initCV(video.webcamVideo);
 
 
-initUI(video, players);
+initUI(video, players, cvHelper);
 
 
 
