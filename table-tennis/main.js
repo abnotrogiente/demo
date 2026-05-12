@@ -136,6 +136,7 @@ const cvHelper = new CV_Helper();
 console.log("before cv init");
 await cvHelper.init(video.webcamVideo);
 console.log("after cv init");
+cvHelper.camera = camera;
 // await initCV(video.webcamVideo);
 
 
@@ -195,6 +196,7 @@ function updateCalibration(elapsedTime) {
     // camera.setRotationFromEuler(new Euler(r.x, r.y, r.z));
 
     // camera.setFocalLength(parseFloat(calib["f"]) / 100);
+    return;
     cameraDebug.position.copy(t);
     cameraDebug.setRotationFromEuler(new Euler(r.x, r.y, r.z, "ZXY"));
     cameraDebug.fov = 2 * Math.atan(1280 / (2 * parseFloat(calib["f"]))) * 360 / (2 * Math.PI);

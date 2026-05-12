@@ -1,4 +1,5 @@
 import CV from "@techstark/opencv-js"
+import { Matrix4 } from "three";
 
 
 
@@ -59,6 +60,30 @@ export class CV_Helper {
         this.trackingEnabled = true;
         this.calibrationOnRepeat = false;
         this.showVideo = true;
+
+        this.cvToThree = new Matrix4().set(
+            1, 0, 0, 0,
+            0, 0, -1, 0,
+            0, 1, 0, 0,
+            0, 0, 0, 1
+        );
+
+        this.rot = new Matrix4();
+        this.trans = new Matrix4();
+        this.extrinsic = new Matrix4();
+        this.corners = new this.cv.Mat();
+        this.patternSize = new this.cv.Size(8, 5);
+
+        this.objectPoints = new this.cv.MatVector();
+        this.objectPoints.push_back(this.#createObjectPoints());
+        this.imagePoints = new this.cv.MatVector();
+        this.imagePoints.push_back(this.corners.clone());
+
+        this.rvecs = new this.cv.MatVector();
+        this.tvecs = new this.cv.MatVector();
+
+        this.cameraMatrix = this.cv.Mat.eye(3, 3, this.cv.CV_64F);
+        this.distCoeffs = new this.cv.Mat.zeros(8, 1, this.cv.CV_64F);
 
     }
 
@@ -307,14 +332,13 @@ export class CV_Helper {
 
     calibrate2() {
         // const patternSize = new this.cv.Size(22, 16);
-        const patternSize = new this.cv.Size(8, 5);
 
-        this.corners = new this.cv.Mat();
+
 
         // Detect this.corners
         this.found = this.cv.findChessboardCorners(
             this.src,
-            patternSize,
+            this.patternSize,
             this.corners,
             this.cv.CALIB_CB_ADAPTIVE_THRESH +
             this.cv.CALIB_CB_NORMALIZE_IMAGE
@@ -336,62 +360,93 @@ export class CV_Helper {
         //     );
         // }
 
-        // =========================
-        // DRAW CORNERS
-        // =========================
-
-        // this.cv.drawChessboardCorners(
-        //     this.src,
-        //     patternSize,
-        //     this.corners,
-        //     this.found
-        // );
 
 
-        console.log((this.found ? "" : "not ") + "found");
-        // show on canvas
-        // this.render();
-
-        return;
+        // return;
 
         // =========================
         // COLLECT POINTS
         // =========================
 
-        let objectPoints = [];
-        let imagePoints = [];
+
 
         if (this.found) {
-            objectPoints.push(this.#createObjectPoints());
-            imagePoints.push(this.corners.clone());
+            // this.objectPoints.set(this.#createObjectPoints(this.patternSize));
+            // this.imagePoints.pop();
+
+            this.imagePoints.set(0, this.corners.clone());
+            // this.imagePoints.push_back(this.corners.clone());
         }
 
         // =========================
         // CALIBRATE
         // =========================
 
-        let cameraMatrix = this.cv.Mat.eye(3, 3, this.cv.CV_64F);
-        let distCoeffs = new this.cv.Mat.zeros(8, 1, this.cv.CV_64F);
 
-        let rvecs = new this.cv.MatVector();
-        let tvecs = new this.cv.MatVector();
 
+
+
+        // return;
+        // this.cv.calibrateCamera()
         this.cv.calibrateCamera(
-            objectPoints,
-            imagePoints,
+            this.objectPoints,
+            this.imagePoints,
             new this.cv.Size(this.width, this.height),
-            cameraMatrix,
-            distCoeffs,
-            rvecs,
-            tvecs
+            this.cameraMatrix,
+            this.distCoeffs,
+            this.rvecs,
+            this.tvecs,
         );
+        console.log("Camera Matrix:", this.cameraMatrix.data64F);
+        console.log("Dist Coeffs:", this.distCoeffs.data64F);
+        console.log("rotv : " + this.tvecs.get(0).data64F);
+        const R = new this.cv.Mat();
+        this.cv.Rodrigues(this.rvecs.get(0), R);
+        console.log("R : " + R.data64F);
+        const T = this.tvecs.get(0);
 
-        console.log("Camera Matrix:", cameraMatrix.data64F);
-        console.log("Dist Coeffs:", distCoeffs.data64F);
-
+        const r = R.data64F;
+        const t = T.data64F;
         // cleanup
         // this.corners.delete();
         // display.delete();
+
+        // OpenCV rotation matrix
+        this.rot.set(
+            r[0], r[1], r[2], 0,
+            r[3], r[4], r[5], 0,
+            r[6], r[7], r[8], 0,
+            0, 0, 0, 1
+        );
+
+        // translation
+        this.trans.makeTranslation(t[0], t[1], t[2]);
+
+        // world -> camera
+        this.extrinsic.multiplyMatrices(this.trans, this.rot);
+
+        // invert for Three.js camera pose
+        const cameraMatrixWorld = this.extrinsic.clone();
+
+
+        cameraMatrixWorld.multiply(this.cvToThree);
+
+        // this.camera.matrixAutoUpdate = false;
+        this.camera.matrix.copy(cameraMatrixWorld);
+        this.camera.matrix.decompose(
+            this.camera.position,
+            this.camera.quaternion,
+            this.camera.scale
+        );
+
+        const fx = this.cameraMatrix.data64F[0];
+        const fy = this.cameraMatrix.data64F[4];
+
+        const fov = 2 * Math.atan(this.height / (2 * fy)) * 180 / Math.PI;
+        // cameraMatrixWorld.delete();
+        // this.camera.fov = fov;
+        // this.camera.aspect = this.width / this.height;
+        // this.camera.updateProjectionMatrix();
 
     }
 
@@ -416,16 +471,17 @@ export class CV_Helper {
     }
 
     #createObjectPoints() {
-        const squareSize = 0.014; //cm
+        // const squareSize = 0.014; //m
+        const squareSize = 0.02525; //m
         const objp = [];
 
-        for (let i = 0; i < patternSize.height; i++) {
-            for (let j = 0; j < patternSize.width; j++) {
+        for (let i = 0; i < this.patternSize.height; i++) {
+            for (let j = 0; j < this.patternSize.width; j++) {
                 objp.push(j * squareSize, i * squareSize, 0);
             }
         }
 
-        return this.cv.matFromArray(patternSize.width * patternSize.height, 1, CV.CV_32FC3, objp);
+        return this.cv.matFromArray(this.patternSize.width * this.patternSize.height, 1, this.cv.CV_32FC3, objp);
     }
 
 }
