@@ -31,7 +31,7 @@ import { Physics } from './physics';
 import { Players } from './players';
 import { Video } from './video';
 // import CV from "@techstark/opencv-js"
-import { CV_Helper } from './cv';
+import { CV_Helper } from './cv2';
 import { initUI } from './uiWindow';
 
 

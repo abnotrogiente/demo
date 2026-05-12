@@ -1,4 +1,4 @@
-import { CV_Helper } from "./cv";
+import { CV_Helper } from "./cv2";
 import { Players } from "./players";
 import { Video } from "./video";
 
@@ -66,5 +66,33 @@ export function initUI(video, players, cvHelper) {
         await video.init(useMock);
         players.setVideo(video);
         cvHelper.init(video.webcamVideo);
-    })
+    });
+
+    const trackingSelect = document.getElementById("tracking-select");
+    trackingSelect.value = cvHelper.trackingEnabled ? "Simple Orange" : "Disabled";
+    trackingSelect.addEventListener("change", () => {
+        const value = trackingSelect.value;
+        cvHelper.trackingEnabled = value === "Simple Orange";
+        if (!cvHelper.trackingEnabled) cvHelper.clearCanvas();
+    });
+
+    const showVideoCheckbox = document.getElementById("show-video-checkbox");
+    showVideoCheckbox.addEventListener("change", () => {
+        console.log("show video : " + showVideoCheckbox.checked);
+        cvHelper.showVideo = showVideoCheckbox.checked;
+        if (!cvHelper.showVideo) cvHelper.clearCanvas();
+    });
+
+    const calibrationButton = document.getElementById("calibration-button");
+    calibrationButton.addEventListener("click", () => {
+        cvHelper.calibrate2();
+    });
+
+    const calibrationSelect = document.getElementById("calibration-select");
+    calibrationSelect.value = cvHelper.calibrationOnRepeat ? "On repeat" : "On demand";
+    calibrationSelect.addEventListener("change", () => {
+        const onRepeat = calibrationSelect.value === "On repeat";
+        cvHelper.calibrationOnRepeat = onRepeat;
+        calibrationButton.hidden = onRepeat;
+    });
 }
