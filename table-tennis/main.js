@@ -113,7 +113,7 @@ const ball = physics.createSphere({
 });
 
 const tracked_ball = new Mesh(
-    new SphereGeometry(radius * 2),
+    new SphereGeometry(radius),
     new MeshStandardMaterial({ color: 0xfe7000 })
 );
 tracked_ball.position.y = 1.5;
@@ -137,7 +137,7 @@ console.log("before cv init");
 await cvHelper.init(video.webcamVideo, tracked_ball);
 scene.add(cvHelper.rayHelper);
 console.log("after cv init");
-cvHelper.camera = cameraDebug;
+cvHelper.camera = camera;
 // await initCV(video.webcamVideo);
 
 

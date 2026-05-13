@@ -85,7 +85,7 @@ export function initUI(video, players, cvHelper) {
 
     const calibrationButton = document.getElementById("calibration-button");
     calibrationButton.addEventListener("click", () => {
-        cvHelper.calibrate2();
+        cvHelper.calibrate();
     });
 
     const calibrationSelect = document.getElementById("calibration-select");

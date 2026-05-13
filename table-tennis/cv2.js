@@ -240,21 +240,8 @@ export class CV_Helper {
                         2
                     );
 
-                    console.log("circle  : " + JSON.stringify(center));
-                    console.log("width : " + this.width);
-                    const center_ndc = new Vector2(
-                        center.x / this.width * 2 - 1,
-                        -center.y / this.height * 2 + 1
-                    )
 
-                    this.raycaster.setFromCamera(center_ndc, this.camera);
-                    this.rayHelper.position.copy(this.raycaster.ray.origin);
-                    this.rayHelper.setDirection(this.raycaster.ray.direction.clone());
-
-                    if (this.fx) {
-                        const dist = this.fx * 0.01381 / radius;
-                        this.ball.position.copy(this.raycaster.ray.origin).add(this.raycaster.ray.direction.multiplyScalar(dist));
-                    }
+                    this.#moveBall(center, radius);
 
                     // Draw center point
                     this.cv.circle(
@@ -297,6 +284,24 @@ export class CV_Helper {
         // Display result
         this.render();
 
+    }
+
+    #moveBall(centerScreen, radiusScreen) {
+        // console.log("circle  : " + JSON.stringify(centerScreen));
+        // console.log("width : " + this.width);
+        const center_ndc = new Vector2(
+            centerScreen.x / this.width * 2 - 1,
+            -centerScreen.y / this.height * 2 + 1
+        )
+
+        this.raycaster.setFromCamera(center_ndc, this.camera);
+        this.rayHelper.position.copy(this.raycaster.ray.origin);
+        this.rayHelper.setDirection(this.raycaster.ray.direction.clone());
+
+        if (this.fx) {
+            const dist = this.fx * 0.01381 / radiusScreen;
+            this.ball.position.copy(this.raycaster.ray.origin).add(this.raycaster.ray.direction.multiplyScalar(dist));
+        }
     }
 
     render() {
@@ -372,6 +377,13 @@ export class CV_Helper {
             this.rvecs,
             this.tvecs,
         );
+
+        this.#setCameraFromCalibration();
+
+
+    }
+
+    #setCameraFromCalibration() {
         // console.log("Camera Matrix:", this.cameraMatrix.data64F);
         // console.log("Dist Coeffs:", this.distCoeffs.data64F);
         // console.log("rotv : " + this.tvecs.get(0).data64F);
@@ -402,7 +414,7 @@ export class CV_Helper {
 
         this.extrinsic.set(
             r[0], r[1], r[2], t[0],
-            r[3], r[4], r[5], t[2] + .2,
+            r[3], r[4], r[5], t[2] + .1,
             r[6], r[7], r[8], t[1],
             0, 0, 0, 1
         );
@@ -434,9 +446,8 @@ export class CV_Helper {
         const fov = 2 * Math.atan(this.width / (2 * fx)) * 180 / Math.PI;
         // cameraMatrixWorld.delete();
         this.camera.fov = fov;
-        this.camera.aspect = this.width / this.height;
+        // this.camera.aspect = this.width / this.height;
         this.camera.updateProjectionMatrix();
-
     }
 
     #drawCorners() {
