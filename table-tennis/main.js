@@ -136,7 +136,7 @@ const cvHelper = new CV_Helper();
 console.log("before cv init");
 await cvHelper.init(video.webcamVideo);
 console.log("after cv init");
-cvHelper.camera = camera;
+cvHelper.camera = cameraDebug;
 // await initCV(video.webcamVideo);
 
 
@@ -225,6 +225,10 @@ const animation = () => {
     updateCalibration(elapsed);
     players.detectFrame();
     cvHelper.processFrame();
+    cameraDebug.updateProjectionMatrix();
+    cameraDebug.updateMatrixWorld();
+    cameraDebug.updateProjectionMatrix();
+    helper.update();
     // cvHelper.calibrate();
     // processFrame();
 

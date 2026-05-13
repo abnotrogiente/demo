@@ -58,15 +58,22 @@ export class CV_Helper {
         this.cap = new this.cv.VideoCapture(video_src);
 
         this.trackingEnabled = true;
-        this.calibrationOnRepeat = false;
+        this.calibrationOnRepeat = true;
         this.showVideo = true;
 
         this.cvToThree = new Matrix4().set(
             1, 0, 0, 0,
-            0, 0, -1, 0,
-            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, -1, 0, 0,
             0, 0, 0, 1
         );
+
+        // this.cvToThree = new Matrix4().set(
+        //     1, 0, 0, 0,
+        //     0, -1, 0, 0,
+        //     0, 0, -1, 0,
+        //     0, 0, 0, 1
+        // );
 
         this.rot = new Matrix4();
         this.trans = new Matrix4();
@@ -99,11 +106,11 @@ export class CV_Helper {
 
             // let img = this.ctx_video.getImageData(0, 0, this.width / 2, this.height / 2);
             // this.src.data.set(img.data);
-            // this.cv.cvtColor(this.src, this.gray, this.cv.COLOR_RGBA2GRAY);
             // this.cv.imshow(this.cvCanvas, this.gray);
 
 
             this.cap.read(this.src);
+            this.cv.cvtColor(this.src, this.gray, this.cv.COLOR_RGBA2GRAY);
             if (this.calibrationOnRepeat) this.calibrate2();
             this.#drawCorners();
             // this.render();
@@ -345,20 +352,21 @@ export class CV_Helper {
         );
 
         // Refine this.corners
-        // if (this.found) {
-        //     this.cv.cornerSubPix(
-        //         this.src,
-        //         this.corners,
-        //         new this.cv.Size(11, 11),
-        //         new this.cv.Size(-1, -1),
-        //         new this.cv.TermCriteria(
-        //             this.cv.TermCriteria_EPS +
-        //             this.cv.TermCriteria_MAX_ITER,
-        //             30,
-        //             0.001
-        //         )
-        //     );
-        // }
+        if (this.found) {
+            // console.log("cornersubpix : " + this.cv.TermCriteria);
+            this.cv.cornerSubPix(
+                this.gray,
+                this.corners,
+                new this.cv.Size(11, 11),
+                new this.cv.Size(-1, -1),
+                new this.cv.TermCriteria(
+                    this.cv.TermCriteria_EPS +
+                    this.cv.TermCriteria_MAX_ITER,
+                    30,
+                    0.001
+                )
+            );
+        }
 
 
 
@@ -411,25 +419,38 @@ export class CV_Helper {
         // this.corners.delete();
         // display.delete();
 
-        // OpenCV rotation matrix
-        this.rot.set(
-            r[0], r[1], r[2], 0,
-            r[3], r[4], r[5], 0,
-            r[6], r[7], r[8], 0,
+        // // OpenCV rotation matrix
+        // this.rot.set(
+        //     r[0], r[1], r[2], 0,
+        //     r[3], r[4], r[5], 0,
+        //     r[6], r[7], r[8], 0,
+        //     0, 0, 0, 1
+        // );
+
+        // // translation
+        // this.trans.makeTranslation(t[0], t[1], t[2]);
+
+        // // world -> camera
+        // this.extrinsic.multiplyMatrices(this.trans, this.rot);
+
+        this.extrinsic.set(
+            r[0], r[1], r[2], t[0],
+            r[3], r[4], r[5], t[2],
+            r[6], r[7], r[8], t[1],
             0, 0, 0, 1
         );
 
-        // translation
-        this.trans.makeTranslation(t[0], t[1], t[2]);
-
-        // world -> camera
-        this.extrinsic.multiplyMatrices(this.trans, this.rot);
-
         // invert for Three.js camera pose
-        const cameraMatrixWorld = this.extrinsic.clone();
+        this.extrinsic.premultiply(this.cvToThree);
+        const cameraMatrixWorld = this.extrinsic.clone().invert();
 
 
-        cameraMatrixWorld.multiply(this.cvToThree);
+        // cameraMatrixWorld.multiply(this.cvToThree);
+        // cameraMatrixWorld.multiplyMatrices(
+        //     this.cvToThree,
+        //     cameraMatrixWorld
+        // );
+
 
         // this.camera.matrixAutoUpdate = false;
         this.camera.matrix.copy(cameraMatrixWorld);
