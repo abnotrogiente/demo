@@ -1,10 +1,15 @@
 import CV from "@techstark/opencv-js"
-import { Matrix4 } from "three";
+import { ArrowHelper, Matrix4, Mesh, Raycaster, Vector2, Vector3 } from "three";
 
 
 
 export class CV_Helper {
-    async init(video_src) {
+    /**
+     * 
+     * @param {*} video_src 
+     * @param {Mesh} ball 
+     */
+    async init(video_src, ball) {
         if (this.cvCanvas) {
             document.body.remove(this.cvCanvas);
         }
@@ -92,6 +97,12 @@ export class CV_Helper {
         this.cameraMatrix = this.cv.Mat.eye(3, 3, this.cv.CV_64F);
         this.distCoeffs = new this.cv.Mat.zeros(8, 1, this.cv.CV_64F);
 
+        this.raycaster = new Raycaster();
+        this.rayHelper = new ArrowHelper();
+        // this.rayHelper = new ArrowHelper(this.rayDirection, this.rayOrigin, 1);
+
+        this.ball = ball;
+
     }
 
     clearCanvas() {
@@ -111,7 +122,7 @@ export class CV_Helper {
 
             this.cap.read(this.src);
             this.cv.cvtColor(this.src, this.gray, this.cv.COLOR_RGBA2GRAY);
-            if (this.calibrationOnRepeat) this.calibrate2();
+            if (this.calibrationOnRepeat) this.calibrate();
             this.#drawCorners();
             // this.render();
             // return;
@@ -229,6 +240,22 @@ export class CV_Helper {
                         2
                     );
 
+                    console.log("circle  : " + JSON.stringify(center));
+                    console.log("width : " + this.width);
+                    const center_ndc = new Vector2(
+                        center.x / this.width * 2 - 1,
+                        -center.y / this.height * 2 + 1
+                    )
+
+                    this.raycaster.setFromCamera(center_ndc, this.camera);
+                    this.rayHelper.position.copy(this.raycaster.ray.origin);
+                    this.rayHelper.setDirection(this.raycaster.ray.direction.clone());
+
+                    if (this.fx) {
+                        const dist = this.fx * 0.01381 / radius;
+                        this.ball.position.copy(this.raycaster.ray.origin).add(this.raycaster.ray.direction.multiplyScalar(dist));
+                    }
+
                     // Draw center point
                     this.cv.circle(
                         this.src,
@@ -278,66 +305,6 @@ export class CV_Helper {
     }
 
     calibrate() {
-        const patternSize = new this.cv.Size(22, 16);
-
-        let corners = new this.cv.Mat();
-
-        //DETECT CORNERS
-        // this.cv.cvtColor();
-        // if (!this.cv.findChessboardCorners) return;
-        let found = this.cv.findChessboardCorners(
-            this.gray,
-            patternSize,
-            corners,
-            this.cv.CALIB_CB_ADAPTIVE_THRESH + this.cv.CALIB_CB_NORMALIZE_IMAGE
-        );
-
-        //REFINE CORNERS
-        if (found) {
-            this.cv.cornerSubPix(
-                gray,
-                corners,
-                new this.cv.Size(11, 11),
-                new this.cv.Size(-1, -1),
-                new this.cv.TermCriteria(
-                    this.cv.TermCriteria_EPS + this.cv.TermCriteria_MAX_ITER,
-                    30,
-                    0.001
-                )
-            );
-        }
-
-        // COLLECT POINTS
-        if (!this.objectPoints) this.objectPoints = [];
-        if (!this.imagePoints) this.imagePoints = [];
-
-        if (found) {
-            this.objectPoints.push(this.#createObjectPoints());
-            this.imagePoints.push(corners.clone());
-        }
-
-        //CALIBRATE
-        let cameraMatrix = this.cv.Mat.eye(3, 3, this.cv.CV_64F);
-        let distCoeffs = new this.cv.Mat.zeros(8, 1, this.cv.CV_64F);
-
-        let rvecs = new this.cv.MatVector();
-        let tvecs = new this.cv.MatVector();
-
-        this.cv.calibrateCamera(
-            this.objectPoints,
-            this.imagePoints,
-            new this.cv.Size(width, height),
-            cameraMatrix,
-            distCoeffs,
-            rvecs,
-            tvecs
-        );
-
-        console.log("Camera Matrix:", cameraMatrix.data64F);
-        console.log("Dist Coeffs:", distCoeffs.data64F);
-    }
-
-    calibrate2() {
         // const patternSize = new this.cv.Size(22, 16);
 
 
@@ -405,12 +372,12 @@ export class CV_Helper {
             this.rvecs,
             this.tvecs,
         );
-        console.log("Camera Matrix:", this.cameraMatrix.data64F);
-        console.log("Dist Coeffs:", this.distCoeffs.data64F);
-        console.log("rotv : " + this.tvecs.get(0).data64F);
+        // console.log("Camera Matrix:", this.cameraMatrix.data64F);
+        // console.log("Dist Coeffs:", this.distCoeffs.data64F);
+        // console.log("rotv : " + this.tvecs.get(0).data64F);
+        // console.log("R : " + R.data64F);
         const R = new this.cv.Mat();
         this.cv.Rodrigues(this.rvecs.get(0), R);
-        console.log("R : " + R.data64F);
         const T = this.tvecs.get(0);
 
         const r = R.data64F;
@@ -435,7 +402,7 @@ export class CV_Helper {
 
         this.extrinsic.set(
             r[0], r[1], r[2], t[0],
-            r[3], r[4], r[5], t[2],
+            r[3], r[4], r[5], t[2] + .2,
             r[6], r[7], r[8], t[1],
             0, 0, 0, 1
         );
@@ -461,13 +428,14 @@ export class CV_Helper {
         );
 
         const fx = this.cameraMatrix.data64F[0];
+        this.fx = fx;
         const fy = this.cameraMatrix.data64F[4];
 
-        const fov = 2 * Math.atan(this.height / (2 * fy)) * 180 / Math.PI;
+        const fov = 2 * Math.atan(this.width / (2 * fx)) * 180 / Math.PI;
         // cameraMatrixWorld.delete();
-        // this.camera.fov = fov;
-        // this.camera.aspect = this.width / this.height;
-        // this.camera.updateProjectionMatrix();
+        this.camera.fov = fov;
+        this.camera.aspect = this.width / this.height;
+        this.camera.updateProjectionMatrix();
 
     }
 

@@ -134,7 +134,8 @@ console.log("after players init");
 
 const cvHelper = new CV_Helper();
 console.log("before cv init");
-await cvHelper.init(video.webcamVideo);
+await cvHelper.init(video.webcamVideo, tracked_ball);
+scene.add(cvHelper.rayHelper);
 console.log("after cv init");
 cvHelper.camera = cameraDebug;
 // await initCV(video.webcamVideo);
@@ -222,7 +223,7 @@ const animation = () => {
     const delta = clock.getDelta();
     const elapsed = clock.getElapsedTime();
 
-    updateCalibration(elapsed);
+    // updateCalibration(elapsed);
     players.detectFrame();
     cvHelper.processFrame();
     cameraDebug.updateProjectionMatrix();
