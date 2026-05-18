@@ -65,7 +65,7 @@ export function initUI(video, players, cvHelper) {
         const useMock = value === "Video";
         await video.init(useMock);
         players.setVideo(video);
-        cvHelper.init(video.webcamVideo);
+        await cvHelper.init(video.webcamVideo);
     });
 
     const trackingSelect = document.getElementById("tracking-select");

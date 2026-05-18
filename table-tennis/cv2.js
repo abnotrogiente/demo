@@ -10,21 +10,20 @@ export class CV_Helper {
      * @param {Mesh} ball 
      */
     async init(video_src, ball) {
-        if (this.cvCanvas) {
-            document.body.remove(this.cvCanvas);
-        }
         this.video_src = video_src
         // await waitForOpenCV();
         /**@type {CV.CV} */
-        this.cv = await cv({
+        if (!this.cv) this.cv = await cv({
             locateFile: () => "./assets/opencv_js.wasm"
         });
         console.log("CV initialized");
         console.log("find chessboard corners : " + this.cv.findChessboardCorners);
         const cap = new this.cv.VideoCapture(video_src);
-        this.cvCanvas = document.createElement("canvas");
-        document.body.appendChild(this.cvCanvas);
-        this.ctxt = this.cvCanvas.getContext("2d");
+        if (!this.cvCanvas) {
+            this.cvCanvas = document.createElement("canvas");
+            document.body.appendChild(this.cvCanvas);
+            this.ctxt = this.cvCanvas.getContext("2d");
+        }
 
         this.width = video_src.videoWidth;
         this.height = video_src.videoHeight;
@@ -63,7 +62,7 @@ export class CV_Helper {
         this.cap = new this.cv.VideoCapture(video_src);
 
         this.trackingEnabled = true;
-        this.calibrationOnRepeat = true;
+        this.calibrationOnRepeat = false;
         this.showVideo = true;
 
         this.cvToThree = new Matrix4().set(
@@ -118,7 +117,6 @@ export class CV_Helper {
             // let img = this.ctx_video.getImageData(0, 0, this.width / 2, this.height / 2);
             // this.src.data.set(img.data);
             // this.cv.imshow(this.cvCanvas, this.gray);
-
 
             this.cap.read(this.src);
             this.cv.cvtColor(this.src, this.gray, this.cv.COLOR_RGBA2GRAY);
