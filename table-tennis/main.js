@@ -33,6 +33,8 @@ import { Video } from './video';
 // import CV from "@techstark/opencv-js"
 import { CV_Helper } from './cv2';
 import { initUI } from './uiWindow';
+import { EffectComposer, RenderPass } from 'three/examples/jsm/Addons.js';
+import { BallEffects } from './ballEffects2';
 
 
 
@@ -64,6 +66,10 @@ const renderer = new WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 
 document.body.appendChild(renderer.domElement);
+
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.listenToKeyEvents(window); // optional
@@ -104,9 +110,9 @@ const cube = new Mesh(cubeGeometry, cubeMaterial);
 
 const radius = 0.01381;
 const ball = physics.createSphere({
-    position: new Vector3(0, 1.3, 0),
+    position: new Vector3(0, 2., 0),
     radius: radius,
-    color: 0xfe7000,
+    color: 0xfe9000,
     mass: 0.0027,
     restitution: .9, // very bouncy
     friction: .2     // low friction (slides easily)
@@ -114,11 +120,13 @@ const ball = physics.createSphere({
 
 const tracked_ball = new Mesh(
     new SphereGeometry(radius),
-    new MeshStandardMaterial({ color: 0xfe7000 })
+    new MeshStandardMaterial({ color: 0xfe9000 })
 );
 tracked_ball.position.y = 1.5;
 scene.add(tracked_ball);
 
+// const ballEffects = new BallEffects(composer, physics.bodyToMesh.get(ball), scene);
+const ballEffects = new BallEffects(composer, tracked_ball, scene);
 // const players = new Players(camera, scene, renderer);
 // await players.init();
 
@@ -137,7 +145,7 @@ console.log("before cv init");
 await cvHelper.init(video.webcamVideo, tracked_ball);
 scene.add(cvHelper.rayHelper);
 console.log("after cv init");
-cvHelper.camera = camera;
+cvHelper.camera = cameraDebug;
 // await initCV(video.webcamVideo);
 
 
@@ -216,14 +224,14 @@ const clock = new Clock();
 
 // Main loop
 const animation = () => {
-    console.log("enter animation");
+    // console.log("enter animation");
 
     renderer.setAnimationLoop(animation); // requestAnimationFrame() replacement, compatible with XR 
 
     const delta = clock.getDelta();
     const elapsed = clock.getElapsedTime();
 
-    // updateCalibration(elapsed);
+    updateCalibration(elapsed);
     players.detectFrame();
     cvHelper.processFrame();
     cameraDebug.updateProjectionMatrix();
@@ -239,7 +247,10 @@ const animation = () => {
     // cube.rotation.y = elapsed / 1;
     // console.log("delta : " + delta);
     physics.stepSimulation(delta);
-    renderer.render(scene, camera);
+    // effectPass.uniforms.time.value = elapsed;
+    ballEffects.update(delta);
+    // renderer.render(scene, camera);
+    composer.render();
 };
 
 animation();

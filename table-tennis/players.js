@@ -77,6 +77,7 @@ class Player {
         MEDIAPIPE_JOINTS.forEach(name => {
             // Sphere
             const mesh = new Mesh(sphereGeo, mat);
+            mesh.position.z = 10;
             scene.add(mesh);
             this.mediapipe_joints[name] = mesh;
 
@@ -104,6 +105,7 @@ class Player {
 
         MEDIAPIPE_BONES.forEach(([a, b]) => {
             const mesh = new Mesh(cylGeo, cylMat);
+            mesh.position.z = 10;
             scene.add(mesh);
 
             this.mediapipe_bones.push({ mesh, a, b });

@@ -1,6 +1,74 @@
 import CV from "@techstark/opencv-js"
 import { ArrowHelper, Matrix4, Mesh, Raycaster, Vector2, Vector3 } from "three";
 
+export const TRACKING_DISABLED = 0;
+export const TRCAKING_ORANGE = 1;
+export const TRCAKING_FROM_FILE = 2;
+
+
+async function parseCsv(source) {
+    const res = await fetch(source);
+    const contentType = res.headers.get("content-type");
+    if (!contentType || !contentType.includes("text/csv")) {
+        console.log("no file found : " + source);
+        return null;
+    }
+    const text = await res.text();
+
+    if (!text) return;
+    const rows = text.split('\n');
+    const headers = rows[0].split(/,|;/);
+    const data = rows.slice(1).map(row => {
+        const values = row.split(/,|;/);
+        return Object.fromEntries(
+            headers.map((h, i) => [h, values[i]])
+        );
+    }
+    );
+
+    return data;
+}
+
+const calibration_fps = 25;
+const calibrations = await parseCsv("./assets/cam_cal_filtered.csv");
+const ball_positions = await parseCsv("./assets/ball_traj_3D.csv");
+// console.log("calibrations : " + JSON.stringify(calibrations));
+
+
+function updateCalibration(elapsedTime) {
+    const calibIndex = Math.floor(elapsedTime * calibration_fps);
+
+    const traj = ball_positions[calibIndex % 290];
+    // console.log("z : " + traj["z\r"]);
+    const z = parseFloat(traj["z\r"]);
+    tracked_ball.position.set(traj["x"], z, traj["y"]);
+
+
+    // console.log("calib index : " + calibIndex);
+    const calib = calibrations[calibIndex];
+    if (!calib || calib["f"] == 0) return;
+    const t = new Vector3(parseFloat(calib["tvec_y"]), parseFloat(calib["tvec_z"]) + 6, parseFloat(calib["tvec_x"]));
+    const r = new Vector3(parseFloat(calib["rvec_y"]), parseFloat(calib["rvec_z"]), parseFloat(calib["rvec_x"]));
+
+    // console.log("ERROR : " + calib["error"]);
+    // camera.position.copy(t);
+    // camera.setRotationFromEuler(new Euler(r.x, r.y, r.z));
+
+    // camera.setFocalLength(parseFloat(calib["f"]) / 100);
+    return;
+    cameraDebug.position.copy(t);
+    cameraDebug.setRotationFromEuler(new Euler(r.x, r.y, r.z, "ZXY"));
+    cameraDebug.fov = 2 * Math.atan(1280 / (2 * parseFloat(calib["f"]))) * 360 / (2 * Math.PI);
+    cameraDebug.updateProjectionMatrix();
+    cameraDebug.updateMatrixWorld();
+    cameraDebug.updateProjectionMatrix();
+    helper.update();
+
+
+
+    // players.update(calibIndex);
+}
+
 
 
 export class CV_Helper {
