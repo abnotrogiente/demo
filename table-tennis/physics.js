@@ -1,7 +1,43 @@
-import { BoxGeometry, Mesh, MeshStandardMaterial, Quaternion, Scene, SphereGeometry, Vector3 } from "three";
+import { BoxGeometry, Mesh, MeshStandardMaterial, Object3D, Quaternion, Scene, SphereGeometry, Vector3 } from "three";
 import { GLTFLoader } from "three/examples/jsm/Addons.js";
 
 let ammo;
+
+function dispose3(obj) {
+    /**
+     *  @author Marco Sulla (marcosullaroma@gmail.com)
+     *  @date Mar 12, 2016
+     */
+
+
+    var children = obj.children;
+    var child;
+
+    if (children) {
+        for (var i = 0; i < children.length; i += 1) {
+            child = children[i];
+
+            dispose3(child);
+        }
+    }
+
+    var geometry = obj.geometry;
+    var material = obj.material;
+
+    if (geometry) {
+        geometry.dispose();
+    }
+
+    if (material) {
+        var texture = material.map;
+
+        if (texture) {
+            texture.dispose();
+        }
+
+        material.dispose();
+    }
+}
 
 class Physics {
     /**
@@ -60,7 +96,7 @@ class Physics {
         modelOffset = new Vector3() }) {
         const geometry = new BoxGeometry(dimensions.x, dimensions.y, dimensions.z);
         const material = new MeshStandardMaterial({ color: color });
-        const mesh = new Mesh(geometry, material);
+        let mesh = new Mesh(geometry, material);
         mesh.position.copy(position);
         mesh.rotation.setFromQuaternion(rotation);
 
@@ -94,9 +130,7 @@ class Physics {
 
         this.physicsWorld.addRigidBody(body);
 
-        mesh.userData.physicsBody = body;
 
-        this.bodyToMesh.set(body, mesh);
 
         this.bodies.push(body);
 
@@ -104,21 +138,28 @@ class Physics {
 
         body.setRestitution(restitution);
         body.setFriction(friction);
+        this.bodyToMesh.set(body, mesh);
 
 
         //LOAD MODEL
         if (model) {
+            dispose3(mesh);
+            mesh = new Object3D();
             this.loader.load(model, (gltf) => {
                 gltf.scene;
                 if (gltf.scene) {
                     console.log("MODEL LOADED : " + model);
-                    this.scene.add(gltf.scene);
+                    mesh.add(gltf.scene);
+                    // this.scene.add(gltf.scene);
                     gltf.scene.position.copy(modelOffset);
+
+
                 }
                 else console.log("LOADING FAILED");
             });
         }
-        else this.scene.add(mesh);
+        this.bodyToMesh.set(body, mesh);
+        this.scene.add(mesh);
 
         return body;
     }
@@ -165,7 +206,6 @@ class Physics {
 
         this.physicsWorld.addRigidBody(body);
 
-        mesh.userData.physicsBody = body;
 
         this.bodyToMesh.set(body, mesh);
 
@@ -180,6 +220,28 @@ class Physics {
         body.setCcdSweptSphereRadius(radius);
 
         return body;
+    }
+
+    /**
+     * 
+     * @param {Ammo.default.btRigidBody} body 
+     */
+    deleteBody(body) {
+        var index = this.bodies.indexOf(body);
+        if (index !== -1) {
+            this.bodies.splice(index, 1);
+        }
+
+        /**@type {Object3D} */
+        const mesh = this.bodyToMesh.get(body);
+        if (mesh) {
+            this.scene.remove(mesh);
+            dispose3(mesh);
+        }
+        //TODO
+        this.physicsWorld.removeRigidBody(body);
+        this.bodyToMesh.delete(body);
+        this.Ammo.destroy(body);
     }
 
     stepSimulation(dt) {
