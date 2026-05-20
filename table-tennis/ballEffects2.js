@@ -1,5 +1,6 @@
-import { BufferAttribute, BufferGeometry, DataTexture, FloatType, InstancedBufferAttribute, LineSegments, Material, MathUtils, Mesh, Points, RGBAFormat, Scene, ShaderMaterial, Vector3 } from "three";
+import { BufferAttribute, BufferGeometry, DataTexture, FloatType, InstancedBufferAttribute, LineSegments, Material, MathUtils, Mesh, MeshNormalMaterial, PlaneGeometry, Points, RGBAFormat, Scene, ShaderMaterial, Vector2, Vector3 } from "three";
 import { EffectComposer, Line2, LineGeometry, LineMaterial, RenderPass, ShaderPass } from "three/examples/jsm/Addons.js";
+import { tableDimensions } from "./constants";
 
 
 const MAX_LENGTH = 10;
@@ -13,6 +14,7 @@ export class BallEffects {
      */
     constructor(composer, ball, scene) {
         this.ball = ball;
+        this.scene = scene;
 
 
         this.pointsArray = new Float32Array(MAX_LENGTH * 3);
@@ -71,51 +73,54 @@ export class BallEffects {
         this.prevPos = new Vector3();
         this.tmp1 = new Vector3();
         this.tmp2 = new Vector3();
-        // this.posArray = new Float32Array(MAX_LENGTH * 3);
-
-        // this.widths = new Float32Array(MAX_LENGTH);
-
-        // this.geometry = new BufferGeometry();
-        // this.geometry = new LineGeometry();
-        // this.geometry.setPositions(this.posArray);
-        // // this.geometry.setColors(colors);
-        // this.geometry.setAttribute("linewidth",
-        //     new InstancedBufferAttribute(this.widths, 1)
-        // );
-
-        // this.geometry.setAttribute('position', new BufferAttribute(this.posArray, 3));
-
-        // // source: https://discourse.threejs.org/t/how-to-change-line-width-in-shader/27658/3
-
-        // const lineMaterial = new LineMaterial({
-        //     color: 0xffffff,
-        //     vertexColors: true,
-        //     //resolution:  // to be set by renderer, eventually
-        //     dashed: false,
-        //     alphaToCoverage: true,
-        //     onBeforeCompile: shader => {
-        //         shader.vertexShader = `
-        //         ${shader.vertexShader}
-        //         `.replace(`uniform float linewidth;`, `attribute float linewidth;`);
-        //         //console.log(shader.vertexShader)
-        //     }
-
-        // });
-
-        // const line = new Line2(this.geometry, lineMaterial);
-        // line.computeLineDistances();
-        // line.scale.set(1, 1, 1);
-        // scene.add(line);
-
 
 
         this.head = 0;
 
+        this.#initDisplayPlane();
+
 
     }
+
+    #initDisplayPlane() {
+        this.displayPlane = new Mesh(
+            new PlaneGeometry(tableDimensions.depth, tableDimensions.width).rotateX(-Math.PI / 2),
+            new ShaderMaterial({
+                transparent: true,
+                uniforms: {
+                    ballPosition: { value: new Vector2() }
+                },
+                vertexShader: /*glsl */ `
+                    out vec3 vPos;
+                    void main() {
+                        vPos = position;
+                        gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.);
+                    }
+                `,
+                fragmentShader: /*glsl */ `
+                    uniform vec2 ballPosition;
+                    in vec3 vPos;
+                    void main() {
+                        // float c = length(vPos);
+                        // gl_FragColor = vec4(1., 1., 1., c);
+                        float shadowIntensity = length(vPos.xz - ballPosition);
+                        gl_FragColor = vec4(0., 0., 0., pow(max(0.,1.-shadowIntensity),30.));
+
+                    }
+                `
+            })
+        );
+        // plane.rotateX(-Math.PI / 2);
+        this.displayPlane.translateY(tableDimensions.height / 2 + .004);
+        this.scene.add(this.displayPlane);
+    }
+
     update(dt) {
         // this.effectsPass.uniforms.time.value = t;
         // return;
+
+        this.displayPlane.material.uniforms.ballPosition.value.x = this.ball.position.x;
+        this.displayPlane.material.uniforms.ballPosition.value.y = this.ball.position.z;
 
         this.pointsArray[this.head * 3 + 0] = this.ball.position.x;
         this.pointsArray[this.head * 3 + 1] = this.ball.position.y;
@@ -131,38 +136,12 @@ export class BallEffects {
         this.colorsArray[this.head * 3 + 0] = this.tmp1.x;
         this.colorsArray[this.head * 3 + 1] = this.tmp1.y;
         this.colorsArray[this.head * 3 + 2] = this.tmp1.z;
-        // this.colorsArray[this.head * 3 + 0] = 1.;
-        // this.colorsArray[this.head * 3 + 1] = 1.;
-        // this.colorsArray[this.head * 3 + 2] = 1.;
 
-
-        // for (let i = 0; i < MAX_LENGTH; i++) {
-
-        //     const src = ((this.head + i) % MAX_LENGTH) * 3;
-        //     const dst = i * 3;
-
-        //     this.orderedPoints[dst + 0] = this.pointsArray[src + 0];
-        //     this.orderedPoints[dst + 1] = this.pointsArray[src + 1];
-        //     this.orderedPoints[dst + 2] = this.pointsArray[src + 2];
-        // }
-        // for (let i = -3; i < 0; i++) this.orderedPoints[MAX_LENGTH * 3 + i] = NaN;
-        // for (let i = 0; i < 3; i++) this.orderedPoints[i] = NaN;
-
-        // this.pointsArray.copyWithin(this.orderedPoints, 0, 3 * MAX_LENGTH);
         this.orderedPoints.set(this.pointsArray);
-
-        // for (let i = -3; i < 3; i++) this.orderedPoints[(this.head * 3 + i) % (MAX_LENGTH * 3)] = NaN;
 
         for (let i = 0; i < MAX_LENGTH - 1; i++) this.widths[i] = 5;
         this.widths[this.head] = 0;
 
-
-
-
-        // this.widths[this.head] = 2 + this.ball.position.y * 10;
-        // this.posArray[this.head * 3 + 3] = 1.;
-
-        // console.log("x : " + this.ball.position.x);
 
         this.head = (this.head + 1) % MAX_LENGTH;
         // this.posTextureLength++;

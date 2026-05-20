@@ -35,6 +35,7 @@ import { CV_Helper } from './cv2';
 import { initUI } from './uiWindow';
 import { EffectComposer, RenderPass } from 'three/examples/jsm/Addons.js';
 import { BallEffects } from './ballEffects2';
+import { tableDimensions } from './constants';
 
 
 
@@ -75,13 +76,6 @@ composer.addPass(new RenderPass(scene, camera));
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.listenToKeyEvents(window); // optional
 
-const tableDimensions = {
-    width: 2.74,
-    depth: 1.525,
-    height: 0.04, // minimum
-    altitude: 0.76,
-    netHeight: 0.1525
-};
 
 //TODO Z should point to the score 
 
@@ -95,6 +89,7 @@ const table = physics.createBox({
     model: "ping_pong_table.glb",
     modelOffset: new Vector3(0, -tableDimensions.altitude + tableDimensions.height + .015, 0)
 });
+// physics.Ammo.destroy(table)
 
 // const ground = physics.createBox({
 //     dimensions: new Vector3(20, .2, 20),
