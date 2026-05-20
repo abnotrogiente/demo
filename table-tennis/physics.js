@@ -1,4 +1,5 @@
 import { BoxGeometry, Mesh, MeshStandardMaterial, Quaternion, Scene, SphereGeometry, Vector3 } from "three";
+import { GLTFLoader } from "three/examples/jsm/Addons.js";
 
 let ammo;
 
@@ -13,6 +14,8 @@ class Physics {
         /**@type {Ammo.default.btRigidBody[]} */
         this.bodies = [];
 
+
+        this.loader = new GLTFLoader().setPath('assets/');
         this.bodyToMesh = new Map();
     }
 
@@ -43,7 +46,6 @@ class Physics {
 
         this.tmpTransform = new this.Ammo.btTransform();
 
-
     }
 
 
@@ -53,13 +55,14 @@ class Physics {
         dimensions = new Vector3(1, 1, 1),
         restitution = .5,
         friction = .5,
-        color = 0xffffff }) {
+        color = 0xffffff,
+        model = null,
+        modelOffset = new Vector3() }) {
         const geometry = new BoxGeometry(dimensions.x, dimensions.y, dimensions.z);
         const material = new MeshStandardMaterial({ color: color });
         const mesh = new Mesh(geometry, material);
         mesh.position.copy(position);
         mesh.rotation.setFromQuaternion(rotation);
-        this.scene.add(mesh);
 
 
         const shape = new this.Ammo.btBoxShape(
@@ -101,6 +104,21 @@ class Physics {
 
         body.setRestitution(restitution);
         body.setFriction(friction);
+
+
+        //LOAD MODEL
+        if (model) {
+            this.loader.load(model, (gltf) => {
+                gltf.scene;
+                if (gltf.scene) {
+                    console.log("MODEL LOADED : " + model);
+                    this.scene.add(gltf.scene);
+                    gltf.scene.position.copy(modelOffset);
+                }
+                else console.log("LOADING FAILED");
+            });
+        }
+        else this.scene.add(mesh);
 
         return body;
     }

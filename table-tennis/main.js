@@ -90,7 +90,9 @@ const table = physics.createBox({
     dimensions: new Vector3(tableDimensions.depth, tableDimensions.height, tableDimensions.width),
     color: 0x0030FF,
     restitution: .9, // allows bounce
-    friction: .6     // higher friction (grip)
+    friction: .6,     // higher friction (grip)
+    model: "ping_pong_table.glb",
+    modelOffset: new Vector3(0, -tableDimensions.altitude + tableDimensions.height + .015, 0)
 });
 
 // const ground = physics.createBox({
