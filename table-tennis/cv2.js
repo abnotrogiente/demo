@@ -1,9 +1,10 @@
 import CV from "@techstark/opencv-js"
 import { ArrowHelper, Matrix4, Mesh, Raycaster, Vector2, Vector3 } from "three";
+import { Video } from "./video";
 
 export const TRACKING_DISABLED = 0;
-export const TRCAKING_ORANGE = 1;
-export const TRCAKING_FROM_FILE = 2;
+export const TRACKING_ORANGE = 1;
+export const TRACKING_FROM_FILE = 2;
 
 
 async function parseCsv(source) {
@@ -31,14 +32,14 @@ async function parseCsv(source) {
 
 const calibration_fps = 25;
 const calibrations = await parseCsv("./assets/cam_cal_filtered.csv");
-const ball_positions = await parseCsv("./assets/ball_traj_3D.csv");
+const tracking_data = await parseCsv("./assets/ball_traj_3D.csv");
 // console.log("calibrations : " + JSON.stringify(calibrations));
 
 
 function updateCalibration(elapsedTime) {
     const calibIndex = Math.floor(elapsedTime * calibration_fps);
 
-    const traj = ball_positions[calibIndex % 290];
+    const traj = tracking_data[calibIndex % 290];
     // console.log("z : " + traj["z\r"]);
     const z = parseFloat(traj["z\r"]);
     tracked_ball.position.set(traj["x"], z, traj["y"]);
@@ -72,13 +73,18 @@ function updateCalibration(elapsedTime) {
 
 
 export class CV_Helper {
+    constructor() {
+        this.trackingMode = TRACKING_FROM_FILE;
+    }
     /**
      * 
-     * @param {*} video_src 
+     * @param {Video} videoObj
      * @param {Mesh} ball 
      */
-    async init(video_src, ball) {
-        this.video_src = video_src
+    async init(videoObj, ball) {
+        const video_src = videoObj.webcamVideo;
+        this.videoDuration = videoObj.duration;
+        this.video_src = video_src;
         // await waitForOpenCV();
         /**@type {CV.CV} */
         if (!this.cv) this.cv = await cv({
@@ -129,7 +135,7 @@ export class CV_Helper {
 
         this.cap = new this.cv.VideoCapture(video_src);
 
-        this.trackingEnabled = true;
+
         this.calibrationOnRepeat = false;
         this.showVideo = true;
 
@@ -140,6 +146,7 @@ export class CV_Helper {
             0, 0, 0, 1
         );
 
+        this.fx = 1000.;
         // this.cvToThree = new Matrix4().set(
         //     1, 0, 0, 0,
         //     0, -1, 0, 0,
@@ -168,7 +175,7 @@ export class CV_Helper {
         this.rayHelper = new ArrowHelper();
         // this.rayHelper = new ArrowHelper(this.rayDirection, this.rayOrigin, 1);
 
-        this.ball = ball;
+        if (ball) this.ball = ball;
 
     }
 
@@ -192,8 +199,16 @@ export class CV_Helper {
             this.#drawCorners();
             // this.render();
             // return;
-            if (!this.showVideo && !this.trackingEnabled) return;
-            if (this.trackingEnabled) this.trackBall();
+            if (this.trackingMode == TRACKING_ORANGE) this.trackBall();
+            else if (this.trackingMode == TRACKING_FROM_FILE) {
+                const tracking_data_index = Math.min(tracking_data.length, Math.round(tracking_data.length * (this.video_src.currentTime % this.videoDuration) / this.videoDuration));
+                const traj = tracking_data[tracking_data_index % 290];
+                // console.log("z : " + traj["z\r"]);
+                const z = parseFloat(traj["z\r"]);
+                this.ball.position.set(traj["x"], z, traj["y"]);
+
+            }
+            if (!this.showVideo && this.trackingMode != TRACKING_ORANGE) return;
             else {
                 this.render();
             }

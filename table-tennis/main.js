@@ -53,6 +53,7 @@ camera.position.y = 1.8;
 
 //DEBUG CAMERA
 const cameraDebug = new PerspectiveCamera(75, aspect, .1, 1000);
+cameraDebug.position.y = .2;
 const helper = new CameraHelper(cameraDebug);
 helper.material.linewidth = 10;
 scene.add(helper);
@@ -62,7 +63,7 @@ scene.add(light);
 
 scene.add(new DirectionalLight(0xffffff, 1.).rotateX(.2));
 
-const renderer = new WebGLRenderer();
+const renderer = new WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 
 document.body.appendChild(renderer.domElement);
@@ -134,7 +135,7 @@ const ballEffects = new BallEffects(composer, tracked_ball, scene);
 
 // await waitForOpenCV();
 const video = new Video();
-await video.init();
+await video.init(true);
 
 const players = new Players(video, scene);
 console.log("before players init");
@@ -144,7 +145,7 @@ console.log("after players init");
 
 const cvHelper = new CV_Helper();
 console.log("before cv init");
-await cvHelper.init(video.webcamVideo, tracked_ball);
+await cvHelper.init(video, tracked_ball);
 scene.add(cvHelper.rayHelper);
 console.log("after cv init");
 cvHelper.camera = cameraDebug;
@@ -233,7 +234,7 @@ const animation = () => {
     const delta = clock.getDelta();
     const elapsed = clock.getElapsedTime();
 
-    updateCalibration(elapsed);
+    // updateCalibration(elapsed);
     players.detectFrame();
     cvHelper.processFrame();
     cameraDebug.updateProjectionMatrix();

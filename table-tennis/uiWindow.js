@@ -1,4 +1,4 @@
-import { CV_Helper } from "./cv2";
+import { CV_Helper, TRACKING_DISABLED, TRACKING_FROM_FILE, TRACKING_ORANGE } from "./cv2";
 import { Players } from "./players";
 import { Video } from "./video";
 
@@ -65,15 +65,21 @@ export function initUI(video, players, cvHelper) {
         const useMock = value === "Video";
         await video.init(useMock);
         players.setVideo(video);
-        await cvHelper.init(video.webcamVideo);
+        await cvHelper.init(video);
     });
 
     const trackingSelect = document.getElementById("tracking-select");
-    trackingSelect.value = cvHelper.trackingEnabled ? "Simple Orange" : "Disabled";
+    console.log("SELECT OPTIONS : " + JSON.stringify(trackingSelect.options));
+    trackingSelect.value = cvHelper.trackingMode == TRACKING_DISABLED ? "Disabled" :
+        cvHelper.trackingMode == TRACKING_ORANGE ? "Simple Orange" :
+            trackingSelect.options[2].text;
     trackingSelect.addEventListener("change", () => {
         const value = trackingSelect.value;
-        cvHelper.trackingEnabled = value === "Simple Orange";
-        if (!cvHelper.trackingEnabled) cvHelper.clearCanvas();
+        console.log("VALUE : " + value);
+        cvHelper.trackingMode = value === "Disabled" ? TRACKING_DISABLED :
+            value === "Simple Orange" ? TRACKING_ORANGE :
+                TRACKING_FROM_FILE;
+        if (!cvHelper.trackingMode != TRACKING_ORANGE) cvHelper.clearCanvas();
     });
 
     const showVideoCheckbox = document.getElementById("show-video-checkbox");

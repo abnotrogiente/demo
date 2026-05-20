@@ -25,7 +25,7 @@ export class Video {
      */
     constructor() {
 
-
+        this.duration = Infinity;
     }
 
     async init(useMock = false) {
@@ -53,6 +53,7 @@ export class Video {
             video.loop = true;
             video.muted = true;
             await video.play();
+            this.duration = video.duration;
             return video.captureStream();
         }
 
