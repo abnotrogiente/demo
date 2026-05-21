@@ -35,7 +35,7 @@ import { CV_Helper } from './cv2';
 import { initUI } from './uiWindow';
 import { EffectComposer, RenderPass } from 'three/examples/jsm/Addons.js';
 import { BallEffects } from './ballEffects2';
-import { tableDimensions } from './constants';
+import { sportSpecificAssets, tableDimensions } from './constants';
 
 
 
@@ -89,6 +89,10 @@ const table = physics.createBox({
     model: "ping_pong_table.glb",
     modelOffset: new Vector3(0, -tableDimensions.altitude + tableDimensions.height + .015, 0)
 });
+
+sportSpecificAssets.push(table);
+
+// physics.deleteBody(table);
 // physics.Ammo.destroy(table)
 
 // const ground = physics.createBox({
@@ -124,7 +128,7 @@ tracked_ball.position.y = 1.5;
 scene.add(tracked_ball);
 
 // const ballEffects = new BallEffects(composer, physics.bodyToMesh.get(ball), scene);
-const ballEffects = new BallEffects(composer, tracked_ball, scene);
+const ballEffects = new BallEffects(composer, tracked_ball, scene, renderer);
 // const players = new Players(camera, scene, renderer);
 // await players.init();
 
@@ -147,7 +151,7 @@ cvHelper.camera = cameraDebug;
 // await initCV(video.webcamVideo);
 
 
-initUI(video, players, cvHelper);
+initUI(video, players, cvHelper, physics);
 
 
 
