@@ -95,7 +95,6 @@ const table = await physics.createBox({
 
 console.log("Object in scene : " + scene.getObjectByName("Object_3"));
 
-const tableEffects = new TableEffects(scene.getObjectByName("Object_3"));
 
 sportSpecificAssets.push(table);
 
@@ -134,6 +133,7 @@ const tracked_ball = new Mesh(
 tracked_ball.position.y = 1.5;
 scene.add(tracked_ball);
 
+const tableEffects = new TableEffects(scene.getObjectByName("Object_3"), tracked_ball, renderer);
 // const ballEffects = new BallEffects(composer, physics.bodyToMesh.get(ball), scene);
 const ballEffects = new BallEffects(composer, tracked_ball, scene, renderer);
 // const players = new Players(camera, scene, renderer);
@@ -258,7 +258,7 @@ const animation = () => {
     physics.stepSimulation(delta);
     // effectPass.uniforms.time.value = elapsed;
     ballEffects.update(delta);
-    tableEffects.update(elapsed);
+    tableEffects.update(elapsed, delta);
     // renderer.render(scene, camera);
     composer.render();
 };
