@@ -49,6 +49,7 @@ export class Video {
         if (useMock) {
             const video = document.createElement('video');
             video.src = './assets/rally.mp4';
+            this.mock = video;
             // video.src = '../swimming/swimming-race.mp4';
             video.loop = true;
             video.muted = true;

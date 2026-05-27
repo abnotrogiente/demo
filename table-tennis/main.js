@@ -17,7 +17,8 @@ import {
     Vector3,
     Quaternion,
     Euler,
-    CameraHelper
+    CameraHelper,
+    DirectionalLightHelper
 } from 'three';
 
 
@@ -36,6 +37,7 @@ import { initUI } from './uiWindow';
 import { EffectComposer, RenderPass } from 'three/examples/jsm/Addons.js';
 import { BallEffects } from './ballEffects2';
 import { sportSpecificAssets, tableDimensions } from './constants';
+import { TableEffects } from './tableEffects';
 
 
 
@@ -57,12 +59,13 @@ const cameraDebug = new PerspectiveCamera(75, aspect, .1, 1000);
 cameraDebug.position.y = .2;
 const helper = new CameraHelper(cameraDebug);
 helper.material.linewidth = 10;
-scene.add(helper);
+// scene.add(helper);
 
-const light = new AmbientLight(0xffffff, .4); // soft white light
+const light = new AmbientLight(0xffffff, 1.); // soft white light
 scene.add(light);
 
-scene.add(new DirectionalLight(0xffffff, 1.).rotateX(.2));
+const directionalLight = new DirectionalLight(0xffffff, 1.);
+scene.add(directionalLight);
 
 const renderer = new WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -79,7 +82,7 @@ controls.listenToKeyEvents(window); // optional
 
 //TODO Z should point to the score 
 
-const table = physics.createBox({
+const table = await physics.createBox({
     position: new Vector3(0, 0, 0),
     // rotation: new Quaternion(0., 0., .02, 1.),
     dimensions: new Vector3(tableDimensions.depth, tableDimensions.height, tableDimensions.width),
@@ -89,6 +92,10 @@ const table = physics.createBox({
     model: "ping_pong_table.glb",
     modelOffset: new Vector3(0, -tableDimensions.altitude + tableDimensions.height + .015, 0)
 });
+
+console.log("Object in scene : " + scene.getObjectByName("Object_3"));
+
+const tableEffects = new TableEffects(scene.getObjectByName("Object_3"));
 
 sportSpecificAssets.push(table);
 
@@ -251,6 +258,7 @@ const animation = () => {
     physics.stepSimulation(delta);
     // effectPass.uniforms.time.value = elapsed;
     ballEffects.update(delta);
+    tableEffects.update(elapsed);
     // renderer.render(scene, camera);
     composer.render();
 };

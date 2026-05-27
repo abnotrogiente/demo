@@ -85,7 +85,7 @@ class Physics {
     }
 
 
-    createBox({ position = new Vector3(),
+    async createBox({ position = new Vector3(),
         rotation = new Quaternion(),
         mass = 0,
         dimensions = new Vector3(1, 1, 1),
@@ -145,18 +145,20 @@ class Physics {
         if (model) {
             dispose3(mesh);
             mesh = new Object3D();
-            this.loader.load(model, (gltf) => {
-                gltf.scene;
-                if (gltf.scene) {
-                    console.log("MODEL LOADED : " + model);
-                    mesh.add(gltf.scene);
-                    // this.scene.add(gltf.scene);
-                    gltf.scene.position.copy(modelOffset);
+            const gltf = await this.loader.loadAsync(model);
+            gltf.scene;
+            if (gltf.scene) {
+                console.log("MODEL LOADED : " + model);
+                console.log("Object in scene : " + gltf.scene.getObjectByName("Object_3"));
+
+                mesh.add(gltf.scene);
+                // this.scene.add(gltf.scene);
+                gltf.scene.position.copy(modelOffset);
 
 
-                }
-                else console.log("LOADING FAILED");
-            });
+            }
+            else console.log("LOADING FAILED");
+
         }
         this.bodyToMesh.set(body, mesh);
         this.scene.add(mesh);
@@ -177,7 +179,7 @@ class Physics {
         const mesh = new Mesh(geometry, material);
         mesh.position.copy(position);
         mesh.rotation.setFromQuaternion(rotation);
-        this.scene.add(mesh);
+        // this.scene.add(mesh);
 
         const shape = new this.Ammo.btSphereShape(radius);
 

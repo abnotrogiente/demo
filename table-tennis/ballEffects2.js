@@ -1,6 +1,7 @@
 import { BufferAttribute, BufferGeometry, Camera, DataTexture, FloatType, InstancedBufferAttribute, LinearFilter, LineSegments, Material, MathUtils, Mesh, MeshNormalMaterial, PlaneGeometry, Points, RGBAFormat, Scene, ShaderMaterial, Vector2, Vector3, WebGLRenderer, WebGLRenderTarget } from "three";
 import { EffectComposer, Line2, LineGeometry, LineMaterial, RenderPass, ShaderPass } from "three/examples/jsm/Addons.js";
-import { tableDimensions } from "./constants";
+import { config, tableDimensions } from "./constants";
+import { BounceModes, configureSelector, getShaderConstantsFromEnum } from "./config";
 
 
 const MAX_LENGTH = 10;
@@ -97,7 +98,8 @@ export class BallEffects {
                 transparent: true,
                 uniforms: {
                     ballPosition: { value: new Vector2() },
-                    tex: { value: this.currentRenderingTarget.texture }
+                    tex: { value: this.currentRenderingTarget.texture },
+                    bounceMode: { value: config.params.visualizations.bounce }
                 },
                 vertexShader: /*glsl */ `
                     out vec3 vPos;
@@ -117,9 +119,13 @@ export class BallEffects {
                         // float c = length(vPos);
                         // gl_FragColor = vec4(1., 1., 1., c);
                         gl_FragColor = texture(tex, vUv);
-                        return;
-                        float shadowIntensity = length(vPos.xz - ballPosition);
-                        gl_FragColor = vec4(0., 0., 0., pow(max(0.,1.-shadowIntensity),30.));
+                        // return;
+                        float l = length(vPos.xz - ballPosition);
+                        float shadowIntensity = pow(max(0.,1.-l),30.);
+                        gl_FragColor = (1.-shadowIntensity)*gl_FragColor + shadowIntensity*vec4(0., 0., 0., 1.);
+                        float shadowRadiusExt = .06;
+                        float shadowRadiusIn = .04;
+                        if (l <= shadowRadiusExt && l >= shadowRadiusIn ) gl_FragColor = vec4(1., 1., 0., 1.);
 
                     }
                 `
@@ -159,7 +165,8 @@ export class BallEffects {
                 lineDirection: { value: new Vector2() },
                 lineStroke: { value: .01 },
                 bounced: { value: false },
-                previousTexture: { value: null }
+                previousTexture: { value: null },
+                bounceMode: { value: config.params.visualizations.bounce },
             },
             vertexShader: /*glsl */ `
                 out vec2 vPos;
@@ -179,6 +186,9 @@ export class BallEffects {
                 uniform sampler2D previousTexture;
                 uniform float lineStroke;
                 uniform bool bounced;
+                uniform int bounceMode;
+
+                `+ getShaderConstantsFromEnum(config.params.visualizations.BounceModes) + /*glsl */`
                 void main() {
                     float c = length(vPos);
                     // gl_FragColor = vec4(c, c, c, 1.);
@@ -199,18 +209,29 @@ export class BallEffects {
                     // gl_FragColor = vec4(1.);
                     // gl_FragColor.a = 0.;
                     if (isInLine) {
-                        gl_FragColor = vec4(1., 0., 0., 1.);
+                        gl_FragColor = vec4(0., 1., 1., 1.);
                     }
                     if (bounced) {
-                        // gl_FragColor = vec4(1.);
-                        // return;
                         vec2 diff = vPos - ballPosition;
                         float diffSq = dot(diff, diff);
+                        if (bounceMode == RIPPLE) {
+                            if (diffSq <= .05) {
+                                gl_FragColor = vec4(diff, 2., 0.);
+                            }
+                            return;
+                        }
+                        // gl_FragColor = vec4(1.);
+                        // return;
                         if (diffSq <= .05) gl_FragColor = vec4(1., 0., 1., 2.);
                     }
                     // gl_FragColor.a = 0.;
                 }
             `
+        });
+
+        configureSelector("Bounce Mode", config.params.visualizations, "bounce", BounceModes, (value) => {
+            console.log("CHAAAANGE : " + value);
+            texturePassMaterial.uniforms.bounceMode.value = value;
         });
 
         this.texturePassQuad = new Mesh(this.planeGeometry, texturePassMaterial);
@@ -230,9 +251,9 @@ export class BallEffects {
         this.texturePassQuad.material.uniforms.lineDirection.value.copy(this.tmpvec2);
 
         this.texturePassQuad.material.uniforms.bounced.value = this.prevSpeed.y < 0 && this.speed.y > 0;
-        console.log("speed: " + this.speed.y);
-        console.log("prev speed: " + this.prevSpeed.y);
-        console.log("\n\n");
+        // console.log("speed: " + this.speed.y);
+        // console.log("prev speed: " + this.prevSpeed.y);
+        // console.log("\n\n");
         // this.texturePassQuad.material.uniforms.bounced.value = true;
 
         // this.texturePassQuad.material.uniforms.ballPosition.value.x = 0.;
