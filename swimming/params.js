@@ -63,9 +63,12 @@ class Config {
                 foam: { enabled: true, velThreshold: .35, velMax: 3., dispersion: 0.015, timeVariation: 2.5, spaceVariation: 25, attenuation: .015 },
                 splashes: { enabled: true, strengthThreshold: 2. }
             },
-            quiver: { amplitudeFactor: 0.78, frequencyFactor: 1.2, amplitude: .1, omega: 2., waveLength: 1. },
+            quiver: { amplitudeFactor: 0.78, frequencyFactor: 1.2, amplitude: .1, omega: 2., waveLength: 1., alwaysActive: false },
             cornerView: { show: true },
-            chronoPhotography: { available: false }
+            chronoPhotography: { available: false },
+            flags: {
+                flagSize: new GL.Vector(1.5, 2.),
+            }
         };
 
         this.resolution = new GL.Vector(256, 256);
@@ -166,6 +169,8 @@ class Config {
         this.bubbleSpheres = [];
 
         this.classicalOverlayEnabled = false;
+
+        this.hideFloaters = false;
     }
 
     hideEditorPanel(v) {

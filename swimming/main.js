@@ -575,6 +575,24 @@ window.onload = function () {
       config.setScene("100m freestyle").then(() => config.startRace());
       config._setPannelMinimized(true);
     }
+    else if (e.which == 'N'.charCodeAt(0)) {
+      config.resolution.x = 2048;
+      config.resolution.y = 2048;
+      config.params.simulation.poolSize.x = 25;
+      config.params.simulation.poolSize.z = 25;
+      config.params.visualizations.areaConservationEnabled = false;
+      config.params.visualizations.rendering = "lambert";
+      config.params.quiver.alwaysActive = true;
+      config.params.quiver.amplitude = .25;
+      config.params.quiver.frequencyFactor = 1.15;
+      config.params.visualizations.showFlags = true;
+      reset();
+      config.swimmers[0].body.move(new GL.Vector(0, 0, 0));
+      config.swimmers[0].nationality = 1;
+      config.params.flags.flagSize.x = 3.;
+      config.params.flags.flagSize.y = 4.;
+      config._setPannelMinimized(true);
+    }
     else if (e.which == 'M'.charCodeAt(0)) {
       config.setMVPMI();
     }

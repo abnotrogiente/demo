@@ -198,7 +198,7 @@ function Water(gl, resolution = null) {
     out vec4 fragColor;
     uniform float t;
 
-    ` + swimmersHelperFunctions + `
+    ` + swimmersHelperFunctions + /*glsl */`
 
     const int order = 20;
 
@@ -207,6 +207,7 @@ function Water(gl, resolution = null) {
     uniform float amplitude;
     uniform float omega0;
     uniform float waveLength0;
+    uniform bool quiverIsActive;
 
     float rand(vec2 co){return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);}
 
@@ -238,7 +239,11 @@ function Water(gl, resolution = null) {
       if(showWR) w += getRecordWave(coord);
       info.r += add ? w : -w;
       float h = 0.;
-      if (time < 0.) {
+
+      if (quiverIsActive) {
+        h = waveFunctionExp(coord*poolSize.xz);
+      }
+      else if (time < 0.) {
         float interval = 5.;
         float intensity = -time / interval;
         // intensity = .5;
@@ -321,7 +326,7 @@ Water.prototype.addOrRemoveVisualizationWaves = function (add) {
   this.prev_WR_position = this.WR_position;
   this.WR_position = config.getRaceTime() * speed;
   if (this.WR_position > config.params.simulation.poolSize.z) this.WR_position = 2 * config.params.simulation.poolSize.z - this.WR_position;
-  if (!this.visualizationWavesEnabled || !Swimmer.raceHasStarted) return;
+  // if (!this.visualizationWavesEnabled || !Swimmer.raceHasStarted) return;
   var this_ = this;
 
   // console.log("time : " + config.time);
@@ -346,7 +351,8 @@ Water.prototype.addOrRemoveVisualizationWaves = function (add) {
       frequencyFactor: config.params.quiver.frequencyFactor,
       amplitude: config.params.quiver.amplitude,
       omega0: config.params.quiver.omega,
-      waveLength0: config.params.quiver.waveLength
+      waveLength0: config.params.quiver.waveLength,
+      quiverIsActive: config.params.quiver.alwaysActive
     }).draw(this_.plane);
   });
   this.textureB.swapWith(this.textureA);

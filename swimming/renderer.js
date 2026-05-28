@@ -870,7 +870,7 @@ Renderer.prototype.renderWater = function (water, sky, shadowParams) {
       swimmersAttributesTexture: 6,
       iChannel0: 7,
       areaConservation: config.params.visualizations.areaConservationEnabled,
-      flagSize: [1.5, 2.],
+      flagSize: [config.params.flags.flagSize.x, config.params.flags.flagSize.y],
       flagCenter: [this.flagCenter.x, this.flagCenter.y],
       poolSize: [config.params.simulation.poolSize.x, config.params.simulation.poolSize.y, config.params.simulation.poolSize.z],
       poolSizeVertexShader: [config.params.simulation.poolSize.x, config.params.simulation.poolSize.y, config.params.simulation.poolSize.z],

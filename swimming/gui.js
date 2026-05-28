@@ -39,6 +39,11 @@ const createGUI = function (gl, reset) {
     visualizationsFolder.add(config.params.visualizations, "rendering", config.params.visualizations.renderingList).name('rendering').listen().onChange(() => {
         if (config.params.visualizations.rendering == "toon") config.params.simulation.waterDamping = .35
     });
+    visualizationsFolder.add(config, "hideFloaters").name('hide floaters').listen();
+
+    const flagSizeFolder = visualizationsFolder.addFolder("Flags");
+    flagSizeFolder.add(config.params.flags.flagSize, "x", 0, 10).name("width");
+    flagSizeFolder.add(config.params.flags.flagSize, "y", 0, 10).name("height");
 
     const videoFolder = gui.addFolder("video");
     videoFolder.close();
@@ -111,6 +116,7 @@ const createGUI = function (gl, reset) {
 
     const quiverFolder = gui.addFolder("quiver");
     quiverFolder.close();
+    quiverFolder.add(config.params.quiver, "alwaysActive").name("always active");
     quiverFolder.add(config.params.quiver, "amplitude", .01, 1).name("amplitude");
     quiverFolder.add(config.params.quiver, "omega", .5, 5).name("omega");
     quiverFolder.add(config.params.quiver, "amplitudeFactor", .5, .9).name("amplitude factor");
