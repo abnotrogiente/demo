@@ -12,6 +12,83 @@ import { Swimmer } from './swimmer.js';
 import { swimmersHelperFunctions } from './swimmersHelperFunctions.js';
 import { config } from './params.js';
 import { Foam } from './foam.js';
+import { FLAG_DELTA_Z } from './swimmersConstants.js';
+
+const vertexShader = `
+    out vec2 coord;
+    uniform vec2 invPoolSizeVertex;
+    void main() {
+      coord = gl_Vertex.xy * invPoolSizeVertex + 0.5;
+      gl_Position = vec4(gl_Vertex.xy * 2. * invPoolSizeVertex, 0., 1.0);
+    }
+  `;
+
+const areaConservationFragmentShader = /*glsl */ `
+  uniform vec2 center;
+  uniform vec2 u_center_ij;
+  uniform float u_currentStep;
+  in vec2 coord;
+  uniform sampler2D water;
+  uniform sampler2D previous;
+  uniform vec2 poolSize;
+  out vec4 fragColor;
+  void main() {
+    ivec2 center_ij = ivec2(u_center_ij);
+    int currentStep = int(u_currentStep);
+    // if (currentStep == 2) {
+    //   fragColor = vec4(0., 1., 1., 1.);
+    // }
+    // else fragColor = vec4(1., 0., 1., 1.); 
+    // return;
+    ivec2 pixel = ivec2(gl_FragCoord.xy);
+    ivec2 resolution = textureSize(previous, 0);
+    vec2 coordinate = (vec2(pixel)+.5) / vec2(resolution);
+    vec2 deltaCoordinate = 1. / vec2(resolution);
+    vec2 delta = poolSize / vec2(resolution);
+    float delta_z = delta.y;
+    float delta_x = delta.x;
+    float y = texture(water, coordinate).r;
+    float alpha = 1.;
+
+    ivec2 diff = pixel - center_ij;
+    vec3 val = texture(previous, coordinate).rgb;
+    if (val.b < .5) val.rg = (coordinate-.5)*poolSize;
+    if (currentStep == 0) val *= 0.;
+    // if (diff == ivec2(0)) val = center;
+    if (diff.x == 0) val.r = center.x;
+    if (diff.y == 0) val.g = center.y;
+    // if (currentStep == 0.)
+    // SET Z
+    if (abs(diff.y) == currentStep && currentStep != 0) {
+      float sgn = abs(float(diff.y)) / float(diff.y);
+      vec2 prevCoordinate = vec2(coordinate.x, coordinate.y - sgn*deltaCoordinate.y);
+      float z_prev = texture(previous, prevCoordinate).g;
+      float y_prev = texture(water, prevCoordinate).r;
+      float z = z_prev + sgn* sqrt((y-y_prev)*(y-y_prev)*alpha + delta_z*delta_z);
+      // z = z_prev + sqrt((y-y_prev)*(y-y_prev) + delta_z*delta_z);
+      val.g = z;
+      val.b = 1.;
+    }
+    //SET X
+    if(abs(diff.x) == currentStep && currentStep != 0) {
+      float sgn = abs(float(diff.x)) / float(diff.x);
+      vec2 prevCoordinate = vec2(coordinate.x - sgn*deltaCoordinate.x, coordinate.y);
+      float x_prev = texture(previous, prevCoordinate).r;
+      float y_prev = texture(water, prevCoordinate).r;
+      float x = x_prev + sgn* sqrt((y-y_prev)*(y-y_prev)*alpha  + delta_x*delta_x);
+      // x = x_prev + sqrt((y-y_prev)*(y-y_prev) + delta_x*delta_x);
+      val.r = x;
+      val.b = 1.;
+    }
+    // if (max(diff))
+    fragColor = vec4(val, 0.);
+    // fragColor = vec4((coordinate-.5)*poolSize, 0., 1.);
+    // fragColor = vec4(1., 1., 1., 1.);
+    
+  }
+`;
+
+
 
 // The data in the texture is (position.y, velocity.y, normal.x, normal.z)
 function Water(gl, resolution = null) {
@@ -20,14 +97,8 @@ function Water(gl, resolution = null) {
   this.visualizationWavesEnabled = true;
   this.sqrt_2_PI = Math.sqrt(2 * Math.PI);
   this.foam = new Foam();
-  var vertexShader = `
-    out vec2 coord;
-    uniform vec2 invPoolSizeVertex;
-    void main() {
-      coord = gl_Vertex.xy * invPoolSizeVertex + 0.5;
-      gl_Position = vec4(gl_Vertex.xy * 2. * invPoolSizeVertex, 0., 1.0);
-    }
-  `;
+
+  this.areaConservationShader = new GL.Shader(vertexShader, areaConservationFragmentShader);
 
   this.reset(resolution);
   if (!GL.Texture.canUseFloatingPointTextures()) {
@@ -267,7 +338,12 @@ Water.prototype.resetTextures = function () {
   this.textureA = new GL.Texture(this.W, this.H, { type: this.gl.FLOAT, filter: filter });
   this.textureB = new GL.Texture(this.W, this.H, { type: this.gl.FLOAT, filter: filter });
   this.foam.resetTextures(this.W, this.H, this.textureA);
-  this.areaConservationTexture = new GL.Texture(this.W, this.H, { type: this.gl.FLOAT, filter: filter });
+
+  this.areaConservationTextureA = new GL.Texture(this.W, this.H, { type: this.gl.FLOAT, filter: this.gl.LINEAR });
+  this.areaConservationTextureB = new GL.Texture(this.W, this.H, { type: this.gl.FLOAT, filter: this.gl.LINEAR });
+
+
+
   this.showAreaConservedGrid = false;
   this.showProjectionGrid = false;
 
@@ -278,6 +354,8 @@ Water.prototype.resetTextures = function () {
     filter = GL.Texture.canUseHalfFloatingPointLinearFiltering() ? this.gl.LINEAR : this.gl.NEAREST;
     this.textureA = new GL.Texture(this.W, this.H, { type: this.gl.FLOAT, filter: filter });
     this.textureB = new GL.Texture(this.W, this.H, { type: this.gl.FLOAT, filter: filter });
+    this.areaConservationTextureA = new GL.Texture(this.W, this.H, { type: this.gl.FLOAT, filter: filter });
+    this.areaConservationTextureB = new GL.Texture(this.W, this.H, { type: this.gl.FLOAT, filter: filter });
   }
 }
 
@@ -448,7 +526,11 @@ Water.prototype.updateNormals = function () {
 
 Water.prototype.updateAreaConservation = function () {
 
-  if (!config.params.visualizations.areaConservationEnabled) {
+  if (!config.params.visualizations.areaConservation.enabled) {
+    return;
+  }
+  if (config.params.visualizations.areaConservation.optimized) {
+    this.updateAreaConservationOptimized();
     return;
   }
   var this_ = this;
@@ -491,50 +573,171 @@ Water.prototype.updateAreaConservation = function () {
 
   // Read pixels
   this.gl.pixelStorei(this.gl.PACK_ALIGNMENT, 1);
-  const readBuf = new readArrayType(this.W * this.H * 4);
+  this.readBuf = new readArrayType(this.W * this.H * 4);
   // const writeBuf = new readArrayType(this.W * this.H * 4);
-  const writeBuf = new Float32Array(this.W * this.H * 4);
-  this.gl.readPixels(0, 0, this.W, this.H, this.gl.RGBA, readType, readBuf);
-  for (let i = 0; i < this.W; i++) {
-    writeBuf[i * 4 + 1] = 1.0;
+  this.writeBuf = new Float32Array(this.W * this.H * 4);
+  this.gl.readPixels(0, 0, this.W, this.H, this.gl.RGBA, readType, this.readBuf);
+  // for (let i = 0; i < this.W; i++) {
+  //   // writeBuf[i * 4 + 1] = 1.0;
+  // }
+  if (config.params.visualizations.areaConservation.optimized) {
+    // this.updateAreaConservationOptimized();
   }
-  // Example: modify and write back (only for float)
+  else {
+    const dx_proj = config.params.simulation.poolSize.x / this.W;
+    const dz_proj = config.params.simulation.poolSize.z / this.H;
+    const dx_proj_sq = dx_proj * dx_proj;
+    const dz_proj_sq = dz_proj * dz_proj;
+    if (this.textureA.type === this.gl.FLOAT) {
+      // Increase red channel
+      for (let j = 0; j < this.H; j += 1) {
+        for (let i = 0; i < this.W; i += 1) {
+          const index = (j * this.W + i) * 4;
+          const indexAreaConservation = ((this.H - 1 - j) * this.W + i) * 4;
+          const x = this.writeBuf[indexAreaConservation];
+          const z = this.writeBuf[indexAreaConservation + 1];
+          if (i + 1 < this.W) {
+            const dy = this.readBuf[index] - this.readBuf[index + 4];
+            const dx = Math.sqrt(dy * dy + dx_proj_sq);
+            this.writeBuf[indexAreaConservation + 4] = x + dx;
+          }
+          if (j + 1 < this.H) {
+            const dy = this.readBuf[index] - this.readBuf[index + this.W * 4];
+            const dz = Math.sqrt(dy * dy + dz_proj_sq);
+            this.writeBuf[indexAreaConservation - 4 * this.W + 1] = z + dz;
+          }
+        }
+      }
+    }
+    // Write back to textureA
+    this.gl.bindTexture(this.gl.TEXTURE_2D, this.areaConservationTextureA.id);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
+    this.gl.pixelStorei(this.gl.UNPACK_ALIGNMENT, 1);
+
+    this.gl.texSubImage2D(this.gl.TEXTURE_2D, 0, 0, 0, this.W, this.H, this.gl.RGBA, this.gl.FLOAT, this.writeBuf);
+
+    // Cleanup
+    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+
+
+    this.gl.bindTexture(this.gl.TEXTURE_2D, null);
+  }
+
+
+};
+
+
+
+
+Water.prototype.updateAreaConservationOptimized = function () {
+  this.gl.bindTexture(this.gl.TEXTURE_2D, this.areaConservationTextureA.id);
+  this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.NEAREST);
+  this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.NEAREST);
+
+
+  const flagSize = config.params.flags.flagSize;
   const dx_proj = config.params.simulation.poolSize.x / this.W;
   const dz_proj = config.params.simulation.poolSize.z / this.H;
   const dx_proj_sq = dx_proj * dx_proj;
   const dz_proj_sq = dz_proj * dz_proj;
+  const swimmerCenter = config.swimmers[0].body.center;
+  let flagCenter = new GL.Vector(swimmerCenter.x, swimmerCenter.z);
+  flagCenter.y -= FLAG_DELTA_Z;
+  const staticFlag_z = flagSize.y / 2. - config.params.simulation.poolSize.z / 2. + 2.;
+  flagCenter.y = Math.max(flagCenter.y, staticFlag_z);
+  const d_index = Math.max(flagSize.x / dx_proj, flagSize.y / dz_proj) / 2;
+  const poolDimension = new GL.Vector(config.params.simulation.poolSize.x, config.params.simulation.poolSize.z);
+  const center_i = flagCenter.x / dx_proj + this.W / 2;
+  const center_j = flagCenter.y / dz_proj + this.H / 2;
+  const center_ij = new GL.Vector(center_i, center_j);
+  // this.updateAreaConservationTexturePass(flagCenter, center_ij, 2);
+  // return;
+
+  for (let i = 0; i <= d_index; i++) {
+    this.updateAreaConservationTexturePass(flagCenter, center_ij, i);
+  }
+  // return;
+  this.gl.bindTexture(this.gl.TEXTURE_2D, this.areaConservationTextureA.id);
+  this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
+  this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
+  this.gl.bindTexture(this.gl.TEXTURE_2D, null);
+}
+
+Water.prototype.updateAreaConservationTexturePass = function (center, center_ij, currentStep) {
+  this.gl.viewport(0, 0, this.W, this.H);
+  this.areaConservationTextureB.drawTo(() => {
+    this.areaConservationTextureA.bind(0);
+    this.textureA.bind(1);
+    this.areaConservationShader.uniforms({
+      previous: 0,
+      water: 1,
+      invPoolSizeVertex: [this.invPoolSize.x, this.invPoolSize.z],
+      u_currentStep: currentStep,
+      center: [center.x, center.y],
+      u_center_ij: [center_ij.x, center_ij.y],
+      poolSize: [config.params.simulation.poolSize.x, config.params.simulation.poolSize.z]
+    }).draw(this.plane);
+  });
+  this.areaConservationTextureB.swapWith(this.areaConservationTextureA);
+  this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
+
+
+  // this.textureB.drawTo(function () {
+  //   this_.textureA.bind();
+  //   const swimmersAttributesTexture = Swimmer.getAttributesTexture();
+  //   if (swimmersAttributesTexture) swimmersAttributesTexture.bind(2);
+  //   this_.updateShader.uniforms({
+  //     swimmersAttributesTexture: 2,
+  //     swimmersNumber: config.swimmers.length,
+  //     invPoolSizeVertex: [this_.invPoolSize.x, this_.invPoolSize.z],
+  //     delta: [this_.delta.x, this_.delta.y],
+  //     time: config.time,
+  //     wr: this_.WR_position,
+  //     prev_wr: this_.prev_WR_position,
+  //     poolSize: [config.params.simulation.poolSize.x, config.params.simulation.poolSize.y, config.params.simulation.poolSize.z],
+  //     sqrt_2_PI: this_.sqrt_2_PI,
+  //     damping: config.params.simulation.waterDamping
+  //   }).draw(this_.plane);
+  // });
+  // this.textureB.swapWith(this.textureA);
+}
+
+Water.prototype.test2 = function () {
+  const dx_proj = config.params.simulation.poolSize.x / this.W;
+  const dz_proj = config.params.simulation.poolSize.z / this.H;
+  const dx_proj_sq = dx_proj * dx_proj;
+  const dz_proj_sq = dz_proj * dz_proj;
+  const flagCenter = config.swimmers[0].body.center.clone();
+  flagCenter.z -= FLAG_DELTA_Z;
+  const flagSize = config.params.flags.flagSize;
+  const d_index = Math.max(flagSize.x / dx_proj, flagSize.y / dz_proj) / 2;
+  const poolDimension = new GL.Vector(config.params.simulation.poolSize.x, config.params.simulation.poolSize.z);
+  const center_i = flagCenter.x / dx_proj + this.W / 2;
+  const center_j = flagCenter.y / dz_proj + this.H / 2;
   if (this.textureA.type === this.gl.FLOAT) {
     // Increase red channel
     for (let j = 0; j < this.H; j += 1) {
       for (let i = 0; i < this.W; i += 1) {
         const index = (j * this.W + i) * 4;
         const indexAreaConservation = ((this.H - 1 - j) * this.W + i) * 4;
-        const x = writeBuf[indexAreaConservation];
-        const z = writeBuf[indexAreaConservation + 1];
+        const x = this.writeBuf[indexAreaConservation];
+        const z = this.writeBuf[indexAreaConservation + 1];
         if (i + 1 < this.W) {
-          const dy = readBuf[index] - readBuf[index + 4];
+          const dy = this.readBuf[index] - this.readBuf[index + 4];
           const dx = Math.sqrt(dy * dy + dx_proj_sq);
-          writeBuf[indexAreaConservation + 4] = x + dx;
+          this.writeBuf[indexAreaConservation + 4] = x + dx;
         }
         if (j + 1 < this.H) {
-          const dy = readBuf[index] - readBuf[index + this.W * 4];
+          const dy = this.readBuf[index] - this.readBuf[index + this.W * 4];
           const dz = Math.sqrt(dy * dy + dz_proj_sq);
-          writeBuf[indexAreaConservation - 4 * this.W + 1] = z + dz;
+          this.writeBuf[indexAreaConservation - 4 * this.W + 1] = z + dz;
         }
       }
     }
-
-
-    // Write back to textureA
-    this.gl.bindTexture(this.gl.TEXTURE_2D, this.areaConservationTexture.id);
-    this.gl.pixelStorei(this.gl.UNPACK_ALIGNMENT, 1);
-    this.gl.texSubImage2D(this.gl.TEXTURE_2D, 0, 0, 0, this.W, this.H, this.gl.RGBA, this.gl.FLOAT, writeBuf);
   }
+}
 
-  // Cleanup
-  this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
-  this.gl.bindTexture(this.gl.TEXTURE_2D, null);
-};
 
 export { Water };
 

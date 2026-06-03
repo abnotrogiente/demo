@@ -38,7 +38,7 @@ class Config {
         this.params = {
             numSteps: 2, fov: 45,
             visualizations: {
-                enabled: true, showFlags: false, showWR: false, showSpeed: false, showDivingDistance: true,
+                enabled: true, showFlags: true, showWR: false, showSpeed: false, showDivingDistance: true,
                 showFinishTimes: false, showStreaks: false,
                 customWaterPerturbation: "none",
                 waterColorParameter: "none", customParametersList: customParametersList, customParametersDict: customParametersDict,
@@ -47,7 +47,10 @@ class Config {
                 swimmersLinesMode: "neighbours", swimmersLinesModeList: swimmersLinesModeList, swimmersLinesModeDict: listToDict(swimmersLinesModeList),
                 medalsModeBeforeFinish: "none", medalsModesDict: { "none": 0, "stars": 1, "bright": 2, "lanes": 3 },
                 medalsModeAfterFinish: "none",
-                areaConservationEnabled: true,
+                areaConservation: {
+                    enabled: true,
+                    optimized: false
+                },
                 rendering: "realistic", renderingList: renderingList, renderingDict: renderingDict,
                 transitionBeginTime: null,
 
@@ -370,7 +373,7 @@ class Config {
             this.params.video.thresholdBlending = this.currentScene.thresholdBlending;
             if (!this.currentScene.thresholdBlending) this.params.video.opacity = .5;
             else this.params.video.opacity = 1.;
-            this.params.visualizations.areaConservationEnabled = false;
+            this.params.visualizations.areaConservation.enabled = false;
 
             this.stopRace();
             this._reset();
@@ -420,7 +423,7 @@ class Config {
             const value = pair[1];
             this.params.visualizations[key] = value;
         })
-        this.params.visualizations.areaConservationEnabled = false;
+        this.params.visualizations.areaConservation.enabled = false;
     }
     updateEventIndex() {
         this.currentEventIndex = 0;

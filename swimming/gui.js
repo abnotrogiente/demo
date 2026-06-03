@@ -35,15 +35,20 @@ const createGUI = function (gl, reset) {
     visualizationsFolder.add(config.params.visualizations, "showSpeed").name('show speed').listen();
     visualizationsFolder.add(config.params.visualizations, "showDivingDistance").name('show diving distance').listen();
     visualizationsFolder.add(config.params.visualizations.shadow, "enabled").name("show shadow");
-    visualizationsFolder.add(config.params.visualizations, 'areaConservationEnabled', 'areaConservationEnabled').name('area conservation').listen();
     visualizationsFolder.add(config.params.visualizations, "rendering", config.params.visualizations.renderingList).name('rendering').listen().onChange(() => {
         if (config.params.visualizations.rendering == "toon") config.params.simulation.waterDamping = .35
     });
     visualizationsFolder.add(config, "hideFloaters").name('hide floaters').listen();
 
     const flagSizeFolder = visualizationsFolder.addFolder("Flags");
+    flagSizeFolder.close();
     flagSizeFolder.add(config.params.flags.flagSize, "x", 0, 10).name("width");
     flagSizeFolder.add(config.params.flags.flagSize, "y", 0, 10).name("height");
+
+    const areaConservationFolder = visualizationsFolder.addFolder("Area conservation");
+    areaConservationFolder.close();
+    areaConservationFolder.add(config.params.visualizations.areaConservation, "enabled").name("enabled").listen();
+    areaConservationFolder.add(config.params.visualizations.areaConservation, "optimized").name("optimized").listen();
 
     const videoFolder = gui.addFolder("video");
     videoFolder.close();

@@ -54,7 +54,7 @@ var flagSize;
 
 Swimmer.initAttributes();
 function updateResolutionWarning() {
-  document.getElementById('warning').hidden = !(config.resolution.x * config.resolution.y > 300000 && (config.water && config.params.visualizations.areaConservationEnabled));
+  document.getElementById('warning').hidden = !(config.resolution.x * config.resolution.y > 300000 && (config.water && config.params.visualizations.areaConservation.enabled));
 }
 
 let timeSinceFrameRateUpdate = 0;
@@ -535,9 +535,9 @@ window.onload = function () {
       config.swimmers.forEach(swimmer => swimmer.jump(2));
     }
     else if (e.which == 'C'.charCodeAt(0)) {
-      config.params.visualizations.areaConservationEnabled = !config.params.visualizations.areaConservationEnabled;
+      config.params.visualizations.areaConservation.enabled = !config.params.visualizations.areaConservation.enabled;
       updateResolutionWarning();
-      console.log("Area conservation " + (config.params.visualizations.areaConservationEnabled ? "enabled." : "disabled."));
+      console.log("Area conservation " + (config.params.visualizations.areaConservation.enabled ? "enabled." : "disabled."));
     }
     else if (e.which == 'P'.charCodeAt(0)) {
       config.water.showProjectionGrid = !config.water.showProjectionGrid;
@@ -580,7 +580,7 @@ window.onload = function () {
       config.resolution.y = 2048;
       config.params.simulation.poolSize.x = 25;
       config.params.simulation.poolSize.z = 25;
-      config.params.visualizations.areaConservationEnabled = false;
+      config.params.visualizations.areaConservation.enabled = false;
       config.params.visualizations.rendering = "lambert";
       config.params.quiver.alwaysActive = true;
       config.params.quiver.amplitude = .25;
@@ -589,9 +589,12 @@ window.onload = function () {
       reset();
       config.swimmers[0].body.move(new GL.Vector(0, 0, 0));
       config.swimmers[0].nationality = 1;
-      config.params.flags.flagSize.x = 3.;
-      config.params.flags.flagSize.y = 4.;
+      config.params.flags.flagSize.x = 1.;
+      config.params.flags.flagSize.y = 2.;
       config._setPannelMinimized(true);
+    }
+    else if (e.which == 'B'.charCodeAt(0)) {
+      config.params.visualizations.areaConservation.optimized = !config.params.visualizations.areaConservation.optimized;
     }
     else if (e.which == 'M'.charCodeAt(0)) {
       config.setMVPMI();

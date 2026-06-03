@@ -12,6 +12,7 @@ import { Water } from './water.js';
 import { swimmersHelperFunctions } from './swimmersHelperFunctions.js';
 import { textHelperFunctions } from './renderText.js';
 import { config } from './params.js';
+import { FLAG_DELTA_Z } from './swimmersConstants.js';
 
 var helperFunctions = `
   const float IOR_AIR = 1.0;
@@ -184,6 +185,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
       uniform samplerCube sky;
       uniform bool showProjectionGrid;
       uniform bool showAreaConservedGrid;
+      uniform bool areaConservationOptimized;
       uniform sampler2D france;
       uniform sampler2D china;
       uniform vec2 flagSize;
@@ -336,7 +338,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
       void drawFlags(in vec2 position, in vec2 swimmerPos, in float swimmerAltitude, in float nationality, bool rightSide, inout vec3 color) {
         float swimmer_x = swimmerPos.x;
         float swimmer_z = swimmerPos.y;
-        float dz = rightSide ? -2.5 : 2.5;
+        float dz = rightSide ? -`+ FLAG_DELTA_Z + ` : ` + FLAG_DELTA_Z +/*glsl */`;
         float staticFlag_z = flagSize.y / 2. - poolSize.z / 2. + 2.;
         float flag_z = swimmerAltitude <= 0. ? max(staticFlag_z, swimmer_z + dz) : staticFlag_z;
         vec2 flagCenterNew = vec2(swimmer_x, flag_z);
@@ -346,7 +348,8 @@ function Renderer(gl, water, flagCenter, flagSize) {
         if (areaConservation) {
           //vec2 coord = position / poolSize.xz + 0.5;
           //position = texture(areaConservationTexture, coord).xy;
-          flagCorner = texture(areaConservationTexture, flagCorner / poolSize.xz + 0.5).xy;
+
+          if(!areaConservationOptimized) flagCorner = texture(areaConservationTexture, flagCorner / poolSize.xz + 0.5).xy;
         }
         if (showAreaConservedGrid && isOnConservedAreaGrid(position, 0.1)) color = vec3(1., 0., 0.); /* Debug conserved area grid */
         vec2 posFlag = position - flagCorner - flagSize / 2.;/*Fixes the corner of the flag on the XZ plane*/
@@ -540,6 +543,9 @@ function Renderer(gl, water, flagCenter, flagSize) {
           if (areaConservation) {
             vec2 coord = position / poolSize.xz + 0.5;
             position = texture(areaConservationTexture, coord).xy;
+            // color.rg = position;
+            // color.b = 0.;
+            // return;
           }
 
           float speed = getSwimmerSpeed(i);
@@ -848,7 +854,7 @@ Renderer.prototype.renderWater = function (water, sky, shadowParams) {
   this.chinaTexture.bind(8);
   config.water.foam.foamTexNext.bind(9);
   this.lettersTexture.bind(7);
-  water.areaConservationTexture.bind(5);
+  water.areaConservationTextureA.bind(5);
   const swimmersAttributesTexture = Swimmer.getAttributesTexture();
   if (swimmersAttributesTexture) swimmersAttributesTexture.bind(6);
   this.gl.enable(this.gl.CULL_FACE);
@@ -869,7 +875,7 @@ Renderer.prototype.renderWater = function (water, sky, shadowParams) {
       areaConservationTexture: 5,
       swimmersAttributesTexture: 6,
       iChannel0: 7,
-      areaConservation: config.params.visualizations.areaConservationEnabled,
+      areaConservation: config.params.visualizations.areaConservation.enabled,
       flagSize: [config.params.flags.flagSize.x, config.params.flags.flagSize.y],
       flagCenter: [this.flagCenter.x, this.flagCenter.y],
       poolSize: [config.params.simulation.poolSize.x, config.params.simulation.poolSize.y, config.params.simulation.poolSize.z],
@@ -879,6 +885,7 @@ Renderer.prototype.renderWater = function (water, sky, shadowParams) {
       sphereRadius: this.sphereRadius,
       showProjectionGrid: water.showProjectionGrid,
       showAreaConservedGrid: water.showAreaConservedGrid,
+      areaConservationOptimized: config.params.visualizations.areaConservation.optimized,
       wr: water.WR_position,
       swimmersNumber: config.swimmers.length,
       cornerView: config.cornerView,
