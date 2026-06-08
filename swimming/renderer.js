@@ -12,7 +12,7 @@ import { Water } from './water.js';
 import { swimmersHelperFunctions } from './swimmersHelperFunctions.js';
 import { textHelperFunctions } from './renderText.js';
 import { config } from './params.js';
-import { FLAG_DELTA_Z } from './swimmersConstants.js';
+import { FLAG_DELTA_Z, FLAG_DELTA_Z_STATIC } from './swimmersConstants.js';
 
 var helperFunctions = `
   const float IOR_AIR = 1.0;
@@ -339,7 +339,7 @@ function Renderer(gl, water, flagCenter, flagSize) {
         float swimmer_x = swimmerPos.x;
         float swimmer_z = swimmerPos.y;
         float dz = rightSide ? -`+ FLAG_DELTA_Z + ` : ` + FLAG_DELTA_Z +/*glsl */`;
-        float staticFlag_z = flagSize.y / 2. - poolSize.z / 2. + 2.;
+        float staticFlag_z = flagSize.y / 2. - poolSize.z / 2.  +`+ FLAG_DELTA_Z_STATIC +/*glsl*/`;
         float flag_z = swimmerAltitude <= 0. ? max(staticFlag_z, swimmer_z + dz) : staticFlag_z;
         vec2 flagCenterNew = vec2(swimmer_x, flag_z);
         // TODO nettoyer

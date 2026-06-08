@@ -20,6 +20,7 @@ import { Calibration } from './calibration.js';
 import { Water } from './water.js';
 import { drawChronoPhotography } from './chronophotography.js';
 import { ArrayBufferTarget, Muxer } from 'webm-muxer';
+import { captureScreenshot } from './screenShot.js';
 
 const offlineRendering = false;
 
@@ -223,7 +224,7 @@ window.onload = function () {
   function animate() {
     var nextTime = new Date().getTime();
     update((nextTime - prevTime) / 1000);
-    draw(nextTime);
+    draw();
 
     prevTime = nextTime;
     requestAnimationFrame(animate);
@@ -275,7 +276,7 @@ window.onload = function () {
 
         update(1 / fps);
         await config.updateVideoForOfflineRendering();
-        draw(time);
+        draw();
 
 
         gl.finish();
@@ -576,22 +577,40 @@ window.onload = function () {
       config._setPannelMinimized(true);
     }
     else if (e.which == 'N'.charCodeAt(0)) {
-      config.resolution.x = 2048;
-      config.resolution.y = 2048;
-      config.params.simulation.poolSize.x = 25;
-      config.params.simulation.poolSize.z = 25;
+      // config.swimmers[0].nationality = 1;
+      // config.params.simulation.splashes.enabled = false;
+      // config.params.visualizations.shadow.enabled = false;
+      // // config.params.swimmers.showSpheres = false;
+      // return;
+      config.resolution.x = 512;
+      config.resolution.y = 512;
+      config.params.simulation.poolSize.x = 10;
+      config.params.simulation.poolSize.z = 10;
       config.params.visualizations.areaConservation.enabled = false;
       config.params.visualizations.rendering = "lambert";
       config.params.quiver.alwaysActive = true;
-      config.params.quiver.amplitude = .25;
-      config.params.quiver.frequencyFactor = 1.15;
+      config.params.quiver.amplitude = .43;
+      config.params.quiver.frequencyFactor = 1.17;
+      config.params.quiver.waveLength = 2.9;
       config.params.visualizations.showFlags = true;
+      config.params.swimmers.showSpheres = false;
       reset();
       config.swimmers[0].body.move(new GL.Vector(0, 0, 0));
       config.swimmers[0].nationality = 1;
-      config.params.flags.flagSize.x = 1.;
-      config.params.flags.flagSize.y = 2.;
+      config.params.flags.flagSize.x = 3;
+      config.params.flags.flagSize.y = 4.;
       config._setPannelMinimized(true);
+    }
+
+    else if (e.which == 'X'.charCodeAt(0)) {
+      const blob = await captureScreenshot(config.gl, draw, 7680, 4320);
+      // const blob = await captureScreenshot(config.gl, draw, gl.canvas.width, gl.canvas.height);
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "screenshot.png";
+      a.click();
     }
     else if (e.which == 'B'.charCodeAt(0)) {
       config.params.visualizations.areaConservation.optimized = !config.params.visualizations.areaConservation.optimized;

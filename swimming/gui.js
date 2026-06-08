@@ -49,6 +49,7 @@ const createGUI = function (gl, reset) {
     areaConservationFolder.close();
     areaConservationFolder.add(config.params.visualizations.areaConservation, "enabled").name("enabled").listen();
     areaConservationFolder.add(config.params.visualizations.areaConservation, "optimized").name("optimized").listen();
+    areaConservationFolder.add(config.params.visualizations.areaConservation, "legibility", 0, 1).name("legibility").listen();
 
     const videoFolder = gui.addFolder("video");
     videoFolder.close();
@@ -110,7 +111,7 @@ const createGUI = function (gl, reset) {
 
     const cameraFolder = gui.addFolder("camera");
     cameraFolder.close();
-    cameraFolder.add(config.params, 'fov', 28, 45).name('fov').listen().onChange(function (value) {
+    cameraFolder.add(config.params, 'fov', 15, 45).name('fov').listen().onChange(function (value) {
         config.params.visualizations.sparks.fov = value * 2 * Math.PI / 360;
         gl.matrixMode(gl.PROJECTION);
         gl.loadIdentity();
@@ -121,12 +122,12 @@ const createGUI = function (gl, reset) {
 
     const quiverFolder = gui.addFolder("quiver");
     quiverFolder.close();
-    quiverFolder.add(config.params.quiver, "alwaysActive").name("always active");
-    quiverFolder.add(config.params.quiver, "amplitude", .01, 1).name("amplitude");
-    quiverFolder.add(config.params.quiver, "omega", .5, 5).name("omega");
-    quiverFolder.add(config.params.quiver, "amplitudeFactor", .5, .9).name("amplitude factor");
-    quiverFolder.add(config.params.quiver, "frequencyFactor", 1.1, 2).name("frequency factor");
-    quiverFolder.add(config.params.quiver, "waveLength", 1, 30).name("wave length");
+    quiverFolder.add(config.params.quiver, "alwaysActive").name("always active").listen();
+    quiverFolder.add(config.params.quiver, "amplitude", .01, 1).name("amplitude").listen();
+    quiverFolder.add(config.params.quiver, "omega", .5, 5).name("omega").listen();
+    quiverFolder.add(config.params.quiver, "amplitudeFactor", .5, .9).name("amplitude factor").listen();
+    quiverFolder.add(config.params.quiver, "frequencyFactor", 1.1, 2).name("frequency factor").listen();
+    quiverFolder.add(config.params.quiver, "waveLength", 1, 30).name("wave length").listen();
 
     const cornerViewFolder = gui.addFolder("corner view");
     cornerViewFolder.close();

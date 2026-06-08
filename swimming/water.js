@@ -12,7 +12,7 @@ import { Swimmer } from './swimmer.js';
 import { swimmersHelperFunctions } from './swimmersHelperFunctions.js';
 import { config } from './params.js';
 import { Foam } from './foam.js';
-import { FLAG_DELTA_Z } from './swimmersConstants.js';
+import { FLAG_DELTA_Z, FLAG_DELTA_Z_STATIC } from './swimmersConstants.js';
 
 const vertexShader = `
     out vec2 coord;
@@ -31,6 +31,7 @@ const areaConservationFragmentShader = /*glsl */ `
   uniform sampler2D water;
   uniform sampler2D previous;
   uniform vec2 poolSize;
+  uniform float legibility;
   out vec4 fragColor;
   void main() {
     ivec2 center_ij = ivec2(u_center_ij);
@@ -48,7 +49,7 @@ const areaConservationFragmentShader = /*glsl */ `
     float delta_z = delta.y;
     float delta_x = delta.x;
     float y = texture(water, coordinate).r;
-    float alpha = 1.;
+    float alpha = 1. - legibility;
 
     ivec2 diff = pixel - center_ij;
     vec3 val = texture(previous, coordinate).rgb;
@@ -435,6 +436,8 @@ Water.prototype.addOrRemoveVisualizationWaves = function (add) {
   });
   this.textureB.swapWith(this.textureA);
 
+  this.updateAreaConservation();
+
 }
 
 Water.prototype.updateSpheres = function (dt) {
@@ -507,7 +510,7 @@ Water.prototype.stepSimulation = function (dt) {
 
   if (config.params.simulation.foam.enabled) this.foam.updateFoam(dt);
 
-  this.updateAreaConservation();
+  // this.updateAreaConservation();
 };
 
 Water.prototype.updateNormals = function () {
@@ -644,7 +647,7 @@ Water.prototype.updateAreaConservationOptimized = function () {
   const swimmerCenter = config.swimmers[0].body.center;
   let flagCenter = new GL.Vector(swimmerCenter.x, swimmerCenter.z);
   flagCenter.y -= FLAG_DELTA_Z;
-  const staticFlag_z = flagSize.y / 2. - config.params.simulation.poolSize.z / 2. + 2.;
+  const staticFlag_z = flagSize.y / 2. - config.params.simulation.poolSize.z / 2. + FLAG_DELTA_Z_STATIC;
   flagCenter.y = Math.max(flagCenter.y, staticFlag_z);
   const d_index = Math.max(flagSize.x / dx_proj, flagSize.y / dz_proj) / 2;
   const poolDimension = new GL.Vector(config.params.simulation.poolSize.x, config.params.simulation.poolSize.z);
@@ -676,7 +679,8 @@ Water.prototype.updateAreaConservationTexturePass = function (center, center_ij,
       u_currentStep: currentStep,
       center: [center.x, center.y],
       u_center_ij: [center_ij.x, center_ij.y],
-      poolSize: [config.params.simulation.poolSize.x, config.params.simulation.poolSize.z]
+      poolSize: [config.params.simulation.poolSize.x, config.params.simulation.poolSize.z],
+      legibility: config.params.visualizations.areaConservation.legibility
     }).draw(this.plane);
   });
   this.areaConservationTextureB.swapWith(this.areaConservationTextureA);

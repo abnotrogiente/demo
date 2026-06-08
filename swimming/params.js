@@ -38,7 +38,7 @@ class Config {
         this.params = {
             numSteps: 2, fov: 45,
             visualizations: {
-                enabled: true, showFlags: true, showWR: false, showSpeed: false, showDivingDistance: true,
+                enabled: true, showFlags: false, showWR: false, showSpeed: false, showDivingDistance: true,
                 showFinishTimes: false, showStreaks: false,
                 customWaterPerturbation: "none",
                 waterColorParameter: "none", customParametersList: customParametersList, customParametersDict: customParametersDict,
@@ -49,7 +49,8 @@ class Config {
                 medalsModeAfterFinish: "none",
                 areaConservation: {
                     enabled: true,
-                    optimized: false
+                    optimized: false,
+                    legibility: 0.
                 },
                 rendering: "realistic", renderingList: renderingList, renderingDict: renderingDict,
                 transitionBeginTime: null,
