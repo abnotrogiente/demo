@@ -38,6 +38,7 @@ import { EffectComposer, RenderPass } from 'three/examples/jsm/Addons.js';
 import { BallEffects } from './ballEffects2';
 import { sportSpecificAssets, tableDimensions } from './constants';
 import { TableEffects } from './tableEffects';
+import { SurfaceScore } from './surfaceScore';
 
 
 
@@ -191,6 +192,8 @@ async function parseCsv(source) {
 const calibration_fps = 25;
 const calibrations = await parseCsv("./assets/cam_cal_filtered.csv");
 const ball_positions = await parseCsv("./assets/ball_traj_3D.csv");
+
+const surfaceScore = new SurfaceScore(scene, renderer, camera);
 // console.log("calibrations : " + JSON.stringify(calibrations));
 
 
@@ -261,6 +264,8 @@ const animation = () => {
     tableEffects.update(elapsed, delta);
     // renderer.render(scene, camera);
     composer.render();
+    surfaceScore.evaluate();
+
 };
 
 animation();

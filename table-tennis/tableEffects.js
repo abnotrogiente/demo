@@ -19,10 +19,8 @@ export class TableEffects {
         this.speed = new Vector3();
         this.prevSpeed = new Vector3();
         this.tmpvec2 = new Vector2();
-        console.log("MATERIAL : " + surface.material);
         // surface.material = new MeshStandardMaterial();
         surface.material.onBeforeCompile = /**@param {ShaderMaterial} shader*/(shader) => {
-            console.log("BEFORE COMPILE : " + shader.vertexShader);
             shader.uniforms.uTime = { value: 0 };
             shader.uniforms.displayTexture = { value: null };
             shader.uniforms.bounceMode = { value: config.params.visualizations.bounce };
@@ -279,7 +277,6 @@ export class TableEffects {
         });
 
         configureSelector("Bounce Mode", config.params.visualizations, "bounce", BounceModes, (value) => {
-            console.log("CHAAAANGE : " + value);
             this.shader.uniforms.bounceMode.value = value;
             texturePassMaterial.uniforms.bounceMode.value = value;
         });
