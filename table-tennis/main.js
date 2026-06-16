@@ -264,7 +264,7 @@ const animation = () => {
     tableEffects.update(elapsed, delta);
     // renderer.render(scene, camera);
     composer.render();
-    surfaceScore.evaluate();
+    // surfaceScore.evaluate();
 
 };
 
