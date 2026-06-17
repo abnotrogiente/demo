@@ -1,6 +1,5 @@
 import { Vector3 } from "three";
 import { depth } from "three/tsl";
-import { Config } from "./config";
 
 export const tableDimensions = {
     width: 2.74,
@@ -47,17 +46,6 @@ export const sportToAssets = {
 
 
 export const sportSpecificAssets = [];
-
-
-
-
-
-
-
-
-export const config = new Config();
-
-config.configureSelectors();
 
 
 

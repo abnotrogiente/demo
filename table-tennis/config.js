@@ -1,31 +1,63 @@
+const uiWindowContent = document.getElementById("window-content");
 
+export const Selector = Object.freeze({
+    CHECKBOX: 0,
+    SELECT: 1
+});
 
-export function configureSelector(selectorName, variableParent, variableName, variableEnum, callback) {
+// export function configureSelector(selectorName, variableParent, variableName, variableEnum, callback) {
+export function configureSelector({ selectorName = "selector", variableParent = config.params, variableName = "", variableEnum = {}, callback = () => { }, selectorType = Selector.CHECKBOX }) {
     const div = document.createElement("div");
     div.classList.add("control-group");
     const label = document.createElement("label");
     label.textContent = selectorName;
     div.appendChild(label);
-    const selector = document.createElement("select");
+    let selector = null;
+    switch (selectorType) {
+        case Selector.SELECT:
+            selector = document.createElement("select");
+            Object.entries(variableEnum).forEach(([key, value]) => {
+                const option = document.createElement("option");
+                option.value = value;
+                option.textContent = key;
+                selector.appendChild(option);
+            });
+            break;
+        case Selector.CHECKBOX:
+            selector = document.createElement("input");
+            selector.type = "checkbox";
+            selector.checked = variableParent[variableName];
+            break;
+        default:
+            break;
+    }
+
     div.appendChild(selector);
 
-    Object.entries(variableEnum).forEach(([key, value]) => {
-        const option = document.createElement("option");
-        option.value = value;
-        option.textContent = key;
-        selector.appendChild(option);
-    });
 
     uiWindowContent.appendChild(div);
 
     selector.addEventListener("change", () => {
-        variableParent[variableName] = selector.value;
+        switch (selectorType) {
+            case Selector.SELECT:
+                variableParent[variableName] = selector.value;
+                break;
+            case Selector.CHECKBOX:
+                variableParent[variableName] = selector.checked;
+                break;
+            default:
+                break;
+        }
         // console.log("CHANGE : " + variableParent[variableName].toString());
         callback(variableParent[variableName]);
     });
+
 }
 
-const uiWindowContent = document.getElementById("window-content");
+export function configureCheckBox(checkBoxName, variableParent, vairableName, callback) {
+
+}
+
 
 export function getShaderConstantsFromEnum(e) {
     let parametersstr = "";
@@ -38,15 +70,18 @@ export function getShaderConstantsFromEnum(e) {
 }
 
 export const BounceModes = Object.freeze({
-    COLOR: 0,
-    RIPPLE: 1
+    NONE: 0,
+    COLOR: 1,
+    RIPPLE: 2
 })
 export class Config {
     constructor() {
         this.params = {
             visualizations: {
                 BounceModes: BounceModes,
-                bounce: BounceModes.COLOR,
+                bounce: BounceModes.NONE,
+                showShadow: true,
+                hawkEye: true
             }
         }
     }
@@ -60,4 +95,6 @@ export class Config {
 }
 
 
+export const config = new Config();
 
+config.configureSelectors();

@@ -231,6 +231,17 @@ function updateCalibration(elapsedTime) {
     // players.update(calibIndex);
 }
 
+const onkeydown = async function (e) {
+    if (e.which == ' '.charCodeAt(0)) {
+        if (clock.running) clock.stop();
+        else clock.start();
+        console.log("PAUSING");
+    };
+}
+
+// renderer.getContext().canvas.addEventListener("keydown", onkeydown);
+window.addEventListener("keydown", onkeydown);
+
 
 const clock = new Clock();
 

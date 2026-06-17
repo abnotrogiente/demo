@@ -1,7 +1,8 @@
 import { Camera, FloatType, LinearFilter, Mesh, MeshNormalMaterial, MeshStandardMaterial, PlaneGeometry, RGBAFormat, ShaderMaterial, Vector2, Vector3, WebGLRenderer, WebGLRenderTarget } from "three";
-import { BounceModes, configureSelector, getShaderConstantsFromEnum } from "./config";
+import { BounceModes, configureSelector, getShaderConstantsFromEnum, Selector } from "./config";
 import { Scene } from "three";
-import { config, tableDimensions } from "./constants";
+import { tableDimensions } from "./constants";
+import { config } from "./config";
 
 
 export class TableEffects {
@@ -26,6 +27,7 @@ export class TableEffects {
             shader.uniforms.bounceMode = { value: config.params.visualizations.bounce };
             shader.uniforms.tableDimensions = { value: new Vector2(tableDimensions.depth, tableDimensions.width) };
             shader.uniforms.ballPosition = { value: new Vector2() };
+            shader.uniforms.showShadow = { value: config.params.visualizations.showShadow };
             shader.vertexShader = shader.vertexShader.replace(
                 "#include <common>",
                 /*glsl */ `
@@ -69,6 +71,7 @@ export class TableEffects {
                 in vec2 vUv;
                 uniform int bounceMode;
                 uniform vec2 ballPosition;
+                uniform bool showShadow;
 
 
                 `+ getShaderConstantsFromEnum(config.params.visualizations.BounceModes) + /*glsl */`
@@ -155,22 +158,28 @@ export class TableEffects {
                 /*glsl */ `
                 #include <opaque_fragment>
 
-                vec4 col = texture(displayTexture, vUv);
-
+                if (bounceMode != NONE) {
                 
-                if (col.a != 0.) gl_FragColor.rgb = col.a*col.rgb + (1.-col.a)*gl_FragColor.rgb;
+
+                    vec4 col = texture(displayTexture, vUv);
+
+                    
+                    if (col.a != 0.) gl_FragColor.rgb = col.a*col.rgb + (1.-col.a)*gl_FragColor.rgb;
+                }
                 
                 if (bounceMode == RIPPLE) {
                     // gl_FragColor = col;
                 }
                 // gl_FragColor = vec4(vUv, 0., 1.);
 
-                float l = length(vWorldPos.xz - ballPosition);
-                float shadowIntensity = pow(max(0.,1.-l),30.);
-                gl_FragColor = (1.-shadowIntensity)*gl_FragColor + shadowIntensity*vec4(0., 0., 0., 1.);
-                float shadowRadiusExt = .06;
-                float shadowRadiusIn = .04;
-                if (l <= shadowRadiusExt && l >= shadowRadiusIn ) gl_FragColor = vec4(1., 1., 0., 1.);
+                if (showShadow) {
+                    float l = length(vWorldPos.xz - ballPosition);
+                    float shadowIntensity = pow(max(0.,1.-l),30.);
+                    gl_FragColor = (1.-shadowIntensity)*gl_FragColor + shadowIntensity*vec4(0., 0., 0., 1.);
+                    float shadowRadiusExt = .06;
+                    float shadowRadiusIn = .04;
+                    if (l <= shadowRadiusExt && l >= shadowRadiusIn ) gl_FragColor = vec4(1., 1., 0., 1.);
+                }
                     `
             );
             this.shader = shader;
@@ -276,9 +285,28 @@ export class TableEffects {
             `
         });
 
-        configureSelector("Bounce Mode", config.params.visualizations, "bounce", BounceModes, (value) => {
-            this.shader.uniforms.bounceMode.value = value;
-            texturePassMaterial.uniforms.bounceMode.value = value;
+
+        // configureSelector("Bounce Mode", config.params.visualizations, "bounce", BounceModes, (value) => {
+        configureSelector({
+            selectorName: "Bounce Mode",
+            variableParent: config.params.visualizations,
+            variableName: "bounce",
+            variableEnum: BounceModes,
+            selectorType: Selector.SELECT,
+            callback: (value) => {
+                this.shader.uniforms.bounceMode.value = value;
+                texturePassMaterial.uniforms.bounceMode.value = value;
+            }
+        });
+
+        configureSelector({
+            selectorName: "Show Shadow",
+            variableParent: config.params.visualizations,
+            variableName: "showShadow",
+            selectorType: Selector.CHECKBOX,
+            callback: (value) => {
+                this.shader.uniforms.showShadow.value = value;
+            }
         });
 
         this.texturePassQuad = new Mesh(planeGeometry, texturePassMaterial);
@@ -317,7 +345,7 @@ export class TableEffects {
 
         this.texturePassQuad.material.uniforms.previousTexture.value = this.previousRenderingTarget.texture;
         this.renderer.setRenderTarget(this.currentRenderingTarget);
-        this.renderer.render(this.texturePassScene, this.texturePassCamera);
+        if (config.params.visualizations.bounce == BounceModes.NONE) this.renderer.render(this.texturePassScene, this.texturePassCamera);
         // this.renderer.setRenderTarget(null);
         this.shader.uniforms.displayTexture.value = this.currentRenderingTarget.texture;
         [this.previousRenderingTarget, this.currentRenderingTarget] = [this.currentRenderingTarget, this.previousRenderingTarget];
