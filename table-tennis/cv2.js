@@ -204,7 +204,7 @@ export class CV_Helper {
                 const tracking_data_index = Math.min(tracking_data.length, Math.round(tracking_data.length * (this.video_src.currentTime % this.videoDuration) / this.videoDuration));
                 const traj = tracking_data[tracking_data_index % 290];
                 // console.log("z : " + traj["z\r"]);
-                const z = parseFloat(traj["z\r"]);
+                const z = parseFloat(traj["z"]);
                 this.ball.position.set(traj["x"], z, traj["y"]);
                 console.log("ball position : " + JSON.stringify(this.ball.position));
 
