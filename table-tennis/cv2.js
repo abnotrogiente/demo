@@ -206,8 +206,6 @@ export class CV_Helper {
                 // console.log("z : " + traj["z\r"]);
                 const z = parseFloat(traj["z"]);
                 this.ball.position.set(traj["x"], z, traj["y"]);
-                console.log("ball position : " + JSON.stringify(this.ball.position));
-
             }
             if (!this.showVideo && this.trackingMode != TRACKING_ORANGE) return;
             else {
