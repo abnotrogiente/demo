@@ -345,7 +345,7 @@ export class TableEffects {
 
         this.texturePassQuad.material.uniforms.previousTexture.value = this.previousRenderingTarget.texture;
         this.renderer.setRenderTarget(this.currentRenderingTarget);
-        if (config.params.visualizations.bounce == BounceModes.NONE) this.renderer.render(this.texturePassScene, this.texturePassCamera);
+        if (config.params.visualizations.bounce != BounceModes.NONE) this.renderer.render(this.texturePassScene, this.texturePassCamera);
         // this.renderer.setRenderTarget(null);
         this.shader.uniforms.displayTexture.value = this.currentRenderingTarget.texture;
         [this.previousRenderingTarget, this.currentRenderingTarget] = [this.currentRenderingTarget, this.previousRenderingTarget];

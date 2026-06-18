@@ -41,7 +41,7 @@ function updateCalibration(elapsedTime) {
 
     const traj = tracking_data[calibIndex % 290];
     // console.log("z : " + traj["z\r"]);
-    const z = parseFloat(traj["z\r"]);
+    const z = parseFloat(traj["z"]);
     tracked_ball.position.set(traj["x"], z, traj["y"]);
 
 
