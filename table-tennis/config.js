@@ -22,6 +22,7 @@ export function configureSelector({ selectorName = "selector", variableParent = 
                 option.textContent = key;
                 selector.appendChild(option);
             });
+            selector.value = variableParent[variableName];
             break;
         case Selector.CHECKBOX:
             selector = document.createElement("input");
@@ -84,6 +85,7 @@ export class Config {
                 hawkEye: true
             }
         }
+        this.paused = false;
     }
 
     configureSelectors() {

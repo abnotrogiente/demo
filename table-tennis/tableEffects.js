@@ -356,6 +356,7 @@ export class TableEffects {
     }
 
     update(t, dt) {
+        if (config.paused) return;
         this.#texturePass(dt);
         if (this.shader) this.shader.uniforms.uTime.value = t;
         else console.log("shader does not exist");

@@ -102,7 +102,7 @@ export class BallEffects {
 
 
     update(dt) {
-        if (!config.params.visualizations.hawkEye) return;
+        if (!config.params.visualizations.hawkEye || config.paused) return;
         // this.effectsPass.uniforms.time.value = t;
         // return;
 

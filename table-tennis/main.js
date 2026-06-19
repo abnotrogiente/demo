@@ -39,6 +39,7 @@ import { BallEffects } from './ballEffects2';
 import { sportSpecificAssets, tableDimensions } from './constants';
 import { TableEffects } from './tableEffects';
 import { SurfaceScore } from './surfaceScore';
+import { config } from './config';
 
 
 
@@ -233,8 +234,17 @@ function updateCalibration(elapsedTime) {
 
 const onkeydown = async function (e) {
     if (e.which == ' '.charCodeAt(0)) {
-        if (clock.running) clock.stop();
-        else clock.start();
+        config.paused = !config.paused
+        if (config.paused) {
+            clock.stop();
+            if (video.useMock) {
+                video.webcamVideo.pause();
+            }
+        }
+        else {
+            clock.start();
+            if (video.useMock) video.webcamVideo.play();
+        }
         console.log("PAUSING");
     };
 }
