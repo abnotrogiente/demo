@@ -1,5 +1,15 @@
 import { Vector3 } from "three";
-import { depth } from "three/tsl";
+
+export const Selector = Object.freeze({
+    CHECKBOX: 0,
+    SELECT: 1
+});
+
+export const Sport = Object.freeze({
+    TABLE_TENNIS: 0,
+    BOXING: 1
+});
+
 
 export const tableDimensions = {
     width: 2.74,
@@ -9,11 +19,9 @@ export const tableDimensions = {
     netHeight: 0.1525
 };
 
-export const TABLE_TENNIS = 1;
-export const BOXING = 2;
 
 export const sportToAssets = {
-    TABLE_TENNIS: [
+    [Sport.TABLE_TENNIS]: [
         {
             name: "table",
             collideShape: "box",
@@ -28,7 +36,7 @@ export const sportToAssets = {
         },
         // TODO add ball
     ],
-    BOXING: [
+    [Sport.BOXING]: [
         {
             name: "ring",
             collideShape: "box",
@@ -42,6 +50,59 @@ export const sportToAssets = {
             modelOffset: new Vector3(0, -1.5, 0)
         },
     ]
+}
+
+export const sportTrees = {
+    [Sport.TABLE_TENNIS]: {
+        children: [
+            {
+                name: "Player",
+                properties: [],
+                attributes: [],
+                children: [
+                    {
+                        name: "racket",
+                        properties: [],
+                        attributes: [],
+                    }
+                ]
+            },
+            {
+                name: "table",
+                children: [
+                    {
+                        name: "plane",
+                        properties: [],
+                        attributes: [],
+                    },
+                    {
+                        name: "net",
+                        properties: [],
+                        attributes: []
+                    }
+                ]
+            },
+            {
+                name: "ball",
+                properties: [],
+                attributes: []
+            }
+        ],
+        interactions: [
+            {
+                actors: ["racket", "ball"],
+                types: ["technique", "bounce"]
+            },
+            {
+                actors: ["net", "ball"],
+                types: ["bounce"]
+            },
+            {
+                actors: ["plane", "ball"],
+                types: ["bounce", "projection"]
+            }
+        ]
+    }
 }
 
 

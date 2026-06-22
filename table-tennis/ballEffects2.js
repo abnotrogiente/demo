@@ -1,7 +1,8 @@
 import { BufferAttribute, BufferGeometry, Camera, DataTexture, FloatType, InstancedBufferAttribute, LinearFilter, LineSegments, Material, MathUtils, Mesh, MeshNormalMaterial, PlaneGeometry, Points, RGBAFormat, Scene, ShaderMaterial, Vector2, Vector3, WebGLRenderer, WebGLRenderTarget } from "three";
 import { EffectComposer, Line2, LineGeometry, LineMaterial, RenderPass, ShaderPass } from "three/examples/jsm/Addons.js";
 import { tableDimensions } from "./constants";
-import { config, Selector } from "./config";
+import { config } from "./config";
+import { Selector } from "./constants";
 import { BounceModes, configureSelector, getShaderConstantsFromEnum } from "./config";
 
 

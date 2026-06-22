@@ -56,6 +56,8 @@ const camera = new PerspectiveCamera(75, aspect, 0.1, 1000);
 camera.position.z = 3;
 camera.position.y = 1.8;
 
+config.configureSelectors(physics);
+
 //DEBUG CAMERA
 const cameraDebug = new PerspectiveCamera(75, aspect, .1, 1000);
 cameraDebug.position.y = .2;
