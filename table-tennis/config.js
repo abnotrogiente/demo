@@ -98,15 +98,16 @@ export class Config {
             variableName: "sport",
             variableEnum: Sport,
             selectorType: Selector.SELECT,
-            callback: (value) => {
+            callback: async (value) => {
+                console.log("num assets : " + sportSpecificAssets.length);
                 sportSpecificAssets.forEach(asset => physics.deleteBody(asset));
                 sportSpecificAssets.splice(0, sportSpecificAssets.length);
                 const sportAssets = sportToAssets[value];
-                sportAssets.forEach(asset => {
+                sportAssets.forEach(async asset => {
                     let body;
                     switch (asset.collideShape) {
                         case "box":
-                            body = physics.createBox({
+                            body = await physics.createBox({
                                 position: asset.position,
                                 // rotation: new Quaternion(0., 0., .02, 1.),
                                 dimensions: new Vector3(asset.dimensions.width, asset.dimensions.height, asset.dimensions.depth),
