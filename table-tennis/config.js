@@ -99,7 +99,6 @@ export class Config {
             variableEnum: Sport,
             selectorType: Selector.SELECT,
             callback: async (value) => {
-                console.log("num assets : " + sportSpecificAssets.length);
                 sportSpecificAssets.forEach(asset => physics.deleteBody(asset));
                 sportSpecificAssets.splice(0, sportSpecificAssets.length);
                 const sportAssets = sportToAssets[value];
