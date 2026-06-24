@@ -10,14 +10,29 @@ import {
     MeshBasicMaterial,
     BackSide,
     SphereGeometry,
-    Vector3
+    Vector3,
+    Scene,
+    Camera,
+    WebGLRenderer
 } from 'three';
 
 import { BallEffects } from './ballEffects2';
 import { TableEffects } from './tableEffects';
 import { sportSpecificAssets, tableDimensions } from './constants';
+import { ObjectSelector } from './editor';
+import { Physics } from './physics';
+import { EffectComposer } from 'three/examples/jsm/Addons.js';
 
-export async function createEntities(scene, physics, renderer, composer) {
+/**
+ * 
+ * @param {Scene} scene 
+ * @param {Camera} camera 
+ * @param {Physics} physics 
+ * @param {WebGLRenderer} renderer 
+ * @param {EffectComposer} composer 
+ * @returns 
+ */
+export async function createEntities(scene, camera, physics, renderer, composer) {
     // Create Table
     const table = await physics.createBox({
         position: new Vector3(0, 0, 0),
@@ -58,9 +73,42 @@ export async function createEntities(scene, physics, renderer, composer) {
     tracked_ball.position.y = 1.5;
     scene.add(tracked_ball);
 
+    const objectSelector = new ObjectSelector(camera, renderer);
+    const net = scene.getObjectByName("Object_8");
+    net.userData.useBoundingBox = true;
+    const tablePlane = scene.getObjectByName("Object_3");
+    tablePlane.userData.interactions = [
+        {
+            otherActor: "ball",
+            interactionTypes: {
+                "Projection": {
+                    enabled: false
+                },
+                "Bounce": {
+                    enabled: false
+                }
+            }
+        }
+    ];
+    net.userData.interactions = [
+        {
+            otherActor: "ball",
+            interactionTypes: {
+                "Bounce": {
+                    enabled: false
+                }
+            }
+        }
+    ];
+    const interactableMeshes = [net, tablePlane];
+    objectSelector.updateObjectShaders(interactableMeshes);
+
     // Create Effects
     const tableEffects = new TableEffects(scene.getObjectByName("Object_3"), tracked_ball, renderer);
     const ballEffects = new BallEffects(composer, tracked_ball, scene, renderer);
+
+    console.log("SELECTOR : " + objectSelector);
+
 
     return {
         table,
@@ -68,6 +116,8 @@ export async function createEntities(scene, physics, renderer, composer) {
         ball,
         tracked_ball,
         tableEffects,
-        ballEffects
+        ballEffects,
+        interactableMeshes,
+        objectSelector
     };
 }

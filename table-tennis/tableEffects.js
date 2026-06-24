@@ -22,8 +22,21 @@ export class TableEffects {
         this.prevSpeed = new Vector3();
         this.tmpvec2 = new Vector2();
         // surface.material = new MeshStandardMaterial();
+        let prevOnBeforeCompile = null;
+        if (surface.material.onBeforeCompile) prevOnBeforeCompile = surface.material.onBeforeCompile;
         surface.material.onBeforeCompile = /**@param {ShaderMaterial} shader*/(shader) => {
-            shader.uniforms.uTime = { value: 0 };
+            if (prevOnBeforeCompile) prevOnBeforeCompile(shader);
+            // surface.material.onBeforeCompile2(shader);
+            if (!shader.fragmentShader.includes("uTime")) {
+                shader.fragmentShader = shader.fragmentShader.replace(
+                    "#include <common>",
+                            /*glsl */ `
+                            #include <common>
+                            uniform float uTime;
+
+                        `);
+            }
+            shader.uniforms.uTime ??= { value: 0 };
             shader.uniforms.displayTexture = { value: null };
             shader.uniforms.bounceMode = { value: config.params.visualizations.bounce };
             shader.uniforms.tableDimensions = { value: new Vector2(tableDimensions.depth, tableDimensions.width) };
@@ -66,7 +79,6 @@ export class TableEffects {
                 /*glsl */ `
                 #include <common>
                 
-                uniform float uTime;
                 uniform sampler2D displayTexture;
                 in vec3 vWorldPos;
                 in vec2 vUv;

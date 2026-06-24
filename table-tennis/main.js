@@ -38,8 +38,12 @@ async function main() {
         ball,
         tracked_ball,
         tableEffects,
-        ballEffects
-    } = await createEntities(scene, physics, renderer, composer);
+        ballEffects,
+        interactableMeshes,
+        objectSelector
+    } = await createEntities(scene, camera, physics, renderer, composer);
+
+    console.log("selector after : " + objectSelector);
 
     // Initialize Game Systems (pass tracked_ball to CV_Helper)
     const {
@@ -66,6 +70,8 @@ async function main() {
         helper
     );
 
+
+    console.log("OBJECT SELECTOR : " + objectSelector);
     // Start animation loop
     startAnimationLoop(
         renderer,
@@ -77,6 +83,8 @@ async function main() {
         tableEffects,
         cameraDebug,
         helper,
+        interactableMeshes,
+        objectSelector,
         updateCalibrationFn
     );
 }

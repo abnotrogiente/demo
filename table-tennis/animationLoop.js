@@ -3,12 +3,37 @@
  * Main render loop and update logic
  */
 
-export function startAnimationLoop(renderer, composer, physics, players, cvHelper, ballEffects, tableEffects, cameraDebug, helper, updateCalibrationFn) {
+import { ObjectSelector } from "./editor";
+
+/**
+ * 
+ * @param {*} renderer 
+ * @param {*} composer 
+ * @param {*} physics 
+ * @param {*} players 
+ * @param {*} cvHelper 
+ * @param {*} ballEffects 
+ * @param {*} tableEffects 
+ * @param {*} cameraDebug 
+ * @param {*} helper 
+ * @param {*} interactableMeshes 
+ * @param {ObjectSelector} objectSelector 
+ * @param {*} updateCalibrationFn 
+ */
+export function startAnimationLoop(renderer, composer, physics, players, cvHelper, ballEffects, tableEffects, cameraDebug, helper, interactableMeshes, objectSelector, updateCalibrationFn) {
     const animation = () => {
         renderer.setAnimationLoop(animation);
 
         const delta = renderer.getContext().getParameter(renderer.getContext().TIME_ELAPSED) || 0.016;
         const elapsed = performance.now() / 1000;
+
+        interactableMeshes.forEach(mesh => {
+            if (mesh.userData.shader) {
+                mesh.userData.shader.uniforms.uTime.value = elapsed;
+            }
+        });
+
+        if (objectSelector) objectSelector.updateSelectionPannel();
 
         // Update calibration if data is available
         if (updateCalibrationFn) {
