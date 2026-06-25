@@ -4,8 +4,9 @@ import { resolve } from 'path'
 import glsl from 'vite-plugin-glsl';
 
 const copies = [
-    { src: 'node_modules/three/examples/jsm/libs/ammo.wasm.js', dest: 'jsm/libs', rename: { stripBase: 1 } },
-    { src: 'node_modules/three/examples/jsm/libs/ammo.wasm.wasm', dest: 'jsm/libs', rename: { stripBase: 1 } },
+    { src: 'node_modules/three/examples/jsm/libs/**/*', dest: 'jsm/libs', rename: { stripBase: 4 } },
+    // { src: 'node_modules/three/examples/jsm/libs/ammo.wasm.js', dest: 'jsm/libs', rename: { stripBase: 1 } },
+    // { src: 'node_modules/three/examples/jsm/libs/ammo.wasm.wasm', dest: 'jsm/libs', rename: { stripBase: 1 } },
     // { src: 'node_modules/three/examples/jsm/libs/draco/gltf/draco_decoder.js', dest: 'jsm/libs/draco/gltf', rename: "ammo.wasm.js" },
     // { src: 'node_modules/three/examples/jsm/libs/draco/gltf/draco_decoder.wasm', dest: 'jsm/libs/draco/gltf/', rename: "ammo.wasm.js" },
     // { src: 'node_modules/three/examples/jsm/libs/draco/gltf/draco_encoder.js', dest: 'jsm/libs/draco/gltf/', rename: "ammo.wasm.js" },
