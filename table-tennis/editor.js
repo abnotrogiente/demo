@@ -65,10 +65,13 @@ export class ObjectSelector {
                             /*glsl */ `
                             #include <opaque_fragment>
                             if (isPreSelected || isSelected) {
-                                float glowIntensity = .5;
+                                float glowIntensity = .3;
                                 float glowFrequency = 1.;
+                                vec4 yellow = vec4(1., 1., 0., 1.);
+                                vec4 green = vec4(0., 1., 0., 1.);
+                                vec4 color = isSelected ? green : yellow;
                                 glowIntensity = isSelected? .5 : cos(2.*PI*glowFrequency*uTime)*.15+.3;
-                                gl_FragColor = (1. - glowIntensity)*gl_FragColor + glowIntensity*vec4(1., 1., 0., 1.);
+                                gl_FragColor = (1. - glowIntensity)*gl_FragColor + glowIntensity*color;
                             }
                         `);
                     mesh.userData.shader = shader;
@@ -215,7 +218,7 @@ export class ObjectSelector {
                 const interactionsArea = document.createElement('div');
                 interactionsArea.style.marginTop = '8px';
 
-                interactions.forEach(interaction => {
+                interactions.forEach((interaction, idx) => {
                     const actorBtn = document.createElement('button');
                     actorBtn.textContent = interaction.otherActor;
                     actorBtn.style.padding = '6px 8px';
@@ -238,8 +241,28 @@ export class ObjectSelector {
                             console.log("INTER : " + interactionType);
                             const interBtn = document.createElement('button');
                             // const types = Array.isArray(inter.interactionTypes) ? inter.interactionTypes.join(', ') : String(inter.interactionTypes || '');
+                            const hasModes = interactionState && (interactionState.modes || interactionState.mode !== undefined);
                             const enabled = interactionState.enabled !== false; // default true
-                            interBtn.textContent = `${interactionType} ${enabled ? '(enabled)' : '(disabled)'} `;
+
+                            // helper to get mode name from modes object by value
+                            const getModeName = (modesObj, value) => {
+                                if (!modesObj) return String(value);
+                                // if modesObj is an array
+                                if (Array.isArray(modesObj)) {
+                                    return String(value);
+                                }
+                                for (const [k, v] of Object.entries(modesObj)) {
+                                    if (v === value) return k;
+                                }
+                                return String(value);
+                            };
+
+                            if (hasModes) {
+                                const currentMode = interactionState.mode;
+                                interBtn.textContent = `${interactionType} (mode: ${getModeName(interactionState.modes, currentMode)})`;
+                            } else {
+                                interBtn.textContent = `${interactionType} ${enabled ? '(enabled)' : '(disabled)'} `;
+                            }
                             interBtn.style.display = 'block';
                             interBtn.style.width = '100%';
                             interBtn.style.padding = '6px 8px';
@@ -251,15 +274,61 @@ export class ObjectSelector {
                             interBtn.style.background = enabled ? 'rgba(56, 161, 105, 0.12)' : 'rgba(255,255,255,0.04)';
 
                             interBtn.onclick = () => {
-                                // Toggle enabled state
-                                const current = interactionState.enabled !== false;
-                                interactionState.enabled = !current;
-                                // Reflect change in UI
-                                interBtn.textContent = `${interactionType} ${interactionState.enabled ? '(enabled)' : '(disabled)'} `;
-                                interBtn.style.background = interactionState.enabled ? 'rgba(56, 161, 105, 0.12)' : 'rgba(255,255,255,0.04)';
-                                // Persist change back to the original interactions array on the mesh
-                                if (Array.isArray(this.selectedMesh.userData.interactions) && typeof idx === 'number') {
-                                    this.selectedMesh.userData.interactions[idx].enabled = interactionState.enabled;
+                                if (hasModes) {
+                                    // show mode buttons for selection
+                                    // create container for mode buttons
+                                    let modeContainer = interBtn.nextElementSibling;
+                                    if (!modeContainer || !modeContainer.classList || !modeContainer.classList.contains('mode-container')) {
+                                        modeContainer = document.createElement('div');
+                                        modeContainer.classList.add('mode-container');
+                                        modeContainer.style.display = 'flex';
+                                        modeContainer.style.flexDirection = 'column';
+                                        modeContainer.style.gap = '4px';
+                                        modeContainer.style.margin = '6px 0 10px 0';
+
+                                        const modesObj = interactionState.modes || {};
+                                        Object.entries(modesObj).forEach(([modeKey, modeValue]) => {
+                                            const modeBtn = document.createElement('button');
+                                            modeBtn.textContent = modeKey;
+                                            modeBtn.style.padding = '6px 8px';
+                                            modeBtn.style.border = 'none';
+                                            modeBtn.style.borderRadius = '4px';
+                                            modeBtn.style.cursor = 'pointer';
+                                            modeBtn.style.textAlign = 'left';
+                                            modeBtn.style.background = (interactionState.mode === modeValue) ? 'rgba(56, 161, 105, 0.18)' : 'rgba(255,255,255,0.04)';
+
+                                            modeBtn.onclick = (ev) => {
+                                                ev.stopPropagation();
+                                                interactionState.mode = modeValue;
+                                                // update button text and styles
+                                                interBtn.textContent = `${interactionType} (mode: ${modeKey})`;
+                                                // update persisted userData
+                                                if (Array.isArray(this.selectedMesh.userData.interactions) && typeof idx === 'number') {
+                                                    this.selectedMesh.userData.interactions[idx].interactionTypes[interactionType].mode = modeValue;
+                                                }
+                                                // refresh mode button highlights
+                                                Array.from(modeContainer.children).forEach(child => child.style.background = 'rgba(255,255,255,0.04)');
+                                                modeBtn.style.background = 'rgba(56, 161, 105, 0.18)';
+                                            };
+
+                                            modeContainer.appendChild(modeBtn);
+                                        });
+
+                                        interBtn.after(modeContainer);
+                                    }
+                                    // toggle visibility
+                                    modeContainer.style.display = modeContainer.style.display === 'none' ? 'flex' : 'none';
+                                } else {
+                                    // Toggle enabled state
+                                    const current = interactionState.enabled !== false;
+                                    interactionState.enabled = !current;
+                                    // Reflect change in UI
+                                    interBtn.textContent = `${interactionType} ${interactionState.enabled ? '(enabled)' : '(disabled)'} `;
+                                    interBtn.style.background = interactionState.enabled ? 'rgba(56, 161, 105, 0.12)' : 'rgba(255,255,255,0.04)';
+                                    // Persist change back to the original interactions array on the mesh
+                                    if (Array.isArray(this.selectedMesh.userData.interactions) && typeof idx === 'number') {
+                                        this.selectedMesh.userData.interactions[idx].enabled = interactionState.enabled;
+                                    }
                                 }
                             };
 

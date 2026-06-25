@@ -39,7 +39,6 @@ async function main() {
         tracked_ball,
         tableEffects,
         ballEffects,
-        interactableMeshes,
         objectSelector
     } = await createEntities(scene, camera, physics, renderer, composer);
 
@@ -83,7 +82,6 @@ async function main() {
         tableEffects,
         cameraDebug,
         helper,
-        interactableMeshes,
         objectSelector,
         updateCalibrationFn
     );

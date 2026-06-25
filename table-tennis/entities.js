@@ -22,6 +22,7 @@ import { sportSpecificAssets, tableDimensions } from './constants';
 import { ObjectSelector } from './editor';
 import { Physics } from './physics';
 import { EffectComposer } from 'three/examples/jsm/Addons.js';
+import { BounceModes } from './config';
 
 /**
  * 
@@ -85,7 +86,8 @@ export async function createEntities(scene, camera, physics, renderer, composer)
                     enabled: false
                 },
                 "Bounce": {
-                    enabled: false
+                    mode: BounceModes.NONE,
+                    modes: BounceModes
                 }
             }
         }

@@ -41,7 +41,7 @@ export class TableEffects {
             shader.uniforms.bounceMode = { value: config.params.visualizations.bounce };
             shader.uniforms.tableDimensions = { value: new Vector2(tableDimensions.depth, tableDimensions.width) };
             shader.uniforms.ballPosition = { value: new Vector2() };
-            shader.uniforms.showShadow = { value: config.params.visualizations.showShadow };
+            shader.uniforms.showShadow = { value: surface.userData.interactions[0].interactionTypes["Projection"].enabled };
             shader.vertexShader = shader.vertexShader.replace(
                 "#include <common>",
                 /*glsl */ `
@@ -225,7 +225,7 @@ export class TableEffects {
         this.currentRenderingTarget = rtA;
         this.previousRenderingTarget = rtB;
 
-        const texturePassMaterial = new ShaderMaterial({
+        this.texturePassMaterial = new ShaderMaterial({
             // transparent: true,
             uniforms: {
                 ballPosition: { value: new Vector2() },
@@ -300,29 +300,29 @@ export class TableEffects {
 
 
         // configureSelector("Bounce Mode", config.params.visualizations, "bounce", BounceModes, (value) => {
-        configureSelector({
-            selectorName: "Bounce Mode",
-            variableParent: config.params.visualizations,
-            variableName: "bounce",
-            variableEnum: BounceModes,
-            selectorType: Selector.SELECT,
-            callback: (value) => {
-                this.shader.uniforms.bounceMode.value = value;
-                texturePassMaterial.uniforms.bounceMode.value = value;
-            }
-        });
+        // configureSelector({
+        //     selectorName: "Bounce Mode",
+        //     variableParent: config.params.visualizations,
+        //     variableName: "bounce",
+        //     variableEnum: BounceModes,
+        //     selectorType: Selector.SELECT,
+        //     callback: (value) => {
+        //         this.shader.uniforms.bounceMode.value = value;
+        //         this.texturePassMaterial.uniforms.bounceMode.value = value;
+        //     }
+        // });
 
-        configureSelector({
-            selectorName: "Show Shadow",
-            variableParent: config.params.visualizations,
-            variableName: "showShadow",
-            selectorType: Selector.CHECKBOX,
-            callback: (value) => {
-                this.shader.uniforms.showShadow.value = value;
-            }
-        });
+        // configureSelector({
+        //     selectorName: "Show Shadow",
+        //     variableParent: config.params.visualizations,
+        //     variableName: "showShadow",
+        //     selectorType: Selector.CHECKBOX,
+        //     callback: (value) => {
+        //         this.shader.uniforms.showShadow.value = value;
+        //     }
+        // });
 
-        this.texturePassQuad = new Mesh(planeGeometry, texturePassMaterial);
+        this.texturePassQuad = new Mesh(planeGeometry, this.texturePassMaterial);
         this.texturePassScene = new Scene();
         this.texturePassScene.add(this.texturePassQuad);
         this.texturePassCamera = new Camera();
@@ -358,7 +358,7 @@ export class TableEffects {
 
         this.texturePassQuad.material.uniforms.previousTexture.value = this.previousRenderingTarget.texture;
         this.renderer.setRenderTarget(this.currentRenderingTarget);
-        if (config.params.visualizations.bounce != BounceModes.NONE) this.renderer.render(this.texturePassScene, this.texturePassCamera);
+        if (this.bounceMode != BounceModes.NONE) this.renderer.render(this.texturePassScene, this.texturePassCamera);
         // this.renderer.setRenderTarget(null);
         this.shader.uniforms.displayTexture.value = this.currentRenderingTarget.texture;
         [this.previousRenderingTarget, this.currentRenderingTarget] = [this.currentRenderingTarget, this.previousRenderingTarget];
@@ -370,6 +370,12 @@ export class TableEffects {
 
     update(t, dt) {
         if (config.paused) return;
+        if (this.shader) this.shader.uniforms.showShadow.value = this.surface.userData.interactions[0].interactionTypes["Projection"].enabled;
+        this.bounceMode = this.surface.userData.interactions[0].interactionTypes["Bounce"].mode;
+        console.log("bounce mode : " + this.bounceMode);
+        this.texturePassQuad.material.uniforms.bounceMode.value = this.bounceMode;
+        // if (this.texturePassMaterial) this.texturePassMaterial.uniforms.bounceMode.value = bounceMode;
+        if (this.shader) this.shader.uniforms.bounceMode.value = this.bounceMode;
         this.#texturePass(dt);
         if (this.shader) this.shader.uniforms.uTime.value = t;
         else console.log("shader does not exist");
