@@ -16,7 +16,7 @@ copies.push({ src: "swimming/assets/vis-config.json", dest: "swimming/assets" })
 copies.push({ src: "swimming/assets/vis-config-demo.json", dest: "swimming/assets" });
 copies.push({ src: "swimming/assets/vis-config-demo-2.json", dest: "swimming/assets" });
 
-copies.push({ src: "table-tennis/assets", dest: "table-tennis" });
+copies.push({ src: "table-tennis/assets/**/*", dest: "table-tennis/assets" });
 
 
 
