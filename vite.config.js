@@ -4,23 +4,23 @@ import { resolve } from 'path'
 import glsl from 'vite-plugin-glsl';
 
 const copies = [
-    { src: 'node_modules/three/examples/jsm/libs/ammo.wasm.js', dest: 'jsm/libs/' },
-    { src: 'node_modules/three/examples/jsm/libs/ammo.wasm.wasm', dest: 'jsm/libs/' },
-    { src: 'node_modules/three/examples/jsm/libs/draco/gltf/draco_decoder.js', dest: 'jsm/libs/draco/gltf' },
-    { src: 'node_modules/three/examples/jsm/libs/draco/gltf/draco_decoder.wasm', dest: 'jsm/libs/draco/gltf/' },
-    { src: 'node_modules/three/examples/jsm/libs/draco/gltf/draco_encoder.js', dest: 'jsm/libs/draco/gltf/' },
-    { src: 'node_modules/three/examples/jsm/libs/draco/gltf/draco_wasm_wrapper.js', dest: 'jsm/libs/draco/gltf/' }
+    { src: 'node_modules/three/examples/jsm/libs/ammo.wasm.js', dest: 'jsm/libs/', rename: "ammo.wasm.js" },
+    { src: 'node_modules/three/examples/jsm/libs/ammo.wasm.wasm', dest: 'jsm/libs/', rename: "ammo.wasm.wasm" },
+    // { src: 'node_modules/three/examples/jsm/libs/draco/gltf/draco_decoder.js', dest: 'jsm/libs/draco/gltf', rename: "ammo.wasm.js" },
+    // { src: 'node_modules/three/examples/jsm/libs/draco/gltf/draco_decoder.wasm', dest: 'jsm/libs/draco/gltf/', rename: "ammo.wasm.js" },
+    // { src: 'node_modules/three/examples/jsm/libs/draco/gltf/draco_encoder.js', dest: 'jsm/libs/draco/gltf/', rename: "ammo.wasm.js" },
+    // { src: 'node_modules/three/examples/jsm/libs/draco/gltf/draco_wasm_wrapper.js', dest: 'jsm/libs/draco/gltf/', rename: "ammo.wasm.js" }
 ];
 
-copies.push({ src: "swimming/assets/vis-config.json", dest: "swimming/assets" });
-copies.push({ src: "swimming/assets/vis-config-demo.json", dest: "swimming/assets" });
-copies.push({ src: "swimming/assets/vis-config-demo-2.json", dest: "swimming/assets" });
+copies.push({ src: "swimming/assets/vis-config.json", dest: "swimming/assets", rename: "vis-config.json" });
+copies.push({ src: "swimming/assets/vis-config-demo.json", dest: "swimming/assets", rename: "vis-config-demo.json" });
+copies.push({ src: "swimming/assets/vis-config-demo-2.json", dest: "swimming/assets", rename: "vis-config-demo-2.json" });
 
 copies.push({ src: "table-tennis/assets/**/*", dest: "" });
 
 
 
-for (let i = 1; i <= 8; i++) copies.push({ src: "swimming/assets/race-data/" + i + ".csv", dest: "swimming/assets/race-data/" });
+for (let i = 1; i <= 8; i++) copies.push({ src: "swimming/assets/race-data/" + i + ".csv", dest: "swimming/assets/race-data/", rename: i + ".csv" });
 
 export default defineConfig({
     base: "/demo/",
