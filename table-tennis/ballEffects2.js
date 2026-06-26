@@ -37,7 +37,6 @@ export class BallEffects {
             clr.push(Math.random(), Math.random(), Math.random());
             if (i < counter - 1) wdth.push(MathUtils.randInt(2, 20));
         }
-        console.log(pts.length, clr.length, wdth.length);
         this.pointsArray = new Float32Array(pts);
         this.orderedPoints = new Float32Array((MAX_LENGTH) * 3);
 
@@ -50,7 +49,6 @@ export class BallEffects {
         // this.widths = new Float32Array(wdth);
         // this.geometry.setAttribute("linewidth", new InstancedBufferAttribute(new Float32Array(wdth), 1));
         this.geometry.setAttribute("linewidth", new InstancedBufferAttribute(this.widths, 1));
-        console.log(this.geometry);
 
         let matLine = new LineMaterial({
 

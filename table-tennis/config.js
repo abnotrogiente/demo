@@ -1,6 +1,8 @@
-import { Vector3 } from "three";
-import { Selector, Sport, sportSpecificAssets, sportToAssets } from "./constants";
+import { Mesh, MeshStandardMaterial, Scene, SphereGeometry, Vector3, WebGLRenderer } from "three";
+import { Selector, SportName, sportSpecificAssets, sportToAssets, sportTrees } from "./constants";
 import { Physics } from "./physics";
+import { Sport } from "./sport";
+import { Video } from "./video";
 
 const uiWindowContent = document.getElementById("window-content");
 
@@ -76,7 +78,7 @@ export const BounceModes = Object.freeze({
 export class Config {
     constructor() {
         this.params = {
-            sport: Sport.TABLE_TENNIS,
+            sport: SportName.TABLE_TENNIS,
             visualizations: {
                 BounceModes: BounceModes,
                 bounce: BounceModes.NONE,
@@ -89,44 +91,33 @@ export class Config {
 
     /**
      * 
+     * @param {Scene} scene 
+     * @param {WebGLRenderer} renderer 
+     * @param {Video} video 
      * @param {Physics} physics 
      */
+    init(scene, renderer, video) {
+        this.scene = scene;
+        this.renderer = renderer;
+        this.video = video;
+    }
+
+    /**
+     * 
+     * @param {Physics} physics 
+    */
     configureSelectors(physics) {
         configureSelector({
             selectorName: "Sport",
             variableParent: config.params,
             variableName: "sport",
-            variableEnum: Sport,
+            variableEnum: SportName,
             selectorType: Selector.SELECT,
             callback: async (value) => {
-                sportSpecificAssets.forEach(asset => physics.deleteBody(asset));
-                sportSpecificAssets.splice(0, sportSpecificAssets.length);
-                const sportAssets = sportToAssets[value];
-                sportAssets.forEach(async asset => {
-                    let body;
-                    switch (asset.collideShape) {
-                        case "box":
-                            body = await physics.createBox({
-                                position: asset.position,
-                                // rotation: new Quaternion(0., 0., .02, 1.),
-                                dimensions: new Vector3(asset.dimensions.width, asset.dimensions.height, asset.dimensions.depth),
-                                restitution: asset.physicsConstants.restitution, // allows bounce
-                                friction: asset.physicsConstants.friction,     // higher friction (grip)
-                                model: asset.model,
-                                modelOffset: asset.modelOffset
-                            });
-                            break;
-                        case "sphere":
-                            break;
-                        default:
-                            console.warn("tried to add sport specific asset with invalid shape");
-                            break;
-
-                    }
-                    sportSpecificAssets.push(body);
-                });
+                this.sport = new Sport(sportTrees[value], this.renderer, this.scene, this.video);
+                await this.sport.init(physics);
             }
-        })
+        });
         // configureSelector("Bounce Mode", this.params.visualizations, "bounce", BounceModes, () => { return null });
 
     }

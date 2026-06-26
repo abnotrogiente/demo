@@ -178,16 +178,12 @@ export class Players {
      */
     async init(scene) {
 
-        console.log("test0");
         this.vision = await FilesetResolver.forVisionTasks(
             "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm"
         );
 
-        console.log("test1");
         this.numPose = 1;
         await this.setNumPoseDetected(this.numPose);
-
-        console.log("test2");
 
         this.setVideo(this.video);
 
@@ -209,7 +205,7 @@ export class Players {
                 this.skinnedMesh = obj;
                 this.skeleton = this.skinnedMesh.skeleton;
                 this.#setModelBonesAndConnections(this.skinnedMesh);
-                console.log("LOADED");
+                // console.log("LOADED");
             }
         });
 

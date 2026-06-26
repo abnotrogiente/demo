@@ -12,7 +12,6 @@ import { parseCsv, updateCalibration } from './utils.js';
 import { setupEventHandlers } from './eventHandlers.js';
 import { startAnimationLoop, createUpdateCalibrationCallback } from './animationLoop.js';
 
-console.log("initialized in main");
 
 async function main() {
     // Initialize Scene and Renderer
@@ -42,8 +41,6 @@ async function main() {
         objectSelector
     } = await createEntities(scene, camera, physics, renderer, composer);
 
-    console.log("selector after : " + objectSelector);
-
     // Initialize Game Systems (pass tracked_ball to CV_Helper)
     const {
         video,
@@ -52,25 +49,26 @@ async function main() {
         surfaceScore
     } = await initializeSystems(scene, renderer, camera, physics, cameraDebug, tracked_ball);
 
+    config.init(scene, renderer, video);
+
+
     // Load calibration data
-    const calibrations = await parseCsv("./assets/cam_cal_filtered.csv");
-    const ball_positions = await parseCsv("./assets/ball_traj_3D.csv");
+    // const calibrations = await parseCsv("./assets/cam_cal_filtered.csv");
+    // const ball_positions = await parseCsv("./assets/ball_traj_3D.csv");
 
     // Setup event handlers
     const clock = new Clock();
     setupEventHandlers(camera, renderer, video, clock);
 
     // Create calibration update callback
-    const updateCalibrationFn = createUpdateCalibrationCallback(
-        ball_positions,
-        calibrations,
-        tracked_ball,
-        cameraDebug,
-        helper
-    );
+    // const updateCalibrationFn = createUpdateCalibrationCallback(
+    //     ball_positions,
+    //     calibrations,
+    //     tracked_ball,
+    //     cameraDebug,
+    //     helper
+    // );
 
-
-    console.log("OBJECT SELECTOR : " + objectSelector);
     // Start animation loop
     startAnimationLoop(
         renderer,
@@ -83,7 +81,7 @@ async function main() {
         cameraDebug,
         helper,
         objectSelector,
-        updateCalibrationFn
+        // updateCalibrationFn
     );
 }
 

@@ -90,8 +90,8 @@ export class CV_Helper {
         if (!this.cv) this.cv = await cv({
             locateFile: () => "./assets/opencv_js.wasm"
         });
-        console.log("CV initialized");
-        console.log("find chessboard corners : " + this.cv.findChessboardCorners);
+        // console.log("CV initialized");
+        // console.log("find chessboard corners : " + this.cv.findChessboardCorners);
         const cap = new this.cv.VideoCapture(video_src);
         if (!this.cvCanvas) {
             this.cvCanvas = document.createElement("canvas");

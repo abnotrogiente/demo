@@ -17,16 +17,12 @@ export async function initializeSystems(scene, renderer, camera, physics, camera
 
     // Initialize Players
     const players = new Players(video, scene);
-    console.log("before players init");
     await players.init(scene);
-    console.log("after players init");
 
     // Initialize Computer Vision Helper
     const cvHelper = new CV_Helper();
-    console.log("before cv init");
     await cvHelper.init(video, tracked_ball);
     scene.add(cvHelper.rayHelper);
-    console.log("after cv init");
     cvHelper.camera = cameraDebug;
 
     // Initialize UI

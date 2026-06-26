@@ -372,12 +372,11 @@ export class TableEffects {
         if (config.paused) return;
         if (this.shader) this.shader.uniforms.showShadow.value = this.surface.userData.interactions[0].interactionTypes["Projection"].enabled;
         this.bounceMode = this.surface.userData.interactions[0].interactionTypes["Bounce"].mode;
-        console.log("bounce mode : " + this.bounceMode);
         this.texturePassQuad.material.uniforms.bounceMode.value = this.bounceMode;
         // if (this.texturePassMaterial) this.texturePassMaterial.uniforms.bounceMode.value = bounceMode;
         if (this.shader) this.shader.uniforms.bounceMode.value = this.bounceMode;
         this.#texturePass(dt);
         if (this.shader) this.shader.uniforms.uTime.value = t;
-        else console.log("shader does not exist");
+        // else console.log("shader does not exist");
     }
 }

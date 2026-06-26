@@ -60,8 +60,8 @@ class Physics {
         const AmmoLib = await Ammo();
         /**@type {Ammo.default} */
         this.Ammo = AmmoLib;
-        console.log("Ammoo loaded:", this.Ammo);
-        console.log("RigidBody exists:", typeof this.Ammo.btRigidBody);
+        // console.log("Ammoo loaded:", this.Ammo);
+        // console.log("RigidBody exists:", typeof this.Ammo.btRigidBody);
         const collisionConfig = new this.Ammo.btDefaultCollisionConfiguration();
         const dispatcher = new this.Ammo.btCollisionDispatcher(collisionConfig);
         const broadphase = new this.Ammo.btDbvtBroadphase();
@@ -78,7 +78,6 @@ class Physics {
         this.physicsWorld.setGravity(new this.Ammo.btVector3(0, -9.8, 0));
 
         this.initialized = true;
-        console.log("initialized");
 
         this.tmpTransform = new this.Ammo.btTransform();
 
@@ -148,8 +147,6 @@ class Physics {
             const gltf = await this.loader.loadAsync(model);
             gltf.scene;
             if (gltf.scene) {
-                console.log("MODEL LOADED : " + model);
-                console.log("Object in scene : " + gltf.scene.getObjectByName("Object_3"));
 
                 mesh.add(gltf.scene);
                 // this.scene.add(gltf.scene);

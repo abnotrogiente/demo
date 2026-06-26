@@ -5,7 +5,7 @@ export const Selector = Object.freeze({
     SELECT: 1
 });
 
-export const Sport = Object.freeze({
+export const SportName = Object.freeze({
     TABLE_TENNIS: 0,
     BOXING: 1
 });
@@ -21,12 +21,13 @@ export const tableDimensions = {
 
 
 export const sportToAssets = {
-    [Sport.TABLE_TENNIS]: [
+    [SportName.TABLE_TENNIS]: [
         {
             name: "table",
             collideShape: "box",
             dimensions: { width: tableDimensions.width, height: tableDimensions.height, depth: tableDimensions.depth },
             position: new Vector3(0, 0, 0),
+            physics: true,
             physicsConstants: {
                 restitution: .9, // allows bounce
                 friction: .6,     // higher friction (grip)}
@@ -35,11 +36,23 @@ export const sportToAssets = {
             modelOffset: new Vector3(0, -tableDimensions.altitude + tableDimensions.height + .015, 0)
         },
         // TODO add ball
+        {
+            name: "ball",
+            collideShape: "sphere",
+            radius: 0.01381 * 10,
+            position: new Vector3(),
+            physicsConstants: {
+                restitution: .9,
+                friction: .2,
+                mass: .0027
+            }
+        }
     ],
-    [Sport.BOXING]: [
+    [SportName.BOXING]: [
         {
             name: "ring",
             collideShape: "box",
+            physics: true,
             dimensions: { width: 7.8, height: 1., depth: 7.8 },
             position: new Vector3(0, -.5, 0),
             physicsConstants: {
@@ -53,60 +66,111 @@ export const sportToAssets = {
 }
 
 export const sportTrees = {
-    [Sport.TABLE_TENNIS]: {
-        children: [
-            {
-                name: "Player",
+    [SportName.TABLE_TENNIS]: {
+        children: {
+            "Player": {
                 properties: [],
                 attributes: [],
                 children: [
                     {
-                        name: "racket",
+                        name: "Racket",
                         properties: [],
                         attributes: [],
                     }
                 ]
             },
-            {
-                name: "table",
-                children: [
-                    {
-                        name: "plane",
+
+            "Table": {
+                children: {
+                    "Plane": {
                         properties: [],
                         attributes: [],
+                        mesh: "Oject_3"
                     },
-                    {
-                        name: "net",
+                    "Net": {
                         properties: [],
-                        attributes: []
+                        attributes: [],
+                        mesh: "Object_8"
                     }
-                ]
+                }
             },
-            {
-                name: "ball",
+
+            "Ball": {
                 properties: [],
-                attributes: []
+                attributes: [],
+                tracked: true,
+                tracking_file: "./assets/ball_traj_3D.csv"
             }
-        ],
+        },
         interactions: [
             {
-                actors: ["racket", "ball"],
-                types: ["technique", "bounce"]
+                actors: ["Racket", "Ball"],
+                types: ["technique", "Bounce"]
             },
             {
-                actors: ["net", "ball"],
-                types: ["bounce"]
+                actors: ["Net", "Ball"],
+                types: ["Bounce"]
             },
             {
-                actors: ["plane", "ball"],
-                types: ["bounce", "projection"]
+                actors: ["plane", "Ball"],
+                types: ["Bounce", "Projection"]
             }
-        ]
+        ],
+        assets: sportToAssets[SportName.TABLE_TENNIS]
+    },
+
+    [SportName.BOXING]: {
+        children: {
+            "Player": {
+                properties: [],
+                attributes: [],
+                children: [
+                    {
+                        name: "Glove",
+                        properties: [],
+                        attributes: [],
+                    }
+                ]
+            },
+
+            "Ring": {
+                children: {
+                    "Plane": {
+                        properties: [],
+                        attributes: [],
+                        mesh: "Boxing_Ring_Boxing_Ring_0"
+                    },
+                    "Net": {
+                        properties: [],
+                        attributes: [],
+                        mesh: "Boxing_Ring_Boxing_Ring_0_1"
+                    }
+                }
+            }
+        },
+        interactions: [
+            {
+                actors: ["Glove", "Player"],
+                types: ["technique", "Bounce"]
+            },
+            {
+                actors: ["Net", "Player"],
+                types: ["Bounce"]
+            },
+            {
+                actors: ["plane", "Player"],
+                types: ["Bounce", "Projection", "step"]
+            }
+        ],
+        assets: sportToAssets[SportName.BOXING]
     }
 }
 
 
-export const sportSpecificAssets = [];
+export const sportSpecificAssets = {
+    physics: [],
+    nonPhysics: []
+};
 
 
 

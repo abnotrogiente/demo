@@ -73,7 +73,6 @@ export function initUI(video, players, cvHelper, physics) {
     });
 
     const trackingSelect = document.getElementById("tracking-select");
-    console.log("SELECT OPTIONS : " + JSON.stringify(trackingSelect.options));
     trackingSelect.value = cvHelper.trackingMode == TRACKING_DISABLED ? "Disabled" :
         cvHelper.trackingMode == TRACKING_ORANGE ? "Simple Orange" :
             trackingSelect.options[2].text;

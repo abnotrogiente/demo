@@ -45,8 +45,7 @@ export async function createEntities(scene, camera, physics, renderer, composer)
         modelOffset: new Vector3(0, -tableDimensions.altitude + tableDimensions.height + 0.015, 0)
     });
 
-    console.log("Object in scene : " + scene.getObjectByName("Object_3"));
-    sportSpecificAssets.push(table);
+    sportSpecificAssets.physics.push(table);
 
     // Create Room
     const roomGeometry = new BoxGeometry(20, 3, 20);
@@ -58,8 +57,8 @@ export async function createEntities(scene, camera, physics, renderer, composer)
     // Create Ball (Physics)
     const radius = 0.01381;
     const ball = physics.createSphere({
-        position: new Vector3(0, 2.0, 0),
-        radius: radius,
+        position: new Vector3(0, 1.5, 0),
+        radius: radius * 4,
         color: 0xfe9000,
         mass: 0.0027,
         restitution: 0.9,
@@ -72,7 +71,7 @@ export async function createEntities(scene, camera, physics, renderer, composer)
         new MeshStandardMaterial({ color: 0xfe9000 })
     );
     tracked_ball.position.y = 1.5;
-    scene.add(tracked_ball);
+    // scene.add(tracked_ball);
 
     const objectSelector = new ObjectSelector(camera, renderer);
     const net = scene.getObjectByName("Object_8");
@@ -109,7 +108,6 @@ export async function createEntities(scene, camera, physics, renderer, composer)
     const tableEffects = new TableEffects(scene.getObjectByName("Object_3"), tracked_ball, renderer);
     const ballEffects = new BallEffects(composer, tracked_ball, scene, renderer);
 
-    console.log("SELECTOR : " + objectSelector);
 
 
     return {
