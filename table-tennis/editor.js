@@ -356,7 +356,7 @@ export class ObjectSelector {
                 this.selectionPannelDisplayed = false;
                 this.selectionPannelElement = null;
             };
-            container.appendChild(close);
+            // container.appendChild(close);
 
             parent.appendChild(container);
             this.selectionPannelElement = container;

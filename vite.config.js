@@ -16,6 +16,7 @@ const copies = [
 copies.push({ src: "swimming/assets/vis-config.json", dest: "swimming/assets", rename: { stripBase: 2 } });
 copies.push({ src: "swimming/assets/vis-config-demo.json", dest: "swimming/assets", rename: { stripBase: 2 } });
 copies.push({ src: "swimming/assets/vis-config-demo-2.json", dest: "swimming/assets", rename: { stripBase: 2 } });
+copies.push({ src: "swimming/assets/vis-config-classical-overlay.json", dest: "swimming/assets", rename: { stripBase: 2 } });
 
 copies.push({ src: "table-tennis/assets/**/*", dest: "" });
 
