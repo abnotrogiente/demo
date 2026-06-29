@@ -162,8 +162,9 @@ export class ObjectSelector {
             container.id = 'selection-pannel';
             container.dataset.meshUuid = this.selectedMesh.uuid;
             container.style.position = 'absolute';
-            container.style.right = '12px';
-            container.style.top = '12px';
+            container.style.left = 100 * (this.mouse.x / 2 + .5) + '%';
+            container.style.top = 100 * (-this.mouse.y / 2 + .5) + '%';
+            // container.style.top = '12px';
             container.style.background = 'rgba(0,0,0,0.75)';
             container.style.color = '#fff';
             container.style.padding = '8px 10px';
