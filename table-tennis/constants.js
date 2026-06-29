@@ -1,4 +1,5 @@
 import { Vector3 } from "three";
+import { depth } from "three/tsl";
 
 export const SportActorInterationTypes = Object.freeze({
     BOUNCE: 0,
@@ -32,7 +33,7 @@ export const sportToAssets = {
         {
             name: "Table",
             collideShape: "box",
-            dimensions: { width: tableDimensions.width, height: tableDimensions.height, depth: tableDimensions.depth },
+            dimensions: { width: tableDimensions.depth, height: tableDimensions.height, depth: tableDimensions.width },
             position: new Vector3(0, 0, 0),
             physics: true,
             physicsConstants: {
@@ -53,7 +54,15 @@ export const sportToAssets = {
                 friction: .2,
                 mass: .0027
             }
-        }
+        },
+        // {
+        //     name: "vis-wall1",
+        //     collideShape: "box",
+        //     dimensions: { width: .01, height: 2.5, depth: tableDimensions.width },
+        //     position: new Vector3(tableDimensions.depth / 2, 0, 0),
+        //     physics: false,
+
+        // }
     ],
     [SportName.BOXING]: [
         {
@@ -99,7 +108,12 @@ export const sportTrees = {
                         attributes: [],
                         mesh: "Object_8",
                         useBoundingBox: true
-                    }
+                    },
+                    // "Vis Wall 1": {
+                    //     properties: [],
+                    //     attributes: [],
+                    //     mesh: "vis-wall1"
+                    // }
                 }
             },
 
@@ -123,7 +137,11 @@ export const sportTrees = {
             {
                 actors: ["Plane", "Ball"],
                 types: [SportActorInterationTypes.BOUNCE, SportActorInterationTypes.PROJECTION]
-            }
+            },
+            // {
+            //     actors: ["Vis Wall 1", "Ball"],
+            //     types: [SportActorInterationTypes.BOUNCE, SportActorInterationTypes.PROJECTION]
+            // }
         ],
         assets: sportToAssets[SportName.TABLE_TENNIS]
     },
@@ -147,12 +165,14 @@ export const sportTrees = {
                     "Plane": {
                         properties: [],
                         attributes: [],
-                        mesh: "Boxing_Ring_Boxing_Ring_0"
+                        mesh: "Boxing_Ring_Boxing_Ring_0",
+                        cloneMaterial: true
                     },
                     "Net": {
                         properties: [],
                         attributes: [],
-                        mesh: "Boxing_Ring_Boxing_Ring_0_1"
+                        mesh: "Boxing_Ring_Boxing_Ring_0_1",
+                        cloneMaterial: true
                     }
                 }
             }

@@ -1,4 +1,4 @@
-import { Mesh, MeshStandardMaterial, Scene, SphereGeometry, Vector3 } from "three";
+import { BoxGeometry, Mesh, MeshStandardMaterial, Scene, SphereGeometry, Vector3 } from "three";
 import { TableEffects } from "./tableEffects";
 import { parseCsv } from "./utils";
 import { Video } from "./video";
@@ -106,7 +106,7 @@ class Sport {
                 if (child.mesh) {
                     const actor = config.scene.getObjectByName(child.mesh);
                     this.actorByName.set(name, actor);
-                    actor.material = actor.material.clone();
+                    if (child.cloneMaterial) actor.material = actor.material.clone();
                     this.actors.push(actor);
                     this.interactionsFromActor.set(actor, new Map());
                     actor.userData.name = name;
@@ -165,15 +165,25 @@ class Sport {
             let body;
             switch (asset.collideShape) {
                 case "box":
-                    body = await config.physics.createBox({
-                        position: asset.position,
-                        // rotation: new Quaternion(0., 0., .02, 1.),
-                        dimensions: new Vector3(asset.dimensions.width, asset.dimensions.height, asset.dimensions.depth),
-                        restitution: asset.physicsConstants.restitution, // allows bounce
-                        friction: asset.physicsConstants.friction,     // higher friction (grip)
-                        model: asset.model,
-                        modelOffset: asset.modelOffset
-                    });
+                    if (asset.physics) {
+                        body = await config.physics.createBox({
+                            position: asset.position,
+                            // rotation: new Quaternion(0., 0., .02, 1.),
+                            dimensions: new Vector3(asset.dimensions.width, asset.dimensions.height, asset.dimensions.depth),
+                            restitution: asset.physicsConstants.restitution, // allows bounce
+                            friction: asset.physicsConstants.friction,     // higher friction (grip)
+                            model: asset.model,
+                            modelOffset: asset.modelOffset
+                        });
+                    }
+                    else {
+                        const material = new MeshStandardMaterial();
+                        const geometry = new BoxGeometry(asset.dimensions.width, asset.dimensions.height, asset.dimensions.depth);
+                        body = new Mesh(geometry, material);
+                        body.position.copy(asset.position);
+                        body.name = asset.name;
+                        config.scene.add(body);
+                    }
                     break;
                 case "sphere":
                     if (asset.physics) {
