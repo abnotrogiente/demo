@@ -69,6 +69,7 @@ export class ObjectSelector {
                                 vec4 color = isSelected ? green : yellow;
                                 glowIntensity = isSelected? .5 : cos(2.*PI*glowFrequency*uTime)*.15+.3;
                                 gl_FragColor = (1. - glowIntensity)*gl_FragColor + glowIntensity*color;
+                                gl_FragColor.a = 1.;
                             }
                         `);
                     mesh.userData.shader = shader;

@@ -55,14 +55,14 @@ export const sportToAssets = {
                 mass: .0027
             }
         },
-        // {
-        //     name: "vis-wall1",
-        //     collideShape: "box",
-        //     dimensions: { width: .01, height: 2.5, depth: tableDimensions.width },
-        //     position: new Vector3(tableDimensions.depth / 2, 0, 0),
-        //     physics: false,
+        {
+            name: "vis-wall1",
+            collideShape: "box",
+            dimensions: { width: .01, height: 2.5, depth: tableDimensions.width },
+            position: new Vector3(tableDimensions.depth / 2, 0, 0),
+            physics: false,
 
-        // }
+        }
     ],
     [SportName.BOXING]: [
         {
@@ -109,11 +109,11 @@ export const sportTrees = {
                         mesh: "Object_8",
                         useBoundingBox: true
                     },
-                    // "Vis Wall 1": {
-                    //     properties: [],
-                    //     attributes: [],
-                    //     mesh: "vis-wall1"
-                    // }
+                    "Vis Wall 1": {
+                        properties: [],
+                        attributes: [],
+                        mesh: "vis-wall1"
+                    }
                 }
             },
 
@@ -138,10 +138,10 @@ export const sportTrees = {
                 actors: ["Plane", "Ball"],
                 types: [SportActorInterationTypes.BOUNCE, SportActorInterationTypes.PROJECTION]
             },
-            // {
-            //     actors: ["Vis Wall 1", "Ball"],
-            //     types: [SportActorInterationTypes.BOUNCE, SportActorInterationTypes.PROJECTION]
-            // }
+            {
+                actors: ["Vis Wall 1", "Ball"],
+                types: [SportActorInterationTypes.BOUNCE, SportActorInterationTypes.PROJECTION]
+            }
         ],
         assets: sportToAssets[SportName.TABLE_TENNIS]
     },

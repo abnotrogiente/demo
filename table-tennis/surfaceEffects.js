@@ -20,7 +20,7 @@ export class SurfaceEffects {
         this.prevPos = new Vector3();
         this.speed = new Vector3();
         this.prevSpeed = new Vector3();
-        this.tmpvec2 = new Vector2();
+        this.tmpvec3 = new Vector3();
         // surface.material = new MeshStandardMaterial();
         let prevOnBeforeCompile = null;
         if (surface.material.onBeforeCompile) prevOnBeforeCompile = surface.material.onBeforeCompile;
@@ -40,8 +40,9 @@ export class SurfaceEffects {
             shader.uniforms.displayTexture = { value: null };
             shader.uniforms.bounceMode = { value: config.params.visualizations.bounce };
             shader.uniforms.tableDimensions = { value: new Vector2(tableDimensions.depth, tableDimensions.width) };
-            shader.uniforms.otherActorPosition = { value: new Vector2() };
+            shader.uniforms.otherActorPosition = { value: new Vector3() };
             shader.uniforms.showShadow = { value: false };
+            // shader.uniforms.opacity = { value: 1. };
             shader.vertexShader = shader.vertexShader.replace(
                 "#include <common>",
                 /*glsl */ `
@@ -49,6 +50,7 @@ export class SurfaceEffects {
                 
                 out vec3 vWorldPos;
                 out vec2 vUv;
+                // out vec3 vNormal;
                 uniform vec2 tableDimensions;
 
 
@@ -63,17 +65,12 @@ export class SurfaceEffects {
                 // vWorldPos = worldPosition.xyz;
                 vWorldPos = (modelMatrix * vec4(transformed, 1.0)).xyz;
                 vUv = vec2(vWorldPos.x, -vWorldPos.z) / tableDimensions + .5;
+                // vNormal = normal;
+                vNormal = normalize(mat3(modelMatrix) * normal);
                 
                 `
             );
-            // shader.vertexShader = shader.vertexShader.replace(
-            //     "#include <uv_vertex>",
-            //     /*gglsl */`
-            //     #include <uv_vertex>
 
-            //     vUv = uv;
-            //     `
-            // );
             shader.fragmentShader = shader.fragmentShader.replace(
                 "#include <common>",
                 /*glsl */ `
@@ -82,9 +79,11 @@ export class SurfaceEffects {
                 uniform sampler2D displayTexture;
                 in vec3 vWorldPos;
                 in vec2 vUv;
+                // in vec3 vNormal;
                 uniform int bounceMode;
-                uniform vec2 otherActorPosition;
+                uniform vec3 otherActorPosition;
                 uniform bool showShadow;
+                // uniform float opacity;
 
 
                 `+ getShaderConstantsFromEnum(config.params.visualizations.BounceModes) + /*glsl */`
@@ -171,6 +170,7 @@ export class SurfaceEffects {
                 /*glsl */ `
                 #include <opaque_fragment>
 
+
                 if (bounceMode != NONE) {
                 
 
@@ -185,17 +185,24 @@ export class SurfaceEffects {
                 }
                 // gl_FragColor = vec4(vUv, 0., 1.);
 
+                gl_FragColor.a = opacity;
                 if (showShadow) {
-                    float l = length(vWorldPos.xz - otherActorPosition);
+                    vec3 fragToOther = otherActorPosition - vWorldPos;
+                    vec3 normal = normalize(vNormal);
+                    vec3 projection = otherActorPosition - dot(fragToOther, normal)*normal;
+                    float l = length(projection - vWorldPos);
                     float shadowIntensity = pow(max(0.,1.-l),30.);
                     gl_FragColor = (1.-shadowIntensity)*gl_FragColor + shadowIntensity*vec4(0., 0., 0., 1.);
                     float shadowRadiusExt = .06;
                     float shadowRadiusIn = .04;
                     if (l <= shadowRadiusExt && l >= shadowRadiusIn ) gl_FragColor = vec4(1., 1., 0., 1.);
                 }
+                // gl_FragColor = vec4(1., 0., 0., 1.);
+
                     `
             );
             this.shader = shader;
+            surface.material.userData.shader = shader;
         };
 
 
@@ -228,43 +235,56 @@ export class SurfaceEffects {
         this.texturePassMaterial = new ShaderMaterial({
             // transparent: true,
             uniforms: {
-                otherActorPosition: { value: new Vector2() },
-                prevotherActorPosition: { value: new Vector2() },
-                lineDirection: { value: new Vector2() },
+                otherActorPosition: { value: new Vector3() },
+                prevotherActorPosition: { value: new Vector3() },
+                lineDirection: { value: new Vector3() },
                 lineStroke: { value: .01 },
                 bounced: { value: false },
                 previousTexture: { value: null },
                 bounceMode: { value: config.params.visualizations.bounce },
             },
             vertexShader: /*glsl */ `
-                out vec2 vPos;
+                out vec3 vPos;
                 out vec2 vUv;
+                out vec3 vNormal;
                 void main() {
-                    vPos = position.xz;
+                    vPos = position;
                     vUv = uv;
                     gl_Position = vec4(uv*2.-1., 0., 1.);
+                    vNormal = normalize(mat3(modelMatrix) * normal);
+
                 }
             `,
             fragmentShader: /*glsl */ `
-                in vec2 vPos;
+                in vec3 vPos;
                 in vec2 vUv;
-                uniform vec2 otherActorPosition;
-                uniform vec2 prevotherActorPosition;
-                uniform vec2 lineDirection;
+                in vec3 vNormal;
+                uniform vec3 otherActorPosition;
+                uniform vec3 prevotherActorPosition;
+                uniform vec3 lineDirection;
                 uniform sampler2D previousTexture;
                 uniform float lineStroke;
                 uniform bool bounced;
                 uniform int bounceMode;
 
                 `+ getShaderConstantsFromEnum(config.params.visualizations.BounceModes) + /*glsl */`
+
+                vec3 project(vec3 X) {
+                    vec3 fragToX = X - vPos;
+                    vec3 normal = normalize(vNormal);
+                    return X - dot(fragToX, normal)*normal;
+                }
                 void main() {
                     float c = length(vPos);
                     // gl_FragColor = vec4(c, c, c, 1.);
                     // return;
-                    vec2 line = otherActorPosition - prevotherActorPosition; //P1P2
-                    vec2 diffToPrev = vPos - prevotherActorPosition; //P1X
+                    vec3 projectionPrev = project(prevotherActorPosition);
+                    vec3 projectionCurr = project(otherActorPosition);
+                    vec3 line = projectionCurr - projectionPrev; //P1P2
+                    vec3 diffToPrev = vPos - projectionPrev; //P1X
                     float distToPrevSq = dot(diffToPrev, diffToPrev); // ||P1X||²
-                    float coordinateOnLine = dot(diffToPrev, lineDirection); // P1X . d
+                    vec3 lineDir = normalize(line);
+                    float coordinateOnLine = dot(diffToPrev, lineDir); // P1X . d
                     // float coordinateOnLine = dot(diffToPrev, normalize(line)); // P1X . d
                     float lengthProjOnLineSq = coordinateOnLine*coordinateOnLine; // (P1X . d)²
                     bool isAfterPrevotherActor = coordinateOnLine >= 0.; // P1X . d >= 0
@@ -281,11 +301,11 @@ export class SurfaceEffects {
                         gl_FragColor = vec4(0., 1., 1., 1.);
                     }
                     if (bounced) {
-                        vec2 diff = vPos - otherActorPosition;
+                        vec3 diff = vPos - projectionCurr;
                         float diffSq = dot(diff, diff);
                         if (bounceMode == RIPPLE) {
                             if (diffSq <= .1) {
-                                gl_FragColor = vec4(diff, .1, 0.);
+                                // gl_FragColor = vec4(diff, .1, 0.);
                             }
                             return;
                         }
@@ -299,29 +319,6 @@ export class SurfaceEffects {
         });
 
 
-        // configureSelector("Bounce Mode", config.params.visualizations, "bounce", BounceModes, (value) => {
-        // configureSelector({
-        //     selectorName: "Bounce Mode",
-        //     variableParent: config.params.visualizations,
-        //     variableName: "bounce",
-        //     variableEnum: BounceModes,
-        //     selectorType: Selector.SELECT,
-        //     callback: (value) => {
-        //         this.shader.uniforms.bounceMode.value = value;
-        //         this.texturePassMaterial.uniforms.bounceMode.value = value;
-        //     }
-        // });
-
-        // configureSelector({
-        //     selectorName: "Show Shadow",
-        //     variableParent: config.params.visualizations,
-        //     variableName: "showShadow",
-        //     selectorType: Selector.CHECKBOX,
-        //     callback: (value) => {
-        //         this.shader.uniforms.showShadow.value = value;
-        //     }
-        // });
-
         this.texturePassQuad = new Mesh(planeGeometry, this.texturePassMaterial);
         this.texturePassScene = new Scene();
         this.texturePassScene.add(this.texturePassQuad);
@@ -331,16 +328,19 @@ export class SurfaceEffects {
         if (!this.shader) return;
         this.speed.subVectors(this.otherActor.position, this.prevPos).divideScalar(dt);
         this.texturePassQuad.material.uniforms.otherActorPosition.value.x = this.otherActor.position.x;
-        this.texturePassQuad.material.uniforms.otherActorPosition.value.y = this.otherActor.position.z;
-        this.shader.uniforms.otherActorPosition.value.x = this.otherActor.position.x;
-        this.shader.uniforms.otherActorPosition.value.y = this.otherActor.position.z;
+        this.texturePassQuad.material.uniforms.otherActorPosition.value.z = this.otherActor.position.z;
+        // this.texturePassQuad.material.uniforms.otherActorPosition.value.copy(this.otherActor.position);
+        // this.shader.uniforms.otherActorPosition.value.x = this.otherActor.position.x;
+        // this.shader.uniforms.otherActorPosition.value.z = this.otherActor.position.z;
+        this.shader.uniforms.otherActorPosition.value.copy(this.otherActor.position);
         this.texturePassQuad.material.uniforms.prevotherActorPosition.value.x = this.prevPos.x;
-        this.texturePassQuad.material.uniforms.prevotherActorPosition.value.y = this.prevPos.z;
+        this.texturePassQuad.material.uniforms.prevotherActorPosition.value.z = this.prevPos.z;
+        // this.texturePassQuad.material.uniforms.prevotherActorPosition.value.copy(this.prevPos);
         // this.tmp1.copy(this.otherActor.position).sub(this.prevPos).normalize();
-        this.tmpvec2.copy(this.texturePassQuad.material.uniforms.otherActorPosition.value);
-        this.tmpvec2.sub(this.texturePassQuad.material.uniforms.prevotherActorPosition.value);
-        this.tmpvec2.normalize();
-        this.texturePassQuad.material.uniforms.lineDirection.value.copy(this.tmpvec2);
+        this.tmpvec3.copy(this.texturePassQuad.material.uniforms.otherActorPosition.value);
+        this.tmpvec3.sub(this.texturePassQuad.material.uniforms.prevotherActorPosition.value);
+        this.tmpvec3.normalize();
+        this.texturePassQuad.material.uniforms.lineDirection.value.copy(this.tmpvec3);
 
         this.texturePassQuad.material.uniforms.bounced.value = this.prevSpeed.y < 0 && this.speed.y > 0;
         // console.log("speed: " + this.speed.y);

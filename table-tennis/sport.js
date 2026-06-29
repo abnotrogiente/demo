@@ -1,4 +1,4 @@
-import { BoxGeometry, Mesh, MeshStandardMaterial, Scene, SphereGeometry, Vector3 } from "three";
+import { BoxGeometry, Mesh, MeshBasicMaterial, MeshPhongMaterial, MeshStandardMaterial, Scene, SphereGeometry, Vector3 } from "three";
 import { TableEffects } from "./tableEffects";
 import { parseCsv } from "./utils";
 import { Video } from "./video";
@@ -139,6 +139,7 @@ class Sport {
                     this.interactionsFromActor.get(actor1).get(actor2Name).push(interaction);
                     this.interactionsFromActor.get(actor2).get(actor1Name).push(interaction);
                     // console.log("ADDING INTERACTION : " + this.interactionsFromActor.get(actor1);
+                    console.log("ADDING INTERACTION : " + this.surfaceEffectsFromActor.get(actor1));
                     this.surfaceEffectsFromActor.get(actor1).otherActor = actor2;
                 }
                 // if (interactionType === SportActorInterationTypes.PROJECTION) {
@@ -177,7 +178,9 @@ class Sport {
                         });
                     }
                     else {
-                        const material = new MeshStandardMaterial();
+                        const material = new MeshPhongMaterial();
+                        material.transparent = true;
+                        material.opacity = .2;
                         const geometry = new BoxGeometry(asset.dimensions.width, asset.dimensions.height, asset.dimensions.depth);
                         body = new Mesh(geometry, material);
                         body.position.copy(asset.position);
@@ -220,6 +223,7 @@ class Sport {
     update(t, dt) {
         // this.projections.forEach(projection => projection.update(t, dt));
         this.surfaceEffectsFromActor.forEach((surfaceEffects, actor) => {
+            // if (surfaceEffects.surface.material.userData.shader && surfaceEffects.surface.name == "vis-wall1") console.log("surface effects on : " + surfaceEffects.surface.material.userData.shader.fragmentShader);
             surfaceEffects.update(t, dt);
         })
         if (this.selector) this.selector.updateSelectionPannel();
