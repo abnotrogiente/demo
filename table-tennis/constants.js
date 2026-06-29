@@ -1,5 +1,12 @@
 import { Vector3 } from "three";
 
+export const SportActorInterationTypes = Object.freeze({
+    BOUNCE: 0,
+    PROJECTION: 1,
+    TECHNIQUE: 2,
+    STEP: 3
+});
+
 export const Selector = Object.freeze({
     CHECKBOX: 0,
     SELECT: 1
@@ -23,7 +30,7 @@ export const tableDimensions = {
 export const sportToAssets = {
     [SportName.TABLE_TENNIS]: [
         {
-            name: "table",
+            name: "Table",
             collideShape: "box",
             dimensions: { width: tableDimensions.width, height: tableDimensions.height, depth: tableDimensions.depth },
             position: new Vector3(0, 0, 0),
@@ -37,9 +44,9 @@ export const sportToAssets = {
         },
         // TODO add ball
         {
-            name: "ball",
+            name: "Ball",
             collideShape: "sphere",
-            radius: 0.01381 * 10,
+            radius: 0.01381 * 3,
             position: new Vector3(),
             physicsConstants: {
                 restitution: .9,
@@ -85,12 +92,13 @@ export const sportTrees = {
                     "Plane": {
                         properties: [],
                         attributes: [],
-                        mesh: "Oject_3"
+                        mesh: "Object_3"
                     },
                     "Net": {
                         properties: [],
                         attributes: [],
-                        mesh: "Object_8"
+                        mesh: "Object_8",
+                        useBoundingBox: true
                     }
                 }
             },
@@ -99,21 +107,22 @@ export const sportTrees = {
                 properties: [],
                 attributes: [],
                 tracked: true,
-                tracking_file: "./assets/ball_traj_3D.csv"
+                tracking_file: "./assets/ball_traj_3D.csv",
+                mesh: "Ball"
             }
         },
         interactions: [
             {
                 actors: ["Racket", "Ball"],
-                types: ["technique", "Bounce"]
+                types: ["technique", SportActorInterationTypes.BOUNCE]
             },
             {
                 actors: ["Net", "Ball"],
-                types: ["Bounce"]
+                types: [SportActorInterationTypes.BOUNCE]
             },
             {
-                actors: ["plane", "Ball"],
-                types: ["Bounce", "Projection"]
+                actors: ["Plane", "Ball"],
+                types: [SportActorInterationTypes.BOUNCE, SportActorInterationTypes.PROJECTION]
             }
         ],
         assets: sportToAssets[SportName.TABLE_TENNIS]

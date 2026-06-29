@@ -105,38 +105,38 @@ export function initUI(video, players, cvHelper, physics) {
         calibrationButton.hidden = onRepeat;
     });
 
-    const sportSelect = document.getElementById("sport-select");
-    sportSelect.addEventListener("change", () => {
-        sportSpecificAssets.forEach((asset) => physics.deleteBody(asset));
-        sportSpecificAssets.splice(0, sportSpecificAssets.length);
-        switch (sportSelect.value) {
-            case "Boxing":
-                const ring = physics.createBox({
-                    position: new Vector3(0, 0, 0),
-                    // rotation: new Quaternion(0., 0., .02, 1.),
-                    dimensions: new Vector3(tableDimensions.depth, tableDimensions.height, tableDimensions.width),
-                    color: 0x0030FF,
-                    restitution: .9, // allows bounce
-                    friction: .6,     // higher friction (grip)
-                    model: "boxing_ring.glb",
-                    modelOffset: new Vector3(0, -1.5, 0)
-                });
-                sportSpecificAssets.push(ring);
-                break;
-            case "Table Tennis":
-                const table = physics.createBox({
-                    position: new Vector3(0, 0, 0),
-                    // rotation: new Quaternion(0., 0., .02, 1.),
-                    dimensions: new Vector3(tableDimensions.depth, tableDimensions.height, tableDimensions.width),
-                    color: 0x0030FF,
-                    restitution: .9, // allows bounce
-                    friction: .6,     // higher friction (grip)
-                    model: "ping_pong_table.glb",
-                    modelOffset: new Vector3(0, -tableDimensions.altitude + tableDimensions.height + .015, 0)
-                });
+    // const sportSelect = document.getElementById("sport-select");
+    // sportSelect.addEventListener("change", () => {
+    //     sportSpecificAssets.forEach((asset) => physics.deleteBody(asset));
+    //     sportSpecificAssets.splice(0, sportSpecificAssets.length);
+    //     switch (sportSelect.value) {
+    //         case "Boxing":
+    //             const ring = physics.createBox({
+    //                 position: new Vector3(0, 0, 0),
+    //                 // rotation: new Quaternion(0., 0., .02, 1.),
+    //                 dimensions: new Vector3(tableDimensions.depth, tableDimensions.height, tableDimensions.width),
+    //                 color: 0x0030FF,
+    //                 restitution: .9, // allows bounce
+    //                 friction: .6,     // higher friction (grip)
+    //                 model: "boxing_ring.glb",
+    //                 modelOffset: new Vector3(0, -1.5, 0)
+    //             });
+    //             sportSpecificAssets.push(ring);
+    //             break;
+    //         case "Table Tennis":
+    //             const table = physics.createBox({
+    //                 position: new Vector3(0, 0, 0),
+    //                 // rotation: new Quaternion(0., 0., .02, 1.),
+    //                 dimensions: new Vector3(tableDimensions.depth, tableDimensions.height, tableDimensions.width),
+    //                 color: 0x0030FF,
+    //                 restitution: .9, // allows bounce
+    //                 friction: .6,     // higher friction (grip)
+    //                 model: "ping_pong_table.glb",
+    //                 modelOffset: new Vector3(0, -tableDimensions.altitude + tableDimensions.height + .015, 0)
+    //             });
 
-                sportSpecificAssets.push(table);
-                break;
-        }
-    })
+    //             sportSpecificAssets.push(table);
+    //             break;
+    //     }
+    // })
 }

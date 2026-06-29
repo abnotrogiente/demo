@@ -197,16 +197,14 @@ export class CV_Helper {
             this.cv.cvtColor(this.src, this.gray, this.cv.COLOR_RGBA2GRAY);
             if (this.calibrationOnRepeat) this.calibrate();
             this.#drawCorners();
-            // this.render();
-            // return;
-            if (this.trackingMode == TRACKING_ORANGE) this.trackBall();
-            else if (this.trackingMode == TRACKING_FROM_FILE) {
-                const tracking_data_index = Math.min(tracking_data.length, Math.round(tracking_data.length * (this.video_src.currentTime % this.videoDuration) / this.videoDuration));
-                const traj = tracking_data[tracking_data_index % 290];
-                // console.log("z : " + traj["z\r"]);
-                const z = parseFloat(traj["z"]);
-                this.ball.position.set(traj["x"], z, traj["y"]);
-            }
+            // if (this.trackingMode == TRACKING_ORANGE) this.trackBall();
+            // else if (this.trackingMode == TRACKING_FROM_FILE) {
+            //     const tracking_data_index = Math.min(tracking_data.length, Math.round(tracking_data.length * (this.video_src.currentTime % this.videoDuration) / this.videoDuration));
+            //     const traj = tracking_data[tracking_data_index % 290];
+            //     // console.log("z : " + traj["z\r"]);
+            //     const z = parseFloat(traj["z"]);
+            //     this.ball.position.set(traj["x"], z, traj["y"]);
+            // }
             if (!this.showVideo && this.trackingMode != TRACKING_ORANGE) return;
             else {
                 this.render();

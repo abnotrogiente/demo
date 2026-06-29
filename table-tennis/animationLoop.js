@@ -4,6 +4,7 @@
  */
 
 import { ObjectSelector } from "./editor";
+import { sport } from "./sport";
 
 /**
  * 
@@ -20,19 +21,21 @@ import { ObjectSelector } from "./editor";
  * @param {ObjectSelector} objectSelector 
  * @param {*} updateCalibrationFn 
  */
-export function startAnimationLoop(renderer, composer, physics, players, cvHelper, ballEffects, tableEffects, cameraDebug, helper, objectSelector, updateCalibrationFn) {
+export function startAnimationLoop(renderer, composer, physics, players, cvHelper, cameraDebug, helper, updateCalibrationFn) {
     const animation = () => {
         renderer.setAnimationLoop(animation);
 
         const delta = renderer.getContext().getParameter(renderer.getContext().TIME_ELAPSED) || 0.016;
         const elapsed = performance.now() / 1000;
 
-        if (objectSelector) objectSelector.updateSelectionPannel();
+        // if (objectSelector) objectSelector.updateSelectionPannel();
 
         // Update calibration if data is available
         if (updateCalibrationFn) {
             updateCalibrationFn(elapsed);
         }
+
+        sport.update(elapsed, delta);
 
         // Update game systems
         players.detectFrame();
@@ -47,8 +50,8 @@ export function startAnimationLoop(renderer, composer, physics, players, cvHelpe
         physics.stepSimulation(delta);
 
         // Effects update
-        ballEffects.update(delta);
-        tableEffects.update(elapsed, delta);
+        // ballEffects.update(delta);
+        // tableEffects.update(elapsed, delta);
 
         // Render
         composer.render();

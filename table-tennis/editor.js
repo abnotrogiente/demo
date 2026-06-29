@@ -1,15 +1,9 @@
 import { Box3, Camera, Mesh, Raycaster, Scene, ShaderMaterial, Vector2, Vector3, WebGLRenderer } from "three";
+import { config } from "./config";
+import { sport } from "./sport";
 
 export class ObjectSelector {
-    /**
-     * 
-     * @param {Camera} camera 
-     * @param {WebGLRenderer} renderer 
-     * @param {Mesh[]} Mesh 
-     */
-    constructor(camera, renderer, meshes) {
-        this.camera = camera;
-        this.renderer = renderer;
+    constructor() {
         const near = 0;
         const far = 100;
         this.rayCaster = new Raycaster();
@@ -17,18 +11,19 @@ export class ObjectSelector {
         this.mouse = new Vector2(-5, -5);
     }
 
-    /**
-     * 
-     * @param {Mesh[]} meshes 
-     */
-    updateObjectShaders(meshes) {
+
+    updateObjectShaders() {
         this.preSelectedMesh = null;
         this.selectedMesh = null;
-        meshes.forEach(mesh => {
+        sport.actors.forEach(mesh => {
+            console.log("MESH NAME : " + mesh.name);
             // Create a uniforms object on the material to store custom uniforms
             if (!mesh.material.uniforms) {
                 mesh.material.uniforms = {};
             }
+
+            let prevOnBeforeCompile = null;
+            if (mesh.material.onBeforeCompile) prevOnBeforeCompile = mesh.material.onBeforeCompile;
 
             mesh.material.onBeforeCompile =
                 /**
@@ -36,6 +31,8 @@ export class ObjectSelector {
                  * @param {ShaderMaterial} shader 
                  */
                 shader => {
+                    if (prevOnBeforeCompile) prevOnBeforeCompile(shader);
+
                     shader.uniforms.isPreSelected = { value: false };
                     shader.uniforms.isSelected = { value: false };
                     if (!shader.fragmentShader.includes("uTime")) {
@@ -87,15 +84,15 @@ export class ObjectSelector {
             this.mouse.x = (x / canvas.scrollWidth) * 2 - 1;
             this.mouse.y = - (y / canvas.scrollHeight) * 2 + 1;
 
-            meshes.forEach(mesh => {
+            sport.actors.forEach(mesh => {
                 if (mesh.material.uniforms && mesh.material.uniforms.isPreSelected) mesh.material.uniforms.isPreSelected.value = false;
             })
 
 
-            this.rayCaster.setFromCamera(this.mouse, this.camera);
+            this.rayCaster.setFromCamera(this.mouse, config.camera);
             let selected = false;
             this.preSelectedMesh = null;
-            meshes.forEach(mesh => {
+            sport.actors.forEach(mesh => {
                 if (mesh.material.uniforms && mesh.material.uniforms.isPreSelected) mesh.material.uniforms.isPreSelected.value = false;
 
                 if (!mesh.userData.useBoundingBox) return;
@@ -112,7 +109,7 @@ export class ObjectSelector {
                 }
             });
             if (this.preSelectedMesh === null) {
-                const intersects = this.rayCaster.intersectObjects(meshes, true);
+                const intersects = this.rayCaster.intersectObjects(sport.actors, true);
                 if (intersects.length > 0) {
                     const mesh = intersects[0].object;
                     // mesh.scale.set(2, 2, 2);
@@ -134,16 +131,18 @@ export class ObjectSelector {
             if (this.selectedMesh) this.selectedMesh.material.uniforms.isSelected.value = true;
         }
 
-        this.renderer.domElement.addEventListener("mousemove", onMouseMove);
-        this.renderer.domElement.addEventListener("mousedown", onMouseClick);
+        config.renderer.domElement.addEventListener("mousemove", onMouseMove);
+        config.renderer.domElement.addEventListener("mousedown", onMouseClick);
     }
 
     updateSelectionPannel() {
 
         // console.log("UPDATE SELECTION PANNEL : " + this.selectionPannelElement);
         // Create panel when a mesh is selected, or recreate when selection changes
-        const parent = this.renderer?.domElement?.parentElement || document.body;
-        const interactions = this.selectedMesh?.userData?.interactions;
+        const parent = config.renderer?.domElement?.parentElement || document.body;
+        const interactionsMap = sport.interactionsFromActor.get(this.selectedMesh);
+        console.log("interactionsMap : " + JSON.stringify(interactionsMap));
+        // const interactions = this.selectedMesh?.userData?.interactions;
 
         // If there's a panel but the selected mesh changed, remove it to recreate
         if (this.selectionPannelDisplayed && this.selectionPannelElement && this.selectedMesh) {
@@ -197,7 +196,7 @@ export class ObjectSelector {
             // }
             // console.log("ACTOR MAP : " + JSON.stringify(actorMap));
 
-            if (Object.keys(interactions).length === 0) {
+            if (interactionsMap.size === 0) {
                 const none = document.createElement('div');
                 none.textContent = 'No interactions defined';
                 none.style.opacity = '0.85';
@@ -218,9 +217,10 @@ export class ObjectSelector {
                 const interactionsArea = document.createElement('div');
                 interactionsArea.style.marginTop = '8px';
 
-                interactions.forEach((interaction, idx) => {
+                interactionsMap.forEach((interactions, otherActorName) => {
+
                     const actorBtn = document.createElement('button');
-                    actorBtn.textContent = interaction.otherActor;
+                    actorBtn.textContent = otherActorName;
                     actorBtn.style.padding = '6px 8px';
                     actorBtn.style.border = 'none';
                     actorBtn.style.borderRadius = '4px';
@@ -231,18 +231,21 @@ export class ObjectSelector {
                         // Render interactions for this actor
                         interactionsArea.innerHTML = '';
                         const title = document.createElement('div');
-                        title.textContent = `Interactions with ${interaction.otherActor}`;
+                        title.textContent = `Interactions with ${otherActorName}`;
                         title.style.fontWeight = '600';
                         title.style.marginBottom = '6px';
                         interactionsArea.appendChild(title);
 
-                        Object.entries(interaction.interactionTypes).forEach(([interactionType, interactionState]) => {
+
+                        // Object.entries(interaction).forEach(([interactionType, interactionState]) => {
+                        interactions.forEach(interaction => {
+                            const interactionName = interaction.name;
                             // actorMap[actor].forEach((inter) => {
-                            console.log("INTER : " + interactionType);
+                            console.log("INTER : " + interactionName);
                             const interBtn = document.createElement('button');
                             // const types = Array.isArray(inter.interactionTypes) ? inter.interactionTypes.join(', ') : String(inter.interactionTypes || '');
-                            const hasModes = interactionState && (interactionState.modes || interactionState.mode !== undefined);
-                            const enabled = interactionState.enabled !== false; // default true
+                            // const hasModes = interactionState && (interactionState.modes || interactionState.mode !== undefined);
+                            // const enabled = interactionState.enabled !== false; // default true
 
                             // helper to get mode name from modes object by value
                             const getModeName = (modesObj, value) => {
@@ -257,12 +260,9 @@ export class ObjectSelector {
                                 return String(value);
                             };
 
-                            if (hasModes) {
-                                const currentMode = interactionState.mode;
-                                interBtn.textContent = `${interactionType} (mode: ${getModeName(interactionState.modes, currentMode)})`;
-                            } else {
-                                interBtn.textContent = `${interactionType} ${enabled ? '(enabled)' : '(disabled)'} `;
-                            }
+                            const currentMode = interaction.value;
+                            interBtn.textContent = `${interactionName} (mode: ${getModeName(interaction.enum, currentMode)})`;
+
                             interBtn.style.display = 'block';
                             interBtn.style.width = '100%';
                             interBtn.style.padding = '6px 8px';
@@ -271,65 +271,55 @@ export class ObjectSelector {
                             interBtn.style.borderRadius = '4px';
                             interBtn.style.cursor = 'pointer';
                             interBtn.style.textAlign = 'left';
-                            interBtn.style.background = enabled ? 'rgba(56, 161, 105, 0.12)' : 'rgba(255,255,255,0.04)';
+                            // interBtn.style.background = enabled ? 'rgba(56, 161, 105, 0.12)' : 'rgba(255,255,255,0.04)';
+                            interBtn.style.background = 'rgba(255,255,255,0.04)';
 
                             interBtn.onclick = () => {
-                                if (hasModes) {
-                                    // show mode buttons for selection
-                                    // create container for mode buttons
-                                    let modeContainer = interBtn.nextElementSibling;
-                                    if (!modeContainer || !modeContainer.classList || !modeContainer.classList.contains('mode-container')) {
-                                        modeContainer = document.createElement('div');
-                                        modeContainer.classList.add('mode-container');
-                                        modeContainer.style.display = 'flex';
-                                        modeContainer.style.flexDirection = 'column';
-                                        modeContainer.style.gap = '4px';
-                                        modeContainer.style.margin = '6px 0 10px 0';
+                                // show mode buttons for selection
+                                // create container for mode buttons
+                                let modeContainer = interBtn.nextElementSibling;
+                                if (!modeContainer || !modeContainer.classList || !modeContainer.classList.contains('mode-container')) {
+                                    modeContainer = document.createElement('div');
+                                    modeContainer.classList.add('mode-container');
+                                    modeContainer.style.display = 'none';
+                                    modeContainer.style.flexDirection = 'column';
+                                    modeContainer.style.gap = '4px';
+                                    modeContainer.style.margin = '6px 0 10px 0';
 
-                                        const modesObj = interactionState.modes || {};
-                                        Object.entries(modesObj).forEach(([modeKey, modeValue]) => {
-                                            const modeBtn = document.createElement('button');
-                                            modeBtn.textContent = modeKey;
-                                            modeBtn.style.padding = '6px 8px';
-                                            modeBtn.style.border = 'none';
-                                            modeBtn.style.borderRadius = '4px';
-                                            modeBtn.style.cursor = 'pointer';
-                                            modeBtn.style.textAlign = 'left';
-                                            modeBtn.style.background = (interactionState.mode === modeValue) ? 'rgba(56, 161, 105, 0.18)' : 'rgba(255,255,255,0.04)';
+                                    const modesObj = interaction.enum;
+                                    Object.entries(modesObj).forEach(([modeKey, modeValue]) => {
+                                        const modeBtn = document.createElement('button');
+                                        modeBtn.textContent = modeKey;
+                                        modeBtn.style.padding = '6px 8px';
+                                        modeBtn.style.border = 'none';
+                                        modeBtn.style.borderRadius = '4px';
+                                        modeBtn.style.cursor = 'pointer';
+                                        modeBtn.style.textAlign = 'left';
+                                        modeBtn.style.background = (interaction.value === modeValue) ? 'rgba(56, 161, 105, 0.18)' : 'rgba(255,255,255,0.04)';
 
-                                            modeBtn.onclick = (ev) => {
-                                                ev.stopPropagation();
-                                                interactionState.mode = modeValue;
-                                                // update button text and styles
-                                                interBtn.textContent = `${interactionType} (mode: ${modeKey})`;
-                                                // update persisted userData
-                                                if (Array.isArray(this.selectedMesh.userData.interactions) && typeof idx === 'number') {
-                                                    this.selectedMesh.userData.interactions[idx].interactionTypes[interactionType].mode = modeValue;
-                                                }
-                                                // refresh mode button highlights
-                                                Array.from(modeContainer.children).forEach(child => child.style.background = 'rgba(255,255,255,0.04)');
-                                                modeBtn.style.background = 'rgba(56, 161, 105, 0.18)';
-                                            };
+                                        modeBtn.onclick = (ev) => {
+                                            ev.stopPropagation();
+                                            interaction.value = modeValue;
+                                            // update button text and styles
+                                            interBtn.textContent = `${interactionName} (mode: ${modeKey})`;
+                                            // update persisted userData
+                                            // if (Array.isArray(this.selectedMesh.userData.interactions) && typeof idx === 'number') {
+                                            //     interaction
+                                            //     this.selectedMesh.userData.interactions[idx].interactionTypes[interactionName].mode = modeValue;
+                                            // } // TODO VOIR ICI SI PROBLEME
+                                            // refresh mode button highlights
+                                            Array.from(modeContainer.children).forEach(child => child.style.background = 'rgba(255,255,255,0.04)');
+                                            modeBtn.style.background = 'rgba(56, 161, 105, 0.18)';
+                                        };
 
-                                            modeContainer.appendChild(modeBtn);
-                                        });
+                                        modeContainer.appendChild(modeBtn);
+                                    });
 
-                                        interBtn.after(modeContainer);
-                                    }
-                                    // toggle visibility
-                                    modeContainer.style.display = modeContainer.style.display === 'none' ? 'flex' : 'none';
-                                } else {
-                                    // Toggle enabled state
-                                    const current = interactionState.enabled !== false;
-                                    interactionState.enabled = !current;
-                                    // Reflect change in UI
-                                    interBtn.textContent = `${interactionType} ${interactionState.enabled ? '(enabled)' : '(disabled)'} `;
-                                    interBtn.style.background = interactionState.enabled ? 'rgba(56, 161, 105, 0.12)' : 'rgba(255,255,255,0.04)';
-                                    // Persist change back to the original interactions array on the mesh
-                                    if (Array.isArray(this.selectedMesh.userData.interactions) && typeof idx === 'number') {
-                                        this.selectedMesh.userData.interactions[idx].enabled = interactionState.enabled;
-                                    }
+                                    interBtn.after(modeContainer);
                                 }
+                                // toggle visibility
+                                modeContainer.style.display = modeContainer.style.display === 'none' ? 'flex' : 'none';
+
                             };
 
                             interactionsArea.appendChild(interBtn);

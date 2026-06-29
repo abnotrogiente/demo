@@ -1,7 +1,6 @@
-import { Mesh, MeshStandardMaterial, Scene, SphereGeometry, Vector3, WebGLRenderer } from "three";
-import { Selector, SportName, sportSpecificAssets, sportToAssets, sportTrees } from "./constants";
+import { Camera, Mesh, MeshStandardMaterial, Scene, SphereGeometry, Vector3, WebGLRenderer } from "three";
+import { Selector, SportName } from "./constants";
 import { Physics } from "./physics";
-import { Sport } from "./sport";
 import { Video } from "./video";
 
 const uiWindowContent = document.getElementById("window-content");
@@ -75,6 +74,12 @@ export const BounceModes = Object.freeze({
     COLOR: 1,
     RIPPLE: 2
 })
+
+export const EnableModes = Object.freeze({
+    ENABLED: true,
+    DISABLED: false
+});
+
 export class Config {
     constructor() {
         this.params = {
@@ -92,35 +97,38 @@ export class Config {
     /**
      * 
      * @param {Scene} scene 
+     * @param {Camera} camera 
      * @param {WebGLRenderer} renderer 
      * @param {Video} video 
      * @param {Physics} physics 
      */
-    init(scene, renderer, video) {
+    init(scene, camera, renderer, video, physics) {
         this.scene = scene;
+        this.camera = camera;
         this.renderer = renderer;
-        this.video = video;
+        this.videoObject = video;
+        this.physics = physics;
     }
 
-    /**
-     * 
-     * @param {Physics} physics 
-    */
-    configureSelectors(physics) {
-        configureSelector({
-            selectorName: "Sport",
-            variableParent: config.params,
-            variableName: "sport",
-            variableEnum: SportName,
-            selectorType: Selector.SELECT,
-            callback: async (value) => {
-                this.sport = new Sport(sportTrees[value], this.renderer, this.scene, this.video);
-                await this.sport.init(physics);
-            }
-        });
-        // configureSelector("Bounce Mode", this.params.visualizations, "bounce", BounceModes, () => { return null });
+    // /**
+    //  * 
+    //  * @param {Physics} physics 
+    // */
+    // configureSelectors(physics) {
+    //     configureSelector({
+    //         selectorName: "Sport",
+    //         variableParent: config.params,
+    //         variableName: "sport",
+    //         variableEnum: SportName,
+    //         selectorType: Selector.SELECT,
+    //         callback: async (value) => {
+    //             this.sport = new Sport(sportTrees[value], this.renderer, this.scene, this.video);
+    //             await this.sport.init(physics);
+    //         }
+    //     });
+    //     // configureSelector("Bounce Mode", this.params.visualizations, "bounce", BounceModes, () => { return null });
 
-    }
+    // }
 
 
 }

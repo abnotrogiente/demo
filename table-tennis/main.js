@@ -1,6 +1,6 @@
 "use strict";
 
-import { Clock } from 'three';
+import { Clock, Mesh } from 'three';
 import { Physics } from './physics';
 import { config } from './config';
 
@@ -11,6 +11,8 @@ import { initializeSystems } from './initialization.js';
 import { parseCsv, updateCalibration } from './utils.js';
 import { setupEventHandlers } from './eventHandlers.js';
 import { startAnimationLoop, createUpdateCalibrationCallback } from './animationLoop.js';
+import { sport } from './sport.js';
+import { SportName, sportTrees } from './constants.js';
 
 
 async function main() {
@@ -28,18 +30,20 @@ async function main() {
     // Initialize Physics Engine
     const physics = new Physics(scene);
     await physics.init();
-    config.configureSelectors(physics);
+    // config.configureSelectors(physics);
 
     // Create Game Entities
-    const {
-        table,
-        room,
-        ball,
-        tracked_ball,
-        tableEffects,
-        ballEffects,
-        objectSelector
-    } = await createEntities(scene, camera, physics, renderer, composer);
+    // const {
+    //     table,
+    //     room,
+    //     ball,
+    //     tracked_ball,
+    //     tableEffects,
+    //     ballEffects,
+    //     objectSelector
+    // } = await createEntities(scene, camera, physics, renderer, composer);
+
+    await createEntities(scene);
 
     // Initialize Game Systems (pass tracked_ball to CV_Helper)
     const {
@@ -47,9 +51,10 @@ async function main() {
         players,
         cvHelper,
         surfaceScore
-    } = await initializeSystems(scene, renderer, camera, physics, cameraDebug, tracked_ball);
+    } = await initializeSystems(scene, renderer, camera, physics, cameraDebug, new Mesh());
 
-    config.init(scene, renderer, video);
+    config.init(scene, camera, renderer, video, physics);
+    sport.set(sportTrees[config.params.sport]);
 
 
     // Load calibration data
@@ -76,11 +81,8 @@ async function main() {
         physics,
         players,
         cvHelper,
-        ballEffects,
-        tableEffects,
         cameraDebug,
         helper,
-        objectSelector,
         // updateCalibrationFn
     );
 }
