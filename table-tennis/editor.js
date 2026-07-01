@@ -24,7 +24,6 @@ export class ObjectSelector {
         this.preSelectedMesh = null;
         this.selectedMesh = null;
         sport.actors.forEach(mesh => {
-            console.log("MESH NAME : " + mesh.name);
             // Create a uniforms object on the material to store custom uniforms
             if (!mesh.material.uniforms) {
                 mesh.material.uniforms = {};

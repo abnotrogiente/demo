@@ -151,7 +151,6 @@ class Sport {
 
 
     #addInteractions(interactionTypes, actor1, actor1Name, actor2, actor2Name) {
-        console.log("actor2Name :  " + actor2Name);
         interactionTypes.forEach(interactionType => {
             if (actor1 && actor2) {
                 if (!this.surfaceEffectsFromActor.has(actor1)) this.surfaceEffectsFromActor.set(actor1, new SurfaceEffects(actor1));
@@ -161,7 +160,6 @@ class Sport {
                 this.interactionsFromActor.get(actor1).get(actor2Name).push(interaction);
                 this.interactionsFromActor.get(actor2).get(actor1Name).push(interaction);
                 // console.log("ADDING INTERACTION : " + this.interactionsFromActor.get(actor1);
-                console.log("ADDING INTERACTION : " + this.surfaceEffectsFromActor.get(actor1));
                 this.surfaceEffectsFromActor.get(actor1).otherActor = actor2;
             }
             // if (interactionType === SportActorInterationTypes.PROJECTION) {
