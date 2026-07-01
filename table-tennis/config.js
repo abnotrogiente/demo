@@ -69,25 +69,11 @@ export function getShaderConstantsFromEnum(e) {
     return parametersstr;
 }
 
-export const BounceModes = Object.freeze({
-    NONE: 0,
-    COLOR: 1,
-    RIPPLE: 2
-})
-
-export const EnableModes = Object.freeze({
-    ENABLED: true,
-    DISABLED: false
-});
-
 export class Config {
     constructor() {
         this.params = {
             sport: SportName.TABLE_TENNIS,
             visualizations: {
-                BounceModes: BounceModes,
-                bounce: BounceModes.NONE,
-                showShadow: true,
                 hawkEye: true
             }
         }
@@ -109,26 +95,6 @@ export class Config {
         this.videoObject = video;
         this.physics = physics;
     }
-
-    // /**
-    //  * 
-    //  * @param {Physics} physics 
-    // */
-    // configureSelectors(physics) {
-    //     configureSelector({
-    //         selectorName: "Sport",
-    //         variableParent: config.params,
-    //         variableName: "sport",
-    //         variableEnum: SportName,
-    //         selectorType: Selector.SELECT,
-    //         callback: async (value) => {
-    //             this.sport = new Sport(sportTrees[value], this.renderer, this.scene, this.video);
-    //             await this.sport.init(physics);
-    //         }
-    //     });
-    //     // configureSelector("Bounce Mode", this.params.visualizations, "bounce", BounceModes, () => { return null });
-
-    // }
 
 
 }

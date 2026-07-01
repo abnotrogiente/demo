@@ -1,6 +1,6 @@
 import { Camera, FloatType, LinearFilter, Mesh, MeshNormalMaterial, MeshStandardMaterial, PlaneGeometry, RGBAFormat, ShaderMaterial, Vector2, Vector3, WebGLRenderer, WebGLRenderTarget } from "three";
-import { BounceModes, configureSelector, getShaderConstantsFromEnum } from "./config";
-import { Selector, SportActorInterationTypes } from "./constants";
+import { configureSelector, getShaderConstantsFromEnum } from "./config";
+import { BounceModes, Selector, SportActorInterationTypes } from "./constants";
 import { Scene } from "three";
 import { tableDimensions } from "./constants";
 import { config } from "./config";
@@ -86,7 +86,7 @@ export class SurfaceEffects {
                 // uniform float opacity;
 
 
-                `+ getShaderConstantsFromEnum(config.params.visualizations.BounceModes) + /*glsl */`
+                `+ getShaderConstantsFromEnum(BounceModes) + /*glsl */`
 
 
                 float attenuation = 10.;
@@ -160,9 +160,11 @@ export class SurfaceEffects {
 
 
 
-                    normal = getRippleNormal(diff, speed, waveLength, uTime, amplitude0).xzy;
+                    normal = getRippleNormal(vWorldPos.xz - center, speed, waveLength, uTime, amplitude0).xzy;
+                    normal = vec3(diff, 0.);
                 }
 
+                
                     `
             );
             shader.fragmentShader = shader.fragmentShader.replace(
@@ -188,8 +190,8 @@ export class SurfaceEffects {
                 gl_FragColor.a = opacity;
                 if (showShadow) {
                     vec3 fragToOther = otherActorPosition - vWorldPos;
-                    vec3 normal = normalize(vNormal);
-                    vec3 projection = otherActorPosition - dot(fragToOther, normal)*normal;
+                    vec3 normalizedVNormal = normalize(vNormal);
+                    vec3 projection = otherActorPosition - dot(fragToOther, normalizedVNormal)*normalizedVNormal;
                     float l = length(projection - vWorldPos);
                     float shadowIntensity = pow(max(0.,1.-l),30.);
                     gl_FragColor = (1.-shadowIntensity)*gl_FragColor + shadowIntensity*vec4(0., 0., 0., 1.);
@@ -267,7 +269,7 @@ export class SurfaceEffects {
                 uniform bool bounced;
                 uniform int bounceMode;
 
-                `+ getShaderConstantsFromEnum(config.params.visualizations.BounceModes) + /*glsl */`
+                `+ getShaderConstantsFromEnum(BounceModes) + /*glsl */`
 
                 vec3 project(vec3 X) {
                     vec3 fragToX = X - vPos;

@@ -1,5 +1,5 @@
 import { Box3, Camera, Mesh, Raycaster, Scene, ShaderMaterial, Vector2, Vector3, WebGLRenderer } from "three";
-import { config } from "./config";
+import { config, configureSelector } from "./config";
 import { sport } from "./sport";
 
 export class ObjectSelector {
@@ -357,6 +357,15 @@ export class ObjectSelector {
             this.selectionPannelElement = null;
             this.selectionPannelDisplayed = false;
         }
+    }
+
+    configureUI() {
+        // configureSelector({
+        //     selectorName: "Select Actors Mode",
+        //     variableParent: this,
+        //     variableName: "selectActorsMode",
+        //     variableEnum: 
+        // })
     }
 }
 

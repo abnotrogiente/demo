@@ -1,6 +1,6 @@
 import { Camera, FloatType, LinearFilter, Mesh, MeshNormalMaterial, MeshStandardMaterial, PlaneGeometry, RGBAFormat, ShaderMaterial, Vector2, Vector3, WebGLRenderer, WebGLRenderTarget } from "three";
-import { BounceModes, configureSelector, getShaderConstantsFromEnum } from "./config";
-import { Selector } from "./constants";
+import { configureSelector, getShaderConstantsFromEnum } from "./config";
+import { BounceModes, Selector } from "./constants";
 import { Scene } from "three";
 import { tableDimensions } from "./constants";
 import { config } from "./config";
@@ -87,7 +87,7 @@ export class TableEffects {
                 uniform bool showShadow;
 
 
-                `+ getShaderConstantsFromEnum(config.params.visualizations.BounceModes) + /*glsl */`
+                `+ getShaderConstantsFromEnum(BounceModes) + /*glsl */`
 
 
                 float attenuation = 10.;
@@ -256,7 +256,7 @@ export class TableEffects {
                 uniform bool bounced;
                 uniform int bounceMode;
 
-                `+ getShaderConstantsFromEnum(config.params.visualizations.BounceModes) + /*glsl */`
+                `+ getShaderConstantsFromEnum(BounceModes) + /*glsl */`
                 void main() {
                     float c = length(vPos);
                     // gl_FragColor = vec4(c, c, c, 1.);

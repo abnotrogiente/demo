@@ -3,7 +3,7 @@ import { EffectComposer, Line2, LineGeometry, LineMaterial, RenderPass, ShaderPa
 import { tableDimensions } from "./constants";
 import { config } from "./config";
 import { Selector } from "./constants";
-import { BounceModes, configureSelector, getShaderConstantsFromEnum } from "./config";
+import { configureSelector, getShaderConstantsFromEnum } from "./config";
 
 
 const MAX_LENGTH = 10;

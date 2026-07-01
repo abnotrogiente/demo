@@ -29,6 +29,9 @@ function createObjectPoints() {
 
 export class CV_Helper {
     async init(video_src) {
+        if (this.cvCanvas) {
+            document.body.remove(this.cvCanvas);
+        }
         this.video_src = video_src
         await waitForOpenCV();
         console.log("CV initialized");
@@ -36,7 +39,7 @@ export class CV_Helper {
 
         this.cvCanvas = document.createElement("canvas");
         document.body.appendChild(this.cvCanvas);
-        // const ctx = this.cvCanvas.getContext("2d");
+        this.ctxt = this.cvCanvas.getContext("2d");
 
         this.width = video_src.videoWidth;
         this.height = video_src.videoHeight;
@@ -74,20 +77,32 @@ export class CV_Helper {
 
         this.cap = new CV.VideoCapture(video_src);
 
+        this.trackingEnabled = true;
+        this.showVideo = true;
+
+    }
+
+    clearCanvas() {
+        this.ctxt.clearRect(0, 0, this.cvCanvas.width, this.cvCanvas.height);
+
     }
 
     processFrame() {
         try {
 
-            // this.ctx_video.drawImage(this.video_src, 0, 0, this.width, this.height);
+            // this.ctx_video.drawImage(this.video_src, 0, 0, this.width / 2, this.height / 2);
 
-            // let img = this.ctx_video.getImageData(0, 0, this.width, this.height);
+            // let img = this.ctx_video.getImageData(0, 0, this.width / 2, this.height / 2);
             // this.src.data.set(img.data);
             // CV.cvtColor(this.src, this.gray, CV.COLOR_RGBA2GRAY);
-            // // CV.imshow(this.cvCanvas, this.gray);
+            // CV.imshow(this.cvCanvas, this.gray);
+            if (!this.showVideo && !this.trackingEnabled) return;
             this.cap.read(this.src);
-            this.trackBall();
-
+            // return;
+            if (this.trackingEnabled) this.trackBall();
+            else {
+                this.render();
+            }
 
             // cap.read(src); // grab frame from video_src
 
@@ -233,11 +248,15 @@ export class CV_Helper {
             );
         }
 
-
+        if (!this.showVideo) return;
         // Display result
+        this.render();
+
+    }
+
+    render() {
         CV.resize(this.src, this.dst, this.dst.size(), 0, 0, CV.INTER_NEAREST);
         CV.imshow(this.cvCanvas, this.dst);
-
     }
 
     calibrate() {

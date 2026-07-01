@@ -27,6 +27,16 @@ export const tableDimensions = {
     netHeight: 0.1525
 };
 
+export const BounceModes = Object.freeze({
+    NONE: 0,
+    COLOR: 1,
+    RIPPLE: 2
+});
+
+export const EnableModes = Object.freeze({
+    ENABLED: true,
+    DISABLED: false
+});
 
 export const sportToAssets = {
     [SportName.TABLE_TENNIS]: [

@@ -2,9 +2,9 @@ import { BoxGeometry, Mesh, MeshBasicMaterial, MeshPhongMaterial, MeshStandardMa
 import { TableEffects } from "./tableEffects";
 import { parseCsv } from "./utils";
 import { Video } from "./video";
-import { Selector, SportActorInterationTypes, SportName, sportSpecificAssets, sportTrees } from "./constants";
+import { BounceModes, EnableModes, Selector, SportActorInterationTypes, SportName, sportSpecificAssets, sportTrees } from "./constants";
 import { Physics } from "./physics";
-import { BounceModes, config, configureSelector, EnableModes } from "./config";
+import { config, configureSelector } from "./config";
 import { SurfaceEffects } from "./surfaceEffects";
 import { ObjectSelector } from "./editor";
 

@@ -22,7 +22,6 @@ import { SportName, sportSpecificAssets, tableDimensions } from './constants';
 import { ObjectSelector } from './editor';
 import { Physics } from './physics';
 import { EffectComposer } from 'three/examples/jsm/Addons.js';
-import { BounceModes } from './config';
 import { sport } from './sport';
 
 /**
@@ -74,42 +73,8 @@ export async function createEntities(scene, camera, physics, renderer, composer)
     // tracked_ball.position.y = 1.5;
     // // scene.add(tracked_ball);
 
-    // const objectSelector = new ObjectSelector(camera, renderer);
-    // const net = scene.getObjectByName("Object_8");
-    // net.userData.useBoundingBox = true;
-    // const tablePlane = scene.getObjectByName("Object_3");
-    // tablePlane.userData.interactions = [
-    //     {
-    //         otherActor: "ball",
-    //         interactionTypes: {
-    //             "Projection": {
-    //                 enabled: false
-    //             },
-    //             "Bounce": {
-    //                 mode: BounceModes.NONE,
-    //                 modes: BounceModes
-    //             }
-    //         }
-    //     }
-    // ];
-    // net.userData.interactions = [
-    //     {
-    //         otherActor: "ball",
-    //         interactionTypes: {
-    //             "Bounce": {
-    //                 enabled: false
-    //             }
-    //         }
-    //     }
-    // ];
-    // const interactableMeshes = [net, tablePlane];
-    // objectSelector.updateObjectShaders(interactableMeshes);
 
-    // // Create Effects
-    // const tableEffects = new TableEffects(scene.getObjectByName("Object_3"), tracked_ball, renderer);
-    // const ballEffects = new BallEffects(composer, tracked_ball, scene, renderer);
 
-    // sport.set(SportName.TABLE_TENNIS);
 
 
 
