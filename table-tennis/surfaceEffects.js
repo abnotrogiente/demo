@@ -131,6 +131,42 @@ export class SurfaceEffects {
                         -grad.y
                     ));
                 }
+
+                mat3 rotationFromTo(vec3 v, vec3 e) {
+                    float c = dot(v, e);
+
+                    // Parallel vectors
+                    if (c > 0.999999)
+                        return mat3(1.0);
+
+                    // Opposite vectors
+                    if (c < -0.999999)
+                    {
+                        // Choose any perpendicular axis
+                        vec3 axis = normalize(abs(v.x) < 0.9
+                                            ? cross(v, vec3(1,0,0))
+                                            : cross(v, vec3(0,1,0)));
+
+                        float x = axis.x, y = axis.y, z = axis.z;
+
+                        // 180° rotation: R = 2uu^T - I
+                        return mat3(
+                            2.*x*x-1., 2.*x*y,   2.*x*z,
+                            2.*x*y,   2.*y*y-1., 2.*y*z,
+                            2.*x*z,   2.*y*z,   2.*z*z-1.
+                        );
+                    }
+
+                    vec3 vCross = cross(v, e);
+
+                    mat3 K = mat3(
+                        0.0,      vCross.z, -vCross.y,
+                        -vCross.z, 0.0,       vCross.x,
+                        vCross.y,-vCross.x,  0.0
+                    );
+
+                    return mat3(1.0) + K + K*K * (1.0 / (1.0 + c));
+                }
                 
                 `
             );
@@ -155,13 +191,15 @@ export class SurfaceEffects {
 
                     vec4 info = texture(displayTexture, vUv);
 
-                    vec2 diff = info.rg;
-                    float amplitude0 = info.b;
+                    float amplitude0 = -info.a;
+                    vec3 diff = info.rgb;
+                    mat3 rotation = rotationFromTo(normal, vec3(0., 1., 0.));
+                    mat3 inverseRotation = transpose(rotation);
+                    diff = rotation * diff;
 
 
-
-                    normal = getRippleNormal(vWorldPos.xz - center, speed, waveLength, uTime, amplitude0).xzy;
-                    normal = vec3(diff, 0.);
+                    normal = getRippleNormal(diff.xz, speed, waveLength, uTime, amplitude0).xzy;
+                    normal = inverseRotation * normal;
                 }
 
                 
@@ -179,7 +217,7 @@ export class SurfaceEffects {
                     vec4 col = texture(displayTexture, vUv);
 
                     
-                    if (col.a != 0.) gl_FragColor.rgb = col.a*col.rgb + (1.-col.a)*gl_FragColor.rgb;
+                    if (col.a > 0.) gl_FragColor.rgb = col.a*col.rgb + (1.-col.a)*gl_FragColor.rgb;
                 }
                 
                 if (bounceMode == RIPPLE) {
@@ -296,7 +334,7 @@ export class SurfaceEffects {
                     // bool isInLine =isBeforeotherActor;
                     gl_FragColor = texture(previousTexture, vUv);
                     gl_FragColor.a *= .96;
-                    if (bounceMode == RIPPLE) gl_FragColor.b *= .96;
+                    // if (bounceMode == RIPPLE) gl_FragColor.b *= .96;
                     // gl_FragColor = vec4(1.);
                     // gl_FragColor.a = 0.;
                     if (isInLine) {
@@ -307,7 +345,7 @@ export class SurfaceEffects {
                         float diffSq = dot(diff, diff);
                         if (bounceMode == RIPPLE) {
                             if (diffSq <= .1) {
-                                // gl_FragColor = vec4(diff, .1, 0.);
+                                gl_FragColor = vec4(diff, -.1);
                             }
                             return;
                         }
