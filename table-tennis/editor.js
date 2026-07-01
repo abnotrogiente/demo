@@ -152,6 +152,38 @@ export class ObjectSelector {
         config.renderer.domElement.addEventListener("mousedown", onMouseClick);
     }
 
+    fitSelectionPanelToViewport(container) {
+        if (!container || !container.isConnected) return;
+
+        const parent = container.parentElement;
+        if (!parent) return;
+
+        const parentRect = parent.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+
+        const rect = container.getBoundingClientRect();
+        const padding = 8;
+
+        const overflowsLeft = rect.left < padding;
+        const overflowsRight = rect.right > viewportWidth - padding;
+        const overflowsTop = rect.top < padding;
+        const overflowsBottom = rect.bottom > viewportHeight - padding;
+
+        if (!overflowsLeft && !overflowsRight && !overflowsTop && !overflowsBottom) return;
+
+        let nextLeft = rect.left;
+        let nextTop = rect.top;
+
+        if (overflowsLeft) nextLeft = padding;
+        if (overflowsRight) nextLeft = viewportWidth - rect.width - padding;
+        if (overflowsTop) nextTop = padding;
+        if (overflowsBottom) nextTop = viewportHeight - rect.height - padding;
+
+        container.style.left = `${nextLeft - parentRect.left}px`;
+        container.style.top = `${nextTop - parentRect.top}px`;
+    }
+
     updateSelectionPannel() {
 
         // console.log("UPDATE SELECTION PANNEL : " + this.selectionPannelElement);
@@ -188,6 +220,9 @@ export class ObjectSelector {
             container.style.fontFamily = 'Arial, sans-serif';
             container.style.fontSize = '13px';
             container.style.zIndex = 1000;
+            container.style.maxHeight = 'calc(100vh - 16px)';
+            container.style.overflowY = 'auto';
+            container.style.boxSizing = 'border-box';
 
             const title = document.createElement('div');
             title.style.fontWeight = '600';
@@ -253,7 +288,6 @@ export class ObjectSelector {
                         title.style.fontWeight = '600';
                         title.style.marginBottom = '6px';
                         interactionsArea.appendChild(title);
-
 
                         // Object.entries(interaction).forEach(([interactionType, interactionState]) => {
                         interactions.forEach(interaction => {
@@ -337,11 +371,14 @@ export class ObjectSelector {
                                 }
                                 // toggle visibility
                                 modeContainer.style.display = modeContainer.style.display === 'none' ? 'flex' : 'none';
+                                requestAnimationFrame(() => this.fitSelectionPanelToViewport(container));
 
                             };
 
                             interactionsArea.appendChild(interBtn);
                         });
+
+                        requestAnimationFrame(() => this.fitSelectionPanelToViewport(container));
                     };
 
                     actorsList.appendChild(actorBtn);
@@ -351,6 +388,8 @@ export class ObjectSelector {
                 actorsContainer.appendChild(interactionsArea);
                 container.appendChild(actorsContainer);
             }
+
+            requestAnimationFrame(() => this.fitSelectionPanelToViewport(container));
 
             const close = document.createElement('button');
             close.textContent = 'Close';
@@ -368,6 +407,7 @@ export class ObjectSelector {
 
             parent.appendChild(container);
             this.selectionPannelElement = container;
+            requestAnimationFrame(() => this.fitSelectionPanelToViewport(container));
         } else if (this.selectionPannelDisplayed && this.selectedMesh === null) {
             this.selectionPannelElement.remove();
             this.selectionPannelElement = null;
