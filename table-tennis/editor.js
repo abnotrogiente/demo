@@ -1,6 +1,7 @@
 import { Box3, Camera, Mesh, Raycaster, Scene, ShaderMaterial, Vector2, Vector3, WebGLRenderer } from "three";
 import { config, configureSelector } from "./config";
 import { sport } from "./sport";
+import { EnableModes, SelectorTypes } from "./constants";
 
 export class ObjectSelector {
     constructor() {
@@ -9,6 +10,13 @@ export class ObjectSelector {
         this.rayCaster = new Raycaster();
 
         this.mouse = new Vector2(-5, -5);
+
+        this.preSelectedMesh = null;
+        this.selectedMesh = null;
+
+        this.selectActorsMode = true;
+
+        this.configureUI();
     }
 
 
@@ -78,6 +86,7 @@ export class ObjectSelector {
         });
 
         const onMouseMove = (event) => {
+            if (!this.selectActorsMode) return;
             const canvas = event.target;
             const box = canvas.getBoundingClientRect();
             const x = event.clientX - box.left;
@@ -126,10 +135,18 @@ export class ObjectSelector {
             // console.log("Mouse Pos : " + JSON.stringify(this.mouse))
         }
 
-        const onMouseClick = (event) => {
+        this.confirmSelection = () => {
             if (this.selectedMesh) this.selectedMesh.material.uniforms.isSelected.value = false;
             this.selectedMesh = this.preSelectedMesh;
             if (this.selectedMesh) this.selectedMesh.material.uniforms.isSelected.value = true;
+        }
+
+        const onMouseClick = (event) => {
+            console.log("click : " + event.which);
+            if (event.which == 1) {
+                this.confirmSelection();
+            }
+
         }
 
         config.renderer.domElement.addEventListener("mousemove", onMouseMove);
@@ -360,12 +377,17 @@ export class ObjectSelector {
     }
 
     configureUI() {
-        // configureSelector({
-        //     selectorName: "Select Actors Mode",
-        //     variableParent: this,
-        //     variableName: "selectActorsMode",
-        //     variableEnum: 
-        // })
+        configureSelector({
+            selectorName: "Select Actors Mode",
+            variableParent: this,
+            variableName: "selectActorsMode",
+            variableEnum: EnableModes,
+            selectorType: SelectorTypes.SELECT,
+            callback: (value) => {
+                this.preSelectedMesh = null;
+                this.confirmSelection();
+            }
+        });
     }
 }
 
