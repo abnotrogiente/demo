@@ -4,6 +4,7 @@ import { CV_Helper, TRACKING_DISABLED, TRACKING_FROM_FILE, TRACKING_ORANGE } fro
 import { Physics } from "./physics";
 import { Players } from "./players";
 import { Video } from "./video";
+import { config } from "./config";
 
 /**
  * 
@@ -88,7 +89,7 @@ export function initUI(video, players, cvHelper, physics) {
     const showVideoCheckbox = document.getElementById("show-video-checkbox");
     showVideoCheckbox.addEventListener("change", () => {
         console.log("show video : " + showVideoCheckbox.checked);
-        cvHelper.showVideo = showVideoCheckbox.checked;
+        config.params.showVideo = showVideoCheckbox.checked;
         if (!cvHelper.showVideo) cvHelper.clearCanvas();
     });
 

@@ -2,6 +2,7 @@ import { CylinderGeometry, Euler, Mesh, MeshBasicMaterial, Quaternion, Scene, Sk
 import { GLTFLoader } from "three/examples/jsm/Addons.js";
 import { Video } from "./video";
 import { FilesetResolver, PoseLandmarker } from "@mediapipe/tasks-vision";
+import { config } from "./config";
 
 const MEDIAPIPE_JOINTS = [
     "nose",
@@ -282,6 +283,7 @@ export class Players {
     drawLandmarks2D(landmarks) {
         // return;
         // draw lines
+        if (!config.params.showVideo) return;
         this.ctx_2D.strokeStyle = "lime";
         this.ctx_2D.lineWidth = 2;
 

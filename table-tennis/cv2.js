@@ -1,6 +1,7 @@
 import CV from "@techstark/opencv-js"
 import { ArrowHelper, Matrix4, Mesh, Raycaster, Vector2, Vector3 } from "three";
 import { Video } from "./video";
+import { config } from "./config";
 
 export const TRACKING_DISABLED = 0;
 export const TRACKING_ORANGE = 1;
@@ -137,8 +138,6 @@ export class CV_Helper {
 
 
         this.calibrationOnRepeat = false;
-        this.showVideo = true;
-
         this.cvToThree = new Matrix4().set(
             1, 0, 0, 0,
             0, 0, 1, 0,
@@ -205,7 +204,7 @@ export class CV_Helper {
             //     const z = parseFloat(traj["z"]);
             //     this.ball.position.set(traj["x"], z, traj["y"]);
             // }
-            if (!this.showVideo && this.trackingMode != TRACKING_ORANGE) return;
+            if (!config.params.showVideo && this.trackingMode != TRACKING_ORANGE) return;
             else {
                 this.render();
             }
@@ -358,7 +357,7 @@ export class CV_Helper {
             );
         }
 
-        if (!this.showVideo) return;
+        if (!config.params.showVideo) return;
         // Display result
         this.render();
 

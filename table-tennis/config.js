@@ -72,6 +72,7 @@ export function getShaderConstantsFromEnum(e) {
 export class Config {
     constructor() {
         this.params = {
+            showVideo: true,
             sport: SportName.TABLE_TENNIS,
             visualizations: {
                 hawkEye: true
