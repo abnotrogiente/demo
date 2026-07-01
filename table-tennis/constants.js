@@ -33,6 +33,11 @@ export const BounceModes = Object.freeze({
     RIPPLE: 2
 });
 
+export const ProjectionModes = Object.freeze({
+    INSTANTANEOUS: 0,
+    TRACE: 1
+})
+
 export const EnableModes = Object.freeze({
     ENABLED: true,
     DISABLED: false
@@ -43,6 +48,7 @@ export const sportToAssets = {
         {
             name: "Table",
             visPannels: true,
+            visPannelSmallHalf: true,
             collideShape: "box",
             dimensions: { width: tableDimensions.depth, height: tableDimensions.height, depth: tableDimensions.width },
             position: new Vector3(0, 0, 0),
@@ -129,6 +135,11 @@ export const sportTrees = {
                 tracked: true,
                 tracking_file: "./assets/ball_traj_3D.csv",
                 mesh: "Ball"
+            },
+            "ground": {
+                properties: [],
+                attributes: [],
+                // mesh: "ground"
             }
         },
         interactions: [
@@ -144,6 +155,10 @@ export const sportTrees = {
                 actors: ["Plane", "Ball"],
                 types: [SportActorInterationTypes.BOUNCE, SportActorInterationTypes.PROJECTION]
             },
+            // {
+            //     actors: ["ground", "Player"],
+            //     types: [SportActorInterationTypes.BOUNCE, SportActorInterationTypes.PROJECTION]
+            // },
             {
                 visPannels: true,
                 actor: "Ball",

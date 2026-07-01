@@ -1,4 +1,4 @@
-import { BoxGeometry, Mesh, MeshBasicMaterial, MeshPhongMaterial, MeshStandardMaterial, PlaneGeometry, Scene, SphereGeometry, Vector3 } from "three";
+import { BoxGeometry, DoubleSide, Mesh, MeshBasicMaterial, MeshPhongMaterial, MeshStandardMaterial, PlaneGeometry, Scene, SphereGeometry, Vector3 } from "three";
 import { TableEffects } from "./tableEffects";
 import { parseCsv } from "./utils";
 import { Video } from "./video";
@@ -14,26 +14,75 @@ class SportActor {
     }
 }
 
-const interactionNameFromType = new Map([
-    [SportActorInterationTypes.BOUNCE, "Bounce"],
-    [SportActorInterationTypes.PROJECTION, "Projection"],
-    [SportActorInterationTypes.TECHNIQUE, "Technique"],
-    [SportActorInterationTypes.STEP, "Step"],
+
+const characteristicsFromInteraction = new Map([
+    [SportActorInterationTypes.BOUNCE, {
+        name: "Bounce",
+        params: {
+            bounce: {
+                enum: BounceModes,
+                default: BounceModes.NONE
+            }
+        }
+    }],
+    [SportActorInterationTypes.PROJECTION, {
+        name: "Projection",
+        params: {
+            instantaneous: {
+                enum: EnableModes,
+                default: EnableModes.DISABLED
+            },
+            trace: {
+                enum: EnableModes,
+                default: EnableModes.DISABLED
+            }
+        }
+    }],
+    [SportActorInterationTypes.TECHNIQUE, {
+        name: "Technique",
+        params: {
+            technique: {
+                enum: EnableModes,
+                default: EnableModes.DISABLED
+            }
+        }
+
+    }],
+    [SportActorInterationTypes.STEP, {
+        name: "Step",
+        params: {
+            technique: {
+                enum: EnableModes,
+                default: EnableModes.DISABLED
+            }
+        }
+    }],
 ]);
 
-const interactionToEnum = new Map([
-    [SportActorInterationTypes.BOUNCE, BounceModes],
-    [SportActorInterationTypes.PROJECTION, EnableModes],
-    [SportActorInterationTypes.TECHNIQUE, EnableModes],
-    [SportActorInterationTypes.STEP, EnableModes],
-]);
+// const interactionsCharacteristics = new Map([
+//     [SportActorInterationTypes.BOUNCE, {
+//         name: "Bounce",
+//         enum: BounceModes,
+//         default: BounceModes.NONE
+//     }],
+//     [SportActorInterationTypes.PROJECTION, {
+//         name: "Projection",
+//         enum: EnableModes,
+//         default: EnableModes.DISABLED
+//     }],
+//     [SportActorInterationTypes.TECHNIQUE, {
+//         name: "Technique",
+//         enum: EnableModes,
+//         default: EnableModes.DISABLED
+//     }],
+//     [SportActorInterationTypes.STEP, {
+//         name: "Step",
+//         enum: EnableModes,
+//         default: EnableModes.DISABLED
+//     }],
+// ]);
 
-const interactionDefaultValues = new Map([
-    [SportActorInterationTypes.BOUNCE, BounceModes.NONE],
-    [SportActorInterationTypes.PROJECTION, EnableModes.DISABLED],
-    [SportActorInterationTypes.TECHNIQUE, EnableModes.DISABLED],
-    [SportActorInterationTypes.STEP, EnableModes.DISABLED],
-]);
+
 
 export class SportActorInteraction {
     /**
@@ -46,10 +95,20 @@ export class SportActorInteraction {
     constructor(type, actor1, actor2, surfaceEffects) {
         this.actor1 = actor1;
         this.actor2 = actor2;
-        this.enum = interactionToEnum.get(type);
-        this.value = interactionDefaultValues.get(type);
+
+        const interactionCharacteristics = characteristicsFromInteraction.get(type);
+        this.name = interactionCharacteristics.name;
+        this.params = {};
+        Object.entries(interactionCharacteristics.params).forEach(([paramName, param]) => {
+            this.params[paramName] = {
+                value: param.default,
+                enum: param.enum
+            }
+        });
+        // this.enum = interactionsCharacteristics.get(type).enum;
+        // this.value = interactionsCharacteristics.get(type).default;
+        // this.name = interactionsCharacteristics.get(type).name;
         this.type = type;
-        this.name = interactionNameFromType.get(type);
 
         surfaceEffects.addInteraction(this);
     }
@@ -215,28 +274,48 @@ class Sport {
                         const geometry2 = new PlaneGeometry(asset.dimensions.width, 3);
                         // geometry1.rotateY(Math.PI/2);
 
+                        const pannels = [];
+
                         const visPannel1 = new Mesh(geometry1, material);
                         visPannel1.position.set(asset.dimensions.width / 2, 0., 0.);
                         visPannel1.name = "Vis Pannel 1";
+                        pannels.push(visPannel1);
 
                         const visPannel2 = new Mesh(geometry1, material.clone());
                         visPannel2.position.set(-asset.dimensions.width / 2, 0., 0.);
                         visPannel2.rotateY(Math.PI);
                         visPannel2.name = "Vis Pannel 2";
+                        pannels.push(visPannel2);
+
 
                         const visPannel3 = new Mesh(geometry2, material.clone());
                         visPannel3.position.set(0., 0., asset.dimensions.depth / 2);
                         visPannel3.rotateY(Math.PI);
                         visPannel3.name = "Vis Pannel 3";
+                        pannels.push(visPannel3);
+
 
                         const visPannel4 = new Mesh(geometry2, material.clone());
                         visPannel4.position.set(0., 0., -asset.dimensions.depth / 2);
                         visPannel4.name = "Vis Pannel 4";
+                        pannels.push(visPannel4);
 
-                        for (let visPannel of [visPannel1, visPannel2, visPannel3, visPannel4]) {
+
+                        if (asset.visPannelSmallHalf) {
+                            if (asset.dimensions.depth > asset.dimensions.width) {
+                                const visPannel5 = new Mesh(geometry2, material.clone());
+                                visPannel5.material.side = DoubleSide;
+                                visPannel5.position.set(0., 0., 0);
+                                visPannel5.name = "Vis Pannel 5";
+                                pannels.push(visPannel5)
+                            }
+                        }
+
+                        pannels.forEach(visPannel => {
+                            console.log("PANNEL : " + visPannel.name);
                             mesh.add(visPannel);
                             this.#addActor(visPannel, visPannel.name, true);
-                        }
+                        });
 
                     }
                     break;

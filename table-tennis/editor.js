@@ -190,7 +190,6 @@ export class ObjectSelector {
         // Create panel when a mesh is selected, or recreate when selection changes
         const parent = config.renderer?.domElement?.parentElement || document.body;
         const interactionsMap = sport.interactionsFromActor.get(this.selectedMesh);
-        console.log("interactionsMap : " + JSON.stringify(interactionsMap));
         // const interactions = this.selectedMesh?.userData?.interactions;
 
         // If there's a panel but the selected mesh changed, remove it to recreate
@@ -312,8 +311,11 @@ export class ObjectSelector {
                                 return String(value);
                             };
 
-                            const currentMode = interaction.value;
-                            interBtn.textContent = `${interactionName} (mode: ${getModeName(interaction.enum, currentMode)})`;
+                            const paramEntries = Object.entries(interaction.params || {}).length > 0
+                                ? Object.entries(interaction.params || {})
+                                : (interaction.enum ? [["value", { value: interaction.value, enum: interaction.enum }]] : []);
+
+                            interBtn.textContent = interactionName;
 
                             interBtn.style.display = 'block';
                             interBtn.style.width = '100%';
@@ -327,45 +329,64 @@ export class ObjectSelector {
                             interBtn.style.background = 'rgba(255,255,255,0.04)';
 
                             interBtn.onclick = () => {
-                                // show mode buttons for selection
-                                // create container for mode buttons
                                 let modeContainer = interBtn.nextElementSibling;
                                 if (!modeContainer || !modeContainer.classList || !modeContainer.classList.contains('mode-container')) {
                                     modeContainer = document.createElement('div');
                                     modeContainer.classList.add('mode-container');
                                     modeContainer.style.display = 'none';
                                     modeContainer.style.flexDirection = 'column';
-                                    modeContainer.style.gap = '4px';
+                                    modeContainer.style.gap = '6px';
                                     modeContainer.style.margin = '6px 0 10px 0';
 
-                                    const modesObj = interaction.enum;
-                                    Object.entries(modesObj).forEach(([modeKey, modeValue]) => {
-                                        const modeBtn = document.createElement('button');
-                                        modeBtn.textContent = modeKey;
-                                        modeBtn.style.padding = '6px 8px';
-                                        modeBtn.style.border = 'none';
-                                        modeBtn.style.borderRadius = '4px';
-                                        modeBtn.style.cursor = 'pointer';
-                                        modeBtn.style.textAlign = 'left';
-                                        modeBtn.style.background = (interaction.value === modeValue) ? 'rgba(56, 161, 105, 0.18)' : 'rgba(255,255,255,0.04)';
+                                    if (paramEntries.length === 0) {
+                                        const emptyState = document.createElement('div');
+                                        emptyState.textContent = 'No parameters';
+                                        emptyState.style.opacity = '0.8';
+                                        emptyState.style.fontSize = '12px';
+                                        modeContainer.appendChild(emptyState);
+                                    } else {
+                                        paramEntries.forEach(([paramName, paramConfig]) => {
+                                            const paramRow = document.createElement('div');
+                                            paramRow.style.display = 'flex';
+                                            paramRow.style.flexDirection = 'column';
+                                            paramRow.style.gap = '4px';
 
-                                        modeBtn.onclick = (ev) => {
-                                            ev.stopPropagation();
-                                            interaction.value = modeValue;
-                                            // update button text and styles
-                                            interBtn.textContent = `${interactionName} (mode: ${modeKey})`;
-                                            // update persisted userData
-                                            // if (Array.isArray(this.selectedMesh.userData.interactions) && typeof idx === 'number') {
-                                            //     interaction
-                                            //     this.selectedMesh.userData.interactions[idx].interactionTypes[interactionName].mode = modeValue;
-                                            // } // TODO VOIR ICI SI PROBLEME
-                                            // refresh mode button highlights
-                                            Array.from(modeContainer.children).forEach(child => child.style.background = 'rgba(255,255,255,0.04)');
-                                            modeBtn.style.background = 'rgba(56, 161, 105, 0.18)';
-                                        };
+                                            const paramLabel = document.createElement('div');
+                                            paramLabel.textContent = `${paramName}: ${getModeName(paramConfig.enum, paramConfig.value)}`;
+                                            paramLabel.style.fontSize = '12px';
+                                            paramLabel.style.opacity = '0.9';
 
-                                        modeContainer.appendChild(modeBtn);
-                                    });
+                                            const paramOptions = document.createElement('div');
+                                            paramOptions.style.display = 'flex';
+                                            paramOptions.style.flexDirection = 'column';
+                                            paramOptions.style.gap = '4px';
+
+                                            Object.entries(paramConfig.enum || {}).forEach(([modeKey, modeValue]) => {
+                                                const modeBtn = document.createElement('button');
+                                                modeBtn.textContent = modeKey;
+                                                modeBtn.style.padding = '4px 6px';
+                                                modeBtn.style.border = 'none';
+                                                modeBtn.style.borderRadius = '4px';
+                                                modeBtn.style.cursor = 'pointer';
+                                                modeBtn.style.textAlign = 'left';
+                                                modeBtn.style.background = (paramConfig.value === modeValue) ? 'rgba(56, 161, 105, 0.18)' : 'rgba(255,255,255,0.04)';
+
+                                                modeBtn.onclick = (ev) => {
+                                                    ev.stopPropagation();
+                                                    paramConfig.value = modeValue;
+                                                    paramLabel.textContent = `${paramName}: ${modeKey}`;
+                                                    Array.from(paramOptions.children).forEach(child => child.style.background = 'rgba(255,255,255,0.04)');
+                                                    modeBtn.style.background = 'rgba(56, 161, 105, 0.18)';
+                                                };
+
+                                                paramOptions.appendChild(modeBtn);
+                                            });
+
+                                            paramRow.appendChild(paramLabel);
+                                            paramRow.appendChild(paramOptions);
+                                            modeContainer.appendChild(paramRow);
+                                        });
+                                    }
 
                                     interBtn.after(modeContainer);
                                 }

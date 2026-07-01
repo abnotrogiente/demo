@@ -13,7 +13,8 @@ import {
     Vector3,
     Scene,
     Camera,
-    WebGLRenderer
+    WebGLRenderer,
+    MeshPhongMaterial
 } from 'three';
 
 import { BallEffects } from './ballEffects2';
@@ -53,6 +54,17 @@ export async function createEntities(scene, camera, physics, renderer, composer)
     const room = new Mesh(roomGeometry, roomMaterial);
     room.position.y = 1.5 - tableDimensions.altitude;
     scene.add(room);
+
+    const groundThickness = 1.
+    const groundGeometry = new BoxGeometry(20, groundThickness, 20);
+    const groundMaterial = new MeshPhongMaterial();
+    const ground = new Mesh(groundGeometry, groundMaterial);
+    ground.position.y = -groundThickness / 2 + 0.01 - tableDimensions.altitude;
+    ground.name = "ground";
+    scene.add(ground);
+
+
+
 
     // // Create Ball (Physics)
     // const radius = 0.01381;

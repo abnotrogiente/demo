@@ -1,4 +1,4 @@
-import { Camera, FloatType, LinearFilter, Mesh, MeshNormalMaterial, MeshStandardMaterial, PlaneGeometry, RGBAFormat, ShaderMaterial, Vector2, Vector3, WebGLRenderer, WebGLRenderTarget } from "three";
+import { Camera, Color, FloatType, LinearFilter, Mesh, MeshNormalMaterial, MeshStandardMaterial, PlaneGeometry, RGBAFormat, ShaderMaterial, Vector2, Vector3, WebGLRenderer, WebGLRenderTarget } from "three";
 import { configureSelector, getShaderConstantsFromEnum } from "./config";
 import { BounceModes, SportActorInterationTypes } from "./constants";
 import { Scene } from "three";
@@ -211,7 +211,7 @@ export class SurfaceEffects {
                 #include <opaque_fragment>
 
 
-                if (bounceMode != NONE) {
+                if (bounceMode != NONE || true) {
                 
 
                     vec4 col = texture(displayTexture, vUv);
@@ -282,16 +282,19 @@ export class SurfaceEffects {
                 bounced: { value: false },
                 previousTexture: { value: null },
                 bounceMode: { value: config.params.visualizations.bounce },
+                showTrace: { value: false }
             },
             vertexShader: /*glsl */ `
                 out vec3 vPos;
                 out vec2 vUv;
                 out vec3 vNormal;
                 void main() {
-                    vPos = position;
+                    vPos = (modelMatrix * vec4(position, 1.0)).xyz;
+                    // vPos = (modelMatrix * vec4(transformed, 1.0)).xyz;
                     vUv = uv;
-                    gl_Position = vec4(uv*2.-1., 0., 1.);
                     vNormal = normalize(mat3(modelMatrix) * normal);
+                    // vNormal = vec3(0., 0., 1.);
+                    gl_Position = vec4(uv*2.-1., 0., 1.);
 
                 }
             `,
@@ -306,41 +309,52 @@ export class SurfaceEffects {
                 uniform float lineStroke;
                 uniform bool bounced;
                 uniform int bounceMode;
+                uniform bool showTrace;
 
                 `+ getShaderConstantsFromEnum(BounceModes) + /*glsl */`
 
                 vec3 project(vec3 X) {
+                    // vec3 fragToOther = otherActorPosition - vWorldPos;
+                    // vec3 normalizedVNormal = normalize(vNormal);
+                    // vec3 projection = otherActorPosition - dot(fragToOther, normalizedVNormal)*normalizedVNormal;
+
                     vec3 fragToX = X - vPos;
-                    vec3 normal = normalize(vNormal);
-                    return X - dot(fragToX, normal)*normal;
+                    vec3 normalizedVNormal = normalize(vNormal);
+                    // normalizedVNormal = vec3(1., 0., 0.);
+                    return X - dot(fragToX, normalizedVNormal)*normalizedVNormal;
                 }
                 void main() {
-                    float c = length(vPos);
-                    // gl_FragColor = vec4(c, c, c, 1.);
-                    // return;
                     vec3 projectionPrev = project(prevotherActorPosition);
                     vec3 projectionCurr = project(otherActorPosition);
                     vec3 line = projectionCurr - projectionPrev; //P1P2
+                    float lineLengthSq = dot(line, line);
                     vec3 diffToPrev = vPos - projectionPrev; //P1X
                     float distToPrevSq = dot(diffToPrev, diffToPrev); // ||P1X||²
-                    vec3 lineDir = normalize(line);
-                    float coordinateOnLine = dot(diffToPrev, lineDir); // P1X . d
-                    // float coordinateOnLine = dot(diffToPrev, normalize(line)); // P1X . d
-                    float lengthProjOnLineSq = coordinateOnLine*coordinateOnLine; // (P1X . d)²
-                    bool isAfterPrevotherActor = coordinateOnLine >= 0.; // P1X . d >= 0
-                    bool isBeforeotherActor = lengthProjOnLineSq <= dot(line, line); // (P1X . d)² <= ||P1P2||²
-                    bool isInRadius = distToPrevSq - lengthProjOnLineSq <= lineStroke*lineStroke; // ||P1X||² - (P1X . d)² <= r²
-                    bool isInLine = isAfterPrevotherActor && isBeforeotherActor && isInRadius;
-                    // bool isInLine =isBeforeotherActor;
+                    
+                    bool isInLine = false;
+                    
+                    // DEBUG: show the projected positions and line length
+                    // gl_FragColor = vec4(normalize(vNormal) * 0.5 + 0.5, 1.0); // Show surface normal
+                    // gl_FragColor = vec4(vec3(lineLengthSq / 0.1), 1.0); // Show line length squared
+                    
+                    // Only check line intersection if line has meaningful length
+                    if (lineLengthSq > 0.0001) {
+                        vec3 lineDir = normalize(line);
+                        float coordinateOnLine = dot(diffToPrev, lineDir); // P1X . d
+                        float lengthProjOnLineSq = coordinateOnLine*coordinateOnLine; // (P1X . d)²
+                        bool isAfterPrevotherActor = coordinateOnLine >= 0.; // P1X . d >= 0
+                        bool isBeforeotherActor = lengthProjOnLineSq <= lineLengthSq; // (P1X . d)² <= ||P1P2||²
+                        bool isInRadius = distToPrevSq - lengthProjOnLineSq <= lineStroke*lineStroke; // ||P1X||² - (P1X . d)² <= r²
+                        isInLine = isAfterPrevotherActor && isBeforeotherActor && isInRadius;
+                    }
+                    
                     gl_FragColor = texture(previousTexture, vUv);
                     gl_FragColor.a *= .96;
-                    // if (bounceMode == RIPPLE) gl_FragColor.b *= .96;
-                    // gl_FragColor = vec4(1.);
-                    // gl_FragColor.a = 0.;
-                    if (isInLine) {
+                    // isInLine = length(vPos - vec3(0.75, 0.5, 0.5)) <= 1.5;
+                    if (isInLine && showTrace) {
                         gl_FragColor = vec4(0., 1., 1., 1.);
                     }
-                    if (bounced) {
+                    if (bounced && bounceMode != NONE) {
                         vec3 diff = vPos - projectionCurr;
                         float diffSq = dot(diff, diff);
                         if (bounceMode == RIPPLE) {
@@ -360,6 +374,8 @@ export class SurfaceEffects {
 
 
         this.texturePassQuad = new Mesh(planeGeometry, this.texturePassMaterial);
+        // this.texturePassQuad = new Mesh(this.surface.geometry.clone(), this.texturePassMaterial);
+        // this.texturePassQuad.position.copy(this.surface);
         this.texturePassScene = new Scene();
         this.texturePassScene.add(this.texturePassQuad);
         this.texturePassCamera = new Camera();
@@ -367,15 +383,15 @@ export class SurfaceEffects {
     #texturePass(dt) {
         if (!this.shader) return;
         this.speed.subVectors(this.otherActor.position, this.prevPos).divideScalar(dt);
-        this.texturePassQuad.material.uniforms.otherActorPosition.value.x = this.otherActor.position.x;
-        this.texturePassQuad.material.uniforms.otherActorPosition.value.z = this.otherActor.position.z;
-        // this.texturePassQuad.material.uniforms.otherActorPosition.value.copy(this.otherActor.position);
+        // this.texturePassQuad.material.uniforms.otherActorPosition.value.x = this.otherActor.position.x;
+        // this.texturePassQuad.material.uniforms.otherActorPosition.value.z = this.otherActor.position.z;
+        this.texturePassQuad.material.uniforms.otherActorPosition.value.copy(this.otherActor.position);
         // this.shader.uniforms.otherActorPosition.value.x = this.otherActor.position.x;
         // this.shader.uniforms.otherActorPosition.value.z = this.otherActor.position.z;
         this.shader.uniforms.otherActorPosition.value.copy(this.otherActor.position);
-        this.texturePassQuad.material.uniforms.prevotherActorPosition.value.x = this.prevPos.x;
-        this.texturePassQuad.material.uniforms.prevotherActorPosition.value.z = this.prevPos.z;
-        // this.texturePassQuad.material.uniforms.prevotherActorPosition.value.copy(this.prevPos);
+        // this.texturePassQuad.material.uniforms.prevotherActorPosition.value.x = this.prevPos.x;
+        // this.texturePassQuad.material.uniforms.prevotherActorPosition.value.z = this.prevPos.z;
+        this.texturePassQuad.material.uniforms.prevotherActorPosition.value.copy(this.prevPos);
         // this.tmp1.copy(this.otherActor.position).sub(this.prevPos).normalize();
         this.tmpvec3.copy(this.texturePassQuad.material.uniforms.otherActorPosition.value);
         this.tmpvec3.sub(this.texturePassQuad.material.uniforms.prevotherActorPosition.value);
@@ -383,22 +399,14 @@ export class SurfaceEffects {
         this.texturePassQuad.material.uniforms.lineDirection.value.copy(this.tmpvec3);
 
         this.texturePassQuad.material.uniforms.bounced.value = this.prevSpeed.y < 0 && this.speed.y > 0;
-        // console.log("speed: " + this.speed.y);
-        // console.log("prev speed: " + this.prevSpeed.y);
-        // console.log("\n\n");
-        // this.texturePassQuad.material.uniforms.bounced.value = true;
-
-        // this.texturePassQuad.material.uniforms.otherActorPosition.value.x = 0.;
-        // this.texturePassQuad.material.uniforms.otherActorPosition.value.y = 1.;
-        // this.texturePassQuad.material.uniforms.prevotherActorPosition.value.x = .5;
-        // this.texturePassQuad.material.uniforms.prevotherActorPosition.value.y = 0.;
-        // this.tmp1.copy(this.otherActor.position).sub(this.prevPos).normalize();
-        // this.texturePassQuad.material.uniforms.lineDirection.value.set(-1., 0.);
-
 
         this.texturePassQuad.material.uniforms.previousTexture.value = this.previousRenderingTarget.texture;
         config.renderer.setRenderTarget(this.currentRenderingTarget);
-        if (this.bounceMode != BounceModes.NONE) config.renderer.render(this.texturePassScene, this.texturePassCamera);
+        if (this.bounceMode != BounceModes.NONE ||
+            this.projectionInteraction && this.projectionInteraction.params.trace.value
+        ) {
+            config.renderer.render(this.texturePassScene, this.texturePassCamera);
+        }
         // config.renderer.setRenderTarget(null);
         this.shader.uniforms.displayTexture.value = this.currentRenderingTarget.texture;
         [this.previousRenderingTarget, this.currentRenderingTarget] = [this.currentRenderingTarget, this.previousRenderingTarget];
@@ -408,13 +416,48 @@ export class SurfaceEffects {
 
     }
 
+    #cleanTextures() {
+        if (!config.renderer) return;
+
+        const previousClearColor = new Color();
+        config.renderer.getClearColor(previousClearColor);
+        const previousClearAlpha = config.renderer.getClearAlpha();
+
+        const clearTarget = (target) => {
+            if (!target) return;
+            config.renderer.setClearColor(0x000000, 0);
+            config.renderer.setRenderTarget(target);
+            config.renderer.clear(true, true, true);
+            config.renderer.setRenderTarget(null);
+        };
+
+        clearTarget(this.currentRenderingTarget);
+        clearTarget(this.previousRenderingTarget);
+
+        config.renderer.setClearColor(previousClearColor, previousClearAlpha);
+
+        // if (this.shader) {
+        //     this.shader.uniforms.displayTexture.value = null;
+        // }
+
+        // if (this.texturePassQuad?.material?.uniforms) {
+        //     this.texturePassQuad.material.uniforms.previousTexture.value = null;
+        // }
+    }
+
     update(t, dt) {
         if (config.paused) return;
-        if (this.shader && this.projectionInteraction) this.shader.uniforms.showShadow.value = this.projectionInteraction.value;
+        if (this.projectionInteraction) {
+            if (this.shader) this.shader.uniforms.showShadow.value = this.projectionInteraction.params.instantaneous.value;
+            const prevTraceValue = this.texturePassQuad.material.uniforms.showTrace.value;
+            this.texturePassQuad.material.uniforms.showTrace.value = this.projectionInteraction.params.trace.value;
+            if (this.texturePassQuad.material.uniforms.showTrace.value != prevTraceValue) this.#cleanTextures();
+        }
         if (this.bounceInteraction) {
-            this.bounceMode = this.bounceInteraction.value;
+            const prevBounceMode = this.bounceMode;
+            this.bounceMode = this.bounceInteraction.params.bounce.value;
+            if (prevBounceMode != this.bounceMode) this.#cleanTextures();
             this.texturePassQuad.material.uniforms.bounceMode.value = this.bounceMode;
-            // if (this.texturePassMaterial) this.texturePassMaterial.uniforms.bounceMode.value = bounceMode;
             if (this.shader) this.shader.uniforms.bounceMode.value = this.bounceMode;
         }
         this.#texturePass(dt);
