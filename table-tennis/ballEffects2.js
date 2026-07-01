@@ -1,8 +1,7 @@
 import { BufferAttribute, BufferGeometry, Camera, DataTexture, FloatType, InstancedBufferAttribute, LinearFilter, LineSegments, Material, MathUtils, Mesh, MeshNormalMaterial, PlaneGeometry, Points, RGBAFormat, Scene, ShaderMaterial, Vector2, Vector3, WebGLRenderer, WebGLRenderTarget } from "three";
 import { EffectComposer, Line2, LineGeometry, LineMaterial, RenderPass, ShaderPass } from "three/examples/jsm/Addons.js";
-import { tableDimensions } from "./constants";
+import { SelectorTypes, tableDimensions } from "./constants";
 import { config } from "./config";
-import { Selector } from "./constants";
 import { configureSelector, getShaderConstantsFromEnum } from "./config";
 
 
@@ -89,7 +88,7 @@ export class BallEffects {
             selectorName: "Hawk Eye",
             variableParent: config.params.visualizations,
             variableName: "hawkEye",
-            selectorType: Selector.CHECKBOX,
+            selectorType: SelectorTypes.CHECKBOX,
             callback: (value) => {
                 line.visible = value;
             }

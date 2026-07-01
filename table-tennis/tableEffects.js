@@ -1,6 +1,6 @@
 import { Camera, FloatType, LinearFilter, Mesh, MeshNormalMaterial, MeshStandardMaterial, PlaneGeometry, RGBAFormat, ShaderMaterial, Vector2, Vector3, WebGLRenderer, WebGLRenderTarget } from "three";
 import { configureSelector, getShaderConstantsFromEnum } from "./config";
-import { BounceModes, Selector } from "./constants";
+import { BounceModes } from "./constants";
 import { Scene } from "three";
 import { tableDimensions } from "./constants";
 import { config } from "./config";

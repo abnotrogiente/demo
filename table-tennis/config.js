@@ -1,5 +1,5 @@
 import { Camera, Mesh, MeshStandardMaterial, Scene, SphereGeometry, Vector3, WebGLRenderer } from "three";
-import { Selector, SportName } from "./constants";
+import { SelectorTypes, SportName } from "./constants";
 import { Physics } from "./physics";
 import { Video } from "./video";
 
@@ -8,7 +8,7 @@ const uiWindowContent = document.getElementById("window-content");
 
 
 // export function configureSelector(selectorName, variableParent, variableName, variableEnum, callback) {
-export function configureSelector({ selectorName = "selector", variableParent = config.params, variableName = "", variableEnum = {}, callback = () => { }, selectorType = Selector.CHECKBOX }) {
+export function configureSelector({ selectorName = "selector", variableParent = config.params, variableName = "", variableEnum = {}, callback = () => { }, selectorType = SelectorTypes.CHECKBOX }) {
     const div = document.createElement("div");
     div.classList.add("control-group");
     const label = document.createElement("label");
@@ -16,7 +16,7 @@ export function configureSelector({ selectorName = "selector", variableParent = 
     div.appendChild(label);
     let selector = null;
     switch (selectorType) {
-        case Selector.SELECT:
+        case SelectorTypes.SELECT:
             selector = document.createElement("select");
             Object.entries(variableEnum).forEach(([key, value]) => {
                 const option = document.createElement("option");
@@ -26,7 +26,7 @@ export function configureSelector({ selectorName = "selector", variableParent = 
             });
             selector.value = variableParent[variableName];
             break;
-        case Selector.CHECKBOX:
+        case SelectorTypes.CHECKBOX:
             selector = document.createElement("input");
             selector.type = "checkbox";
             selector.checked = variableParent[variableName];
@@ -42,10 +42,10 @@ export function configureSelector({ selectorName = "selector", variableParent = 
 
     selector.addEventListener("change", () => {
         switch (selectorType) {
-            case Selector.SELECT:
+            case SelectorTypes.SELECT:
                 variableParent[variableName] = selector.value;
                 break;
-            case Selector.CHECKBOX:
+            case SelectorTypes.CHECKBOX:
                 variableParent[variableName] = selector.checked;
                 break;
             default:

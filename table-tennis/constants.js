@@ -8,7 +8,7 @@ export const SportActorInterationTypes = Object.freeze({
     STEP: 3
 });
 
-export const Selector = Object.freeze({
+export const SelectorTypes = Object.freeze({
     CHECKBOX: 0,
     SELECT: 1
 });
@@ -42,6 +42,7 @@ export const sportToAssets = {
     [SportName.TABLE_TENNIS]: [
         {
             name: "Table",
+            visPannels: true,
             collideShape: "box",
             dimensions: { width: tableDimensions.depth, height: tableDimensions.height, depth: tableDimensions.width },
             position: new Vector3(0, 0, 0),
@@ -65,14 +66,14 @@ export const sportToAssets = {
                 mass: .0027
             }
         },
-        {
-            name: "vis-wall1",
-            collideShape: "box",
-            dimensions: { width: .01, height: 2.5, depth: tableDimensions.width },
-            position: new Vector3(tableDimensions.depth / 2, 0, 0),
-            physics: false,
+        // {
+        //     name: "vis-wall1",
+        //     collideShape: "box",
+        //     dimensions: { width: .01, height: 2.5, depth: tableDimensions.width },
+        //     position: new Vector3(tableDimensions.depth / 2, 0, 0),
+        //     physics: false,
 
-        }
+        // }
     ],
     [SportName.BOXING]: [
         {
@@ -118,11 +119,6 @@ export const sportTrees = {
                         attributes: [],
                         mesh: "Object_8",
                         useBoundingBox: true
-                    },
-                    "Vis Wall 1": {
-                        properties: [],
-                        attributes: [],
-                        mesh: "vis-wall1"
                     }
                 }
             },
@@ -149,9 +145,11 @@ export const sportTrees = {
                 types: [SportActorInterationTypes.BOUNCE, SportActorInterationTypes.PROJECTION]
             },
             {
-                actors: ["Vis Wall 1", "Ball"],
+                visPannels: true,
+                actor: "Ball",
                 types: [SportActorInterationTypes.BOUNCE, SportActorInterationTypes.PROJECTION]
             }
+
         ],
         assets: sportToAssets[SportName.TABLE_TENNIS]
     },

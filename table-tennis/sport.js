@@ -1,8 +1,8 @@
-import { BoxGeometry, Mesh, MeshBasicMaterial, MeshPhongMaterial, MeshStandardMaterial, Scene, SphereGeometry, Vector3 } from "three";
+import { BoxGeometry, Mesh, MeshBasicMaterial, MeshPhongMaterial, MeshStandardMaterial, PlaneGeometry, Scene, SphereGeometry, Vector3 } from "three";
 import { TableEffects } from "./tableEffects";
 import { parseCsv } from "./utils";
 import { Video } from "./video";
-import { BounceModes, EnableModes, Selector, SportActorInterationTypes, SportName, sportSpecificAssets, sportTrees } from "./constants";
+import { BounceModes, EnableModes, SelectorTypes, SportActorInterationTypes, SportName, sportSpecificAssets, sportTrees } from "./constants";
 import { Physics } from "./physics";
 import { config, configureSelector } from "./config";
 import { SurfaceEffects } from "./surfaceEffects";
@@ -80,6 +80,9 @@ class Sport {
         /**@type {Mesh[]} */
         this.actors = [];
 
+        /**@type {Mesh[]} */
+        this.visPannels = [];
+
         this.video_src = config.videoObject.webcamVideo;
         this.videoDuration = config.videoObject.duration;
 
@@ -105,12 +108,9 @@ class Sport {
             for (const [name, child] of Object.entries(children)) {
                 if (child.mesh) {
                     const actor = config.scene.getObjectByName(child.mesh);
-                    this.actorByName.set(name, actor);
                     if (child.cloneMaterial) actor.material = actor.material.clone();
-                    this.actors.push(actor);
-                    this.interactionsFromActor.set(actor, new Map());
-                    actor.userData.name = name;
                     if (child.useBoundingBox) actor.userData.useBoundingBox = true;
+                    this.#addActor(actor, name);
                 }
                 if (child.tracked) {
                     const trackingData = await parseCsv(child.tracking_file);
@@ -124,34 +124,51 @@ class Sport {
 
         this.sportDescription.interactions.forEach(interaction => {
 
-            const actor1Name = interaction.actors[0];
-            const actor2Name = interaction.actors[1];
+            if (interaction.visPannels) {
+                const actorName = interaction.actor;
+                const actor = this.actorByName.get(actorName);
 
-            const actor1 = this.actorByName.get(actor1Name);
-            const actor2 = this.actorByName.get(actor2Name);
+                this.visPannels.forEach(visPannel => {
+                    this.#addInteractions(interaction.types, visPannel, visPannel.name, actor, actorName);
+                });
+            }
 
-            interaction.types.forEach(interactionType => {
-                if (actor1 && actor2) {
-                    if (!this.surfaceEffectsFromActor.has(actor1)) this.surfaceEffectsFromActor.set(actor1, new SurfaceEffects(actor1));
-                    const interaction = new SportActorInteraction(interactionType, actor1, actor2, this.surfaceEffectsFromActor.get(actor1));
-                    if (!this.interactionsFromActor.get(actor1).has(actor2Name)) this.interactionsFromActor.get(actor1).set(actor2Name, []);
-                    if (!this.interactionsFromActor.get(actor2).has(actor1Name)) this.interactionsFromActor.get(actor2).set(actor1Name, []);
-                    this.interactionsFromActor.get(actor1).get(actor2Name).push(interaction);
-                    this.interactionsFromActor.get(actor2).get(actor1Name).push(interaction);
-                    // console.log("ADDING INTERACTION : " + this.interactionsFromActor.get(actor1);
-                    console.log("ADDING INTERACTION : " + this.surfaceEffectsFromActor.get(actor1));
-                    this.surfaceEffectsFromActor.get(actor1).otherActor = actor2;
-                }
-                // if (interactionType === SportActorInterationTypes.PROJECTION) {
-                //     const effects = new TableEffects(actor1, actor2, config.renderer);
-                //     this.projections.push(effects);
-                // }
-            });
+            else {
+                const actor1Name = interaction.actors[0];
+                const actor2Name = interaction.actors[1];
+
+                const actor1 = this.actorByName.get(actor1Name);
+                const actor2 = this.actorByName.get(actor2Name);
+
+                this.#addInteractions(interaction.types, actor1, actor1Name, actor2, actor2Name);
+            }
 
         });
         this.selector = new ObjectSelector();
         this.selector.updateObjectShaders();
 
+    }
+
+
+    #addInteractions(interactionTypes, actor1, actor1Name, actor2, actor2Name) {
+        console.log("actor2Name :  " + actor2Name);
+        interactionTypes.forEach(interactionType => {
+            if (actor1 && actor2) {
+                if (!this.surfaceEffectsFromActor.has(actor1)) this.surfaceEffectsFromActor.set(actor1, new SurfaceEffects(actor1));
+                const interaction = new SportActorInteraction(interactionType, actor1, actor2, this.surfaceEffectsFromActor.get(actor1));
+                if (!this.interactionsFromActor.get(actor1).has(actor2Name)) this.interactionsFromActor.get(actor1).set(actor2Name, []);
+                if (!this.interactionsFromActor.get(actor2).has(actor1Name)) this.interactionsFromActor.get(actor2).set(actor1Name, []);
+                this.interactionsFromActor.get(actor1).get(actor2Name).push(interaction);
+                this.interactionsFromActor.get(actor2).get(actor1Name).push(interaction);
+                // console.log("ADDING INTERACTION : " + this.interactionsFromActor.get(actor1);
+                console.log("ADDING INTERACTION : " + this.surfaceEffectsFromActor.get(actor1));
+                this.surfaceEffectsFromActor.get(actor1).otherActor = actor2;
+            }
+            // if (interactionType === SportActorInterationTypes.PROJECTION) {
+            //     const effects = new TableEffects(actor1, actor2, config.renderer);
+            //     this.projections.push(effects);
+            // }
+        });
     }
 
     /**
@@ -164,6 +181,7 @@ class Sport {
 
         for (const asset of assets) {
             let body;
+            let mesh;
             switch (asset.collideShape) {
                 case "box":
                     if (asset.physics) {
@@ -176,16 +194,52 @@ class Sport {
                             model: asset.model,
                             modelOffset: asset.modelOffset
                         });
+                        mesh = config.physics.bodyToMesh.get(body);
                     }
                     else {
                         const material = new MeshPhongMaterial();
-                        material.transparent = true;
-                        material.opacity = .2;
                         const geometry = new BoxGeometry(asset.dimensions.width, asset.dimensions.height, asset.dimensions.depth);
-                        body = new Mesh(geometry, material);
-                        body.position.copy(asset.position);
-                        body.name = asset.name;
-                        config.scene.add(body);
+                        mesh = new Mesh(geometry, material);
+                        mesh.position.copy(asset.position);
+                        mesh.name = asset.name;
+                        config.scene.add(mesh);
+                    }
+
+                    if (asset.visPannels) {
+                        const material = new MeshPhongMaterial();
+                        material.transparent = true;
+                        material.opacity = .4;
+                        // const geometry1 = new BoxGeometry(.01, 3., asset.dimensions.depth);
+                        const geometry1 = new PlaneGeometry(asset.dimensions.depth, 3);
+                        geometry1.rotateY(-Math.PI / 2);
+
+                        // const geometry2 = new BoxGeometry(asset.dimensions.width, 3., .01);
+                        const geometry2 = new PlaneGeometry(asset.dimensions.width, 3);
+                        // geometry1.rotateY(Math.PI/2);
+
+                        const visPannel1 = new Mesh(geometry1, material);
+                        visPannel1.position.set(asset.dimensions.width / 2, 0., 0.);
+                        visPannel1.name = "Vis Pannel 1";
+
+                        const visPannel2 = new Mesh(geometry1, material.clone());
+                        visPannel2.position.set(-asset.dimensions.width / 2, 0., 0.);
+                        visPannel2.rotateY(Math.PI);
+                        visPannel2.name = "Vis Pannel 2";
+
+                        const visPannel3 = new Mesh(geometry2, material.clone());
+                        visPannel3.position.set(0., 0., asset.dimensions.depth / 2);
+                        visPannel3.rotateY(Math.PI);
+                        visPannel3.name = "Vis Pannel 3";
+
+                        const visPannel4 = new Mesh(geometry2, material.clone());
+                        visPannel4.position.set(0., 0., -asset.dimensions.depth / 2);
+                        visPannel4.name = "Vis Pannel 4";
+
+                        for (let visPannel of [visPannel1, visPannel2, visPannel3, visPannel4]) {
+                            mesh.add(visPannel);
+                            this.#addActor(visPannel, visPannel.name, true);
+                        }
+
                     }
                     break;
                 case "sphere":
@@ -199,14 +253,16 @@ class Sport {
                             modelOffset: asset.modelOffset
 
                         });
+                        mesh = config.physics.bodyToMesh.get(body);
+
                     }
                     else {
                         const material = new MeshStandardMaterial();
                         const geometry = new SphereGeometry(asset.radius);
-                        body = new Mesh(geometry, material);
-                        body.position.copy(asset.position);
-                        body.name = asset.name;
-                        config.scene.add(body);
+                        mesh = new Mesh(geometry, material);
+                        mesh.position.copy(asset.position);
+                        mesh.name = asset.name;
+                        config.scene.add(mesh);
                     }
                     break;
                 default:
@@ -217,6 +273,16 @@ class Sport {
             }
             if (asset.physics) sportSpecificAssets.physics.push(body);
             else sportSpecificAssets.nonPhysics.push(body);
+        }
+    }
+
+    #addActor(actor, name, isVisPannel = false) {
+        this.actorByName.set(name, actor);
+        this.actors.push(actor);
+        actor.name = name;
+        this.interactionsFromActor.set(actor, new Map());
+        if (isVisPannel) {
+            this.visPannels.push(actor);
         }
     }
 
@@ -244,7 +310,7 @@ class Sport {
             variableParent: config.params,
             variableName: "sport",
             variableEnum: SportName,
-            selectorType: Selector.SELECT,
+            selectorType: SelectorTypes.SELECT,
             callback: async (value) => {
                 // this.sport = new Sport(sportTrees[value], config.renderer, config.scene, this.video);
                 // await this.sport.init(physics);
