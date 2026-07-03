@@ -42,6 +42,7 @@ export class ObjectSelector {
 
                     shader.uniforms.isPreSelected = { value: false };
                     shader.uniforms.isSelected = { value: false };
+                    shader.uniforms.isHighLighted = { value: false };
                     if (!shader.fragmentShader.includes("uTime")) {
                         shader.fragmentShader = shader.fragmentShader.replace(
                             "#include <common>",
@@ -55,6 +56,7 @@ export class ObjectSelector {
                     // Store reference on material for access in mousemove
                     mesh.material.uniforms.isPreSelected = shader.uniforms.isPreSelected;
                     mesh.material.uniforms.isSelected = shader.uniforms.isSelected;
+                    mesh.material.uniforms.isHighLighted = shader.uniforms.isHighLighted;
 
                     shader.fragmentShader = shader.fragmentShader.replace(
                         "#include <common>",
@@ -62,18 +64,20 @@ export class ObjectSelector {
                             #include <common>
                             uniform bool isPreSelected;
                             uniform bool isSelected;
+                            uniform bool isHighLighted;
 
                         `);
                     shader.fragmentShader = shader.fragmentShader.replace(
                         "#include <opaque_fragment>",
                             /*glsl */ `
                             #include <opaque_fragment>
-                            if (isPreSelected || isSelected) {
+                            if (isPreSelected || isSelected || isHighLighted) {
                                 float glowIntensity = .3;
                                 float glowFrequency = 1.;
                                 vec4 yellow = vec4(1., 1., 0., 1.);
                                 vec4 green = vec4(0., 1., 0., 1.);
-                                vec4 color = isSelected ? green : yellow;
+                                vec4 red = vec4(1., 0., 0., 1.);
+                                vec4 color = isSelected ? green : isPreSelected? yellow : red;
                                 glowIntensity = isSelected? .5 : cos(2.*PI*glowFrequency*uTime)*.15+.3;
                                 gl_FragColor = (1. - glowIntensity)*gl_FragColor + glowIntensity*color;
                                 gl_FragColor.a = 1.;
@@ -141,7 +145,6 @@ export class ObjectSelector {
         }
 
         const onMouseClick = (event) => {
-            console.log("click : " + event.which);
             if (event.which == 1) {
                 this.confirmSelection();
             }
@@ -155,10 +158,12 @@ export class ObjectSelector {
     fitSelectionPanelToViewport(container) {
         if (!container || !container.isConnected) return;
 
+        const style = getComputedStyle(container);
         const parent = container.parentElement;
-        if (!parent) return;
+        const parentRect = style.position === 'fixed'
+            ? { left: 0, top: 0 }
+            : (parent?.getBoundingClientRect() || { left: 0, top: 0 });
 
-        const parentRect = parent.getBoundingClientRect();
         const viewportWidth = window.innerWidth;
         const viewportHeight = window.innerHeight;
 
@@ -180,8 +185,66 @@ export class ObjectSelector {
         if (overflowsTop) nextTop = padding;
         if (overflowsBottom) nextTop = viewportHeight - rect.height - padding;
 
-        container.style.left = `${nextLeft - parentRect.left}px`;
-        container.style.top = `${nextTop - parentRect.top}px`;
+        if (style.position === 'fixed') {
+            container.style.left = `${nextLeft}px`;
+            container.style.top = `${nextTop}px`;
+        } else {
+            container.style.left = `${nextLeft - parentRect.left}px`;
+            container.style.top = `${nextTop - parentRect.top}px`;
+        }
+    }
+
+    _removePanel(panel) {
+        if (panel && panel.isConnected) {
+            panel.remove();
+        }
+    }
+
+    _closeModePanel() {
+        this._removePanel(this.modePanelElement);
+        this.modePanelElement = null;
+    }
+
+    _closeInteractionPanel() {
+        this._closeModePanel();
+        this._removePanel(this.interactionPanelElement);
+        this.interactionPanelElement = null;
+    }
+
+    _closeSelectionPanel() {
+        this._closeInteractionPanel();
+        this._removePanel(this.selectionPannelElement);
+        this.selectionPannelElement = null;
+        this.selectionPannelDisplayed = false;
+    }
+
+    _createRightPanel(anchorRect, cursorY, titleText) {
+        const panel = document.createElement('div');
+        panel.style.position = 'fixed';
+        panel.style.minWidth = '240px';
+        panel.style.maxWidth = '320px';
+        panel.style.background = 'rgba(0,0,0,0.75)';
+        panel.style.color = '#fff';
+        panel.style.padding = '8px 10px';
+        panel.style.borderRadius = '6px';
+        panel.style.fontFamily = 'Arial, sans-serif';
+        panel.style.fontSize = '13px';
+        panel.style.zIndex = 1000;
+        panel.style.maxHeight = 'calc(100vh - 16px)';
+        panel.style.overflowY = 'auto';
+        panel.style.boxSizing = 'border-box';
+        panel.style.left = `${anchorRect.right + 8}px`;
+        panel.style.top = `${Math.min(Math.max(cursorY, 8), window.innerHeight - 32)}px`;
+
+        const title = document.createElement('div');
+        title.style.fontWeight = '600';
+        title.style.marginBottom = '6px';
+        title.textContent = titleText;
+        panel.appendChild(title);
+
+        document.body.appendChild(panel);
+        requestAnimationFrame(() => this.fitSelectionPanelToViewport(panel));
+        return panel;
     }
 
     updateSelectionPannel() {
@@ -208,10 +271,9 @@ export class ObjectSelector {
             const container = document.createElement('div');
             container.id = 'selection-pannel';
             container.dataset.meshUuid = this.selectedMesh.uuid;
-            container.style.position = 'absolute';
-            container.style.left = 100 * (this.mouse.x / 2 + .5) + '%';
-            container.style.top = 100 * (-this.mouse.y / 2 + .5) + '%';
-            // container.style.top = '12px';
+            container.style.position = 'fixed';
+            container.style.left = `${100 * (this.mouse.x / 2 + .5)}%`;
+            container.style.top = `${100 * (-this.mouse.y / 2 + .5)}%`;
             container.style.background = 'rgba(0,0,0,0.75)';
             container.style.color = '#fff';
             container.style.padding = '8px 10px';
@@ -222,31 +284,14 @@ export class ObjectSelector {
             container.style.maxHeight = 'calc(100vh - 16px)';
             container.style.overflowY = 'auto';
             container.style.boxSizing = 'border-box';
+            container.style.minWidth = '220px';
+            container.style.transform = 'translateX(0)';
 
             const title = document.createElement('div');
             title.style.fontWeight = '600';
             title.style.marginBottom = '6px';
             title.textContent = `Selected: ${this.selectedMesh.name || 'object'}`;
             container.appendChild(title);
-
-            // Actors list (buttons)
-            const actorsContainer = document.createElement('div');
-            actorsContainer.style.display = 'flex';
-            actorsContainer.style.flexDirection = 'column';
-            actorsContainer.style.gap = '6px';
-
-            // Build map actor -> interactions
-            // const actorMap = {};
-            // if (Array.isArray(interactions)) {
-            //     interactions.forEach((inter, idx) => {
-            //         const actor = inter.otherActor || 'unknown';
-            //         if (!actorMap[actor]) actorMap[actor] = [];
-            //         const interactionTypes = inter.interactionTypes || [];
-            //         console.log("inter : " + interactionTypes[0]);
-            //         actorMap[actor] = interactionTypes;
-            //     });
-            // }
-            // console.log("ACTOR MAP : " + JSON.stringify(actorMap));
 
             if (interactionsMap.size === 0) {
                 const none = document.createElement('div');
@@ -265,12 +310,7 @@ export class ObjectSelector {
                 actorsList.style.flexDirection = 'column';
                 actorsList.style.gap = '6px';
 
-                // area where interactions for chosen actor will be displayed
-                const interactionsArea = document.createElement('div');
-                interactionsArea.style.marginTop = '8px';
-
                 interactionsMap.forEach((interactions, otherActorName) => {
-
                     const actorBtn = document.createElement('button');
                     actorBtn.textContent = otherActorName;
                     actorBtn.style.padding = '6px 8px';
@@ -279,71 +319,72 @@ export class ObjectSelector {
                     actorBtn.style.cursor = 'pointer';
                     actorBtn.style.textAlign = 'left';
                     actorBtn.style.background = 'rgba(255,255,255,0.06)';
-                    actorBtn.onclick = () => {
-                        // Render interactions for this actor
-                        interactionsArea.innerHTML = '';
-                        const title = document.createElement('div');
-                        title.textContent = `Interactions with ${otherActorName}`;
-                        title.style.fontWeight = '600';
-                        title.style.marginBottom = '6px';
-                        interactionsArea.appendChild(title);
+                    actorBtn.style.width = '100%';
 
-                        // Object.entries(interaction).forEach(([interactionType, interactionState]) => {
-                        interactions.forEach(interaction => {
-                            const interactionName = interaction.name;
-                            // actorMap[actor].forEach((inter) => {
-                            console.log("INTER : " + interactionName);
-                            const interBtn = document.createElement('button');
-                            // const types = Array.isArray(inter.interactionTypes) ? inter.interactionTypes.join(', ') : String(inter.interactionTypes || '');
-                            // const hasModes = interactionState && (interactionState.modes || interactionState.mode !== undefined);
-                            // const enabled = interactionState.enabled !== false; // default true
+                    actorBtn.onmouseenter = (event) => {
+                        const otherActor = sport.actorByName.get(otherActorName);
+                        otherActor.material.uniforms.isHighLighted.value = true;
+                    }
 
-                            // helper to get mode name from modes object by value
-                            const getModeName = (modesObj, value) => {
-                                if (!modesObj) return String(value);
-                                // if modesObj is an array
-                                if (Array.isArray(modesObj)) {
-                                    return String(value);
-                                }
-                                for (const [k, v] of Object.entries(modesObj)) {
-                                    if (v === value) return k;
-                                }
-                                return String(value);
-                            };
+                    actorBtn.onmouseleave = (event) => {
+                        const otherActor = sport.actorByName.get(otherActorName);
+                        console.log("actors uniforms : " + JSON.stringify(otherActor.material.uniforms));
+                        otherActor.material.uniforms.isHighLighted.value = false;
+                    }
 
-                            const paramEntries = Object.entries(interaction.params || {}).length > 0
-                                ? Object.entries(interaction.params || {})
-                                : (interaction.enum ? [["value", { value: interaction.value, enum: interaction.enum }]] : []);
+                    actorBtn.onclick = (event) => {
+                        this._closeInteractionPanel();
+                        this._closeModePanel();
 
-                            interBtn.textContent = interactionName;
+                        const interactionPanel = this._createRightPanel(container.getBoundingClientRect(), event.clientY, `Interactions with ${otherActorName}`);
+                        this.interactionPanelElement = interactionPanel;
 
-                            interBtn.style.display = 'block';
-                            interBtn.style.width = '100%';
-                            interBtn.style.padding = '6px 8px';
-                            interBtn.style.marginBottom = '6px';
-                            interBtn.style.border = 'none';
-                            interBtn.style.borderRadius = '4px';
-                            interBtn.style.cursor = 'pointer';
-                            interBtn.style.textAlign = 'left';
-                            // interBtn.style.background = enabled ? 'rgba(56, 161, 105, 0.12)' : 'rgba(255,255,255,0.04)';
-                            interBtn.style.background = 'rgba(255,255,255,0.04)';
+                        if (!interactions || interactions.length === 0) {
+                            const none = document.createElement('div');
+                            none.textContent = 'No interactions available';
+                            none.style.opacity = '0.85';
+                            interactionPanel.appendChild(none);
+                        } else {
+                            interactions.forEach(interaction => {
+                                const interactionName = interaction.name;
+                                const interBtn = document.createElement('button');
+                                interBtn.textContent = interactionName;
+                                interBtn.style.display = 'block';
+                                interBtn.style.width = '100%';
+                                interBtn.style.padding = '6px 8px';
+                                interBtn.style.marginBottom = '6px';
+                                interBtn.style.border = 'none';
+                                interBtn.style.borderRadius = '4px';
+                                interBtn.style.cursor = 'pointer';
+                                interBtn.style.textAlign = 'left';
+                                interBtn.style.background = 'rgba(255,255,255,0.04)';
 
-                            interBtn.onclick = () => {
-                                let modeContainer = interBtn.nextElementSibling;
-                                if (!modeContainer || !modeContainer.classList || !modeContainer.classList.contains('mode-container')) {
-                                    modeContainer = document.createElement('div');
-                                    modeContainer.classList.add('mode-container');
-                                    modeContainer.style.display = 'none';
-                                    modeContainer.style.flexDirection = 'column';
-                                    modeContainer.style.gap = '6px';
-                                    modeContainer.style.margin = '6px 0 10px 0';
+                                interBtn.onclick = (clickEvent) => {
+                                    clickEvent.stopPropagation();
+                                    this._closeModePanel();
+
+                                    const modePanel = this._createRightPanel(interactionPanel.getBoundingClientRect(), clickEvent.clientY, interactionName);
+                                    this.modePanelElement = modePanel;
+
+                                    const getModeName = (modesObj, value) => {
+                                        if (!modesObj) return String(value);
+                                        if (Array.isArray(modesObj)) return String(value);
+                                        for (const [k, v] of Object.entries(modesObj)) {
+                                            if (v === value) return k;
+                                        }
+                                        return String(value);
+                                    };
+
+                                    const paramEntries = Object.entries(interaction.params || {}).length > 0
+                                        ? Object.entries(interaction.params || {})
+                                        : (interaction.enum ? [["value", { value: interaction.value, enum: interaction.enum }]] : []);
 
                                     if (paramEntries.length === 0) {
                                         const emptyState = document.createElement('div');
                                         emptyState.textContent = 'No parameters';
                                         emptyState.style.opacity = '0.8';
                                         emptyState.style.fontSize = '12px';
-                                        modeContainer.appendChild(emptyState);
+                                        modePanel.appendChild(emptyState);
                                     } else {
                                         paramEntries.forEach(([paramName, paramConfig]) => {
                                             const paramRow = document.createElement('div');
@@ -384,33 +425,21 @@ export class ObjectSelector {
 
                                             paramRow.appendChild(paramLabel);
                                             paramRow.appendChild(paramOptions);
-                                            modeContainer.appendChild(paramRow);
+                                            modePanel.appendChild(paramRow);
                                         });
                                     }
+                                };
 
-                                    interBtn.after(modeContainer);
-                                }
-                                // toggle visibility
-                                modeContainer.style.display = modeContainer.style.display === 'none' ? 'flex' : 'none';
-                                requestAnimationFrame(() => this.fitSelectionPanelToViewport(container));
-
-                            };
-
-                            interactionsArea.appendChild(interBtn);
-                        });
-
-                        requestAnimationFrame(() => this.fitSelectionPanelToViewport(container));
+                                interactionPanel.appendChild(interBtn);
+                            });
+                        }
                     };
 
                     actorsList.appendChild(actorBtn);
                 });
 
-                actorsContainer.appendChild(actorsList);
-                actorsContainer.appendChild(interactionsArea);
-                container.appendChild(actorsContainer);
+                container.appendChild(actorsList);
             }
-
-            requestAnimationFrame(() => this.fitSelectionPanelToViewport(container));
 
             const close = document.createElement('button');
             close.textContent = 'Close';
@@ -419,20 +448,14 @@ export class ObjectSelector {
             close.style.border = 'none';
             close.style.borderRadius = '4px';
             close.style.cursor = 'pointer';
-            close.onclick = () => {
-                container.remove();
-                this.selectionPannelDisplayed = false;
-                this.selectionPannelElement = null;
-            };
+            close.onclick = () => this._closeSelectionPanel();
             // container.appendChild(close);
 
             parent.appendChild(container);
             this.selectionPannelElement = container;
             requestAnimationFrame(() => this.fitSelectionPanelToViewport(container));
         } else if (this.selectionPannelDisplayed && this.selectedMesh === null) {
-            this.selectionPannelElement.remove();
-            this.selectionPannelElement = null;
-            this.selectionPannelDisplayed = false;
+            this._closeSelectionPanel();
         }
     }
 
