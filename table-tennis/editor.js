@@ -90,7 +90,7 @@ export class ObjectSelector {
         });
 
         const onMouseMove = (event) => {
-            if (!this.selectActorsMode) return;
+            if (!this.selectActorsMode || this.selectedMesh) return;
             const canvas = event.target;
             const box = canvas.getBoundingClientRect();
             const x = event.clientX - box.left;
@@ -142,6 +142,7 @@ export class ObjectSelector {
         this.confirmSelection = () => {
             if (this.selectedMesh) this.selectedMesh.material.uniforms.isSelected.value = false;
             this.selectedMesh = this.preSelectedMesh;
+            this.preSelectedMesh = null;
             if (this.selectedMesh) this.selectedMesh.material.uniforms.isSelected.value = true;
         }
 
