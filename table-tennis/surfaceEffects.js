@@ -1,10 +1,10 @@
-import { Camera, Color, FloatType, LinearFilter, Mesh, MeshNormalMaterial, MeshStandardMaterial, PlaneGeometry, RGBAFormat, ShaderMaterial, Vector2, Vector3, WebGLRenderer, WebGLRenderTarget } from "three";
+import { Camera, Color, FloatType, Float32BufferAttribute, LinearFilter, Mesh, MeshNormalMaterial, MeshPhongMaterial, MeshStandardMaterial, PlaneGeometry, Quaternion, RGBAFormat, ShaderMaterial, SphereGeometry, Vector2, Vector3, WebGLRenderer, WebGLRenderTarget, DoubleSide } from "three";
 import { configureSelector, getShaderConstantsFromEnum } from "./config";
 import { BounceModes, SportActorInterationTypes } from "./constants";
 import { Scene } from "three";
 import { tableDimensions } from "./constants";
 import { config } from "./config";
-import { SportActorInteraction } from "./sport";
+import { sport, SportActorInteraction } from "./sport";
 
 
 export class SurfaceEffects {
@@ -12,21 +12,21 @@ export class SurfaceEffects {
      * 
      * @param {Mesh} surface 
      */
-    constructor(surface) {
+    constructor(actor) {
         /**@type {Mesh} */
         this.otherActor = null;
 
-        this.surface = surface;
+        this.surface = sport.getSurfaceForEffects(actor);
         this.prevPos = new Vector3();
         this.speed = new Vector3();
         this.prevSpeed = new Vector3();
         this.tmpvec3 = new Vector3();
         // surface.material = new MeshStandardMaterial();
         let prevOnBeforeCompile = null;
-        if (surface.material.onBeforeCompile) prevOnBeforeCompile = surface.material.onBeforeCompile;
-        surface.material.onBeforeCompile = /**@param {ShaderMaterial} shader*/(shader) => {
+        if (this.surface.material.onBeforeCompile) prevOnBeforeCompile = this.surface.material.onBeforeCompile;
+        this.surface.material.onBeforeCompile = /**@param {ShaderMaterial} shader*/(shader) => {
             if (prevOnBeforeCompile) prevOnBeforeCompile(shader);
-            // surface.material.onBeforeCompile2(shader);
+            // this.surface.material.onBeforeCompile2(shader);
             if (!shader.fragmentShader.includes("uTime")) {
                 shader.fragmentShader = shader.fragmentShader.replace(
                     "#include <common>",
@@ -50,6 +50,7 @@ export class SurfaceEffects {
                 
                 out vec3 vWorldPos;
                 out vec2 vUv;
+                out vec2 vScreenUv;
                 // out vec3 vNormal;
                 uniform vec2 tableDimensions;
 
@@ -64,9 +65,21 @@ export class SurfaceEffects {
                 
                 // vWorldPos = worldPosition.xyz;
                 vWorldPos = (modelMatrix * vec4(transformed, 1.0)).xyz;
-                vUv = vec2(vWorldPos.x, -vWorldPos.z) / tableDimensions + .5;
+                // vUv = vec2(vWorldPos.x, -vWorldPos.z) / tableDimensions + .5;
                 // vNormal = normal;
+                vUv = uv;
                 vNormal = normalize(mat3(modelMatrix) * normal);
+                
+                `
+            );
+
+            shader.vertexShader = shader.vertexShader.replace(
+                "#include <project_vertex>",
+                /*glsl */ `
+                #include <project_vertex>
+                
+                vScreenUv = gl_Position.xy / gl_Position.w;
+                vScreenUv = vScreenUv * 0.5 + 0.5;
                 
                 `
             );
@@ -79,6 +92,7 @@ export class SurfaceEffects {
                 uniform sampler2D displayTexture;
                 in vec3 vWorldPos;
                 in vec2 vUv;
+                in vec2 vScreenUv;
                 // in vec3 vNormal;
                 uniform int bounceMode;
                 uniform vec3 otherActorPosition;
@@ -217,7 +231,11 @@ export class SurfaceEffects {
                     vec4 col = texture(displayTexture, vUv);
 
                     
-                    if (col.a > 0.) gl_FragColor.rgb = col.a*col.rgb + (1.-col.a)*gl_FragColor.rgb;
+                    if (col.a > 0.) {
+                        gl_FragColor.rgb = col.a*col.rgb + (1.-col.a)*gl_FragColor.rgb;
+                        // gl_FragColor = vec4(0., 1., 1., 1.);
+                    }
+                    // if (col.a > 0.) gl_FragColor.rgb = vec3(vUv, 0.);
                 }
                 
                 if (bounceMode == RIPPLE) {
@@ -242,11 +260,11 @@ export class SurfaceEffects {
                     `
             );
             this.shader = shader;
-            surface.material.userData.shader = shader;
+            this.surface.material.userData.shader = shader;
         };
 
 
-        surface.material.needsUpdate = true;
+        this.surface.material.needsUpdate = true;
 
         this.#initTexturePass();
     }
@@ -295,6 +313,7 @@ export class SurfaceEffects {
                     vNormal = normalize(mat3(modelMatrix) * normal);
                     // vNormal = vec3(0., 0., 1.);
                     gl_Position = vec4(uv*2.-1., 0., 1.);
+                    // gl_Position = vec4(uv*2.-1., 0., 1.);
 
                 }
             `,
@@ -324,8 +343,21 @@ export class SurfaceEffects {
                     return X - dot(fragToX, normalizedVNormal)*normalizedVNormal;
                 }
                 void main() {
+                    // gl_FragColor = vec4(vUv, 0., 1.);
+                    // return;
                     vec3 projectionPrev = project(prevotherActorPosition);
                     vec3 projectionCurr = project(otherActorPosition);
+
+
+                    // float l = length(vec3(otherActorPosition.x, 0., otherActorPosition.z) - vPos);
+                    // float shadowIntensity = pow(max(0.,1.-l),30.);
+                    // gl_FragColor = (1.-shadowIntensity)*gl_FragColor + shadowIntensity*vec4(0., 0., 0., 1.);
+                    // float shadowRadiusExt = .06;
+                    // float shadowRadiusIn = .04;
+                    // if (l <= shadowRadiusExt && l >= shadowRadiusIn ) gl_FragColor = vec4(1., 1., 0., 1.);
+                    // return;
+
+
                     vec3 line = projectionCurr - projectionPrev; //P1P2
                     float lineLengthSq = dot(line, line);
                     vec3 diffToPrev = vPos - projectionPrev; //P1X
@@ -373,15 +405,23 @@ export class SurfaceEffects {
         });
 
 
-        this.texturePassQuad = new Mesh(planeGeometry, this.texturePassMaterial);
-        // this.texturePassQuad = new Mesh(this.surface.geometry.clone(), this.texturePassMaterial);
-        // this.texturePassQuad.position.copy(this.surface);
+        // Use the same geometry as the surface for the texture-pass mesh.
+        // Clone it so the surface and the texture-pass mesh do not share the same geometry instance.
+        const texturePassGeometry = this.surface.geometry.clone();
+        this.texturePassQuad = new Mesh(texturePassGeometry, this.texturePassMaterial);
+        this.texturePassQuad.frustumCulled = false;
+        this.texturePassQuad.material.side = DoubleSide;
+
+        this.surface.getWorldPosition(this.texturePassQuad.position);
+        this.surface.getWorldQuaternion(this.texturePassQuad.quaternion);
+
         this.texturePassScene = new Scene();
         this.texturePassScene.add(this.texturePassQuad);
         this.texturePassCamera = new Camera();
     }
     #texturePass(dt) {
         if (!this.shader) return;
+        // return;
         this.speed.subVectors(this.otherActor.position, this.prevPos).divideScalar(dt);
         // this.texturePassQuad.material.uniforms.otherActorPosition.value.x = this.otherActor.position.x;
         // this.texturePassQuad.material.uniforms.otherActorPosition.value.z = this.otherActor.position.z;
@@ -405,7 +445,8 @@ export class SurfaceEffects {
         if (this.bounceMode != BounceModes.NONE ||
             this.projectionInteraction && this.projectionInteraction.params.trace.value
         ) {
-            config.renderer.render(this.texturePassScene, this.texturePassCamera);
+            this.texturePassCamera.copy(config.camera);
+            config.renderer.render(this.texturePassScene, config.camera);
         }
         // config.renderer.setRenderTarget(null);
         this.shader.uniforms.displayTexture.value = this.currentRenderingTarget.texture;
@@ -461,7 +502,7 @@ export class SurfaceEffects {
             if (this.shader) this.shader.uniforms.bounceMode.value = this.bounceMode;
         }
         this.#texturePass(dt);
-        if (this.shader) this.shader.uniforms.uTime.value = t;
+        // if (this.shader) this.shader.uniforms.uTime.value = t;
         // else console.log("shader does not exist");
     }
 
