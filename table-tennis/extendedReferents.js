@@ -1,0 +1,116 @@
+import { BoxGeometry, DoubleSide, Mesh, MeshPhongMaterial, PlaneGeometry, SphereGeometry } from "three";
+
+export function createExtendedReferents(dimensions) {
+    const depth = dimensions.depth ? dimensions.depth : dimensions.radius * 2;
+    const width = dimensions.width ? dimensions.width : dimensions.radius * 2;
+
+    console.log("w : " + width);
+    console.log("h : " + depth);
+
+    const material = new MeshPhongMaterial();
+    material.transparent = true;
+    material.opacity = .4;
+    // const geometry1 = new BoxGeometry(.01, 3., asset.dimensions.depth);
+    const geometry1 = new PlaneGeometry(depth, 3);
+    geometry1.rotateY(-Math.PI / 2);
+
+    // const geometry2 = new BoxGeometry(width, 3., .01);
+    const geometry2 = new PlaneGeometry(width, 3);
+    // geometry1.rotateY(Math.PI/2);
+
+    const pannels = [];
+
+    const visPannel1 = new Mesh(geometry1, material);
+    visPannel1.position.set(width / 2, 0., 0.);
+    visPannel1.name = "Border Extension 1";
+    pannels.push(visPannel1);
+
+    const visPannel2 = new Mesh(geometry1, material.clone());
+    visPannel2.position.set(-width / 2, 0., 0.);
+    visPannel2.rotateY(Math.PI);
+    visPannel2.name = "Border Extension 2";
+    pannels.push(visPannel2);
+
+
+    const visPannel3 = new Mesh(geometry2, material.clone());
+    visPannel3.position.set(0., 0., depth / 2);
+    visPannel3.rotateY(Math.PI);
+    visPannel3.name = "Border Extension 3";
+    pannels.push(visPannel3);
+
+
+    const visPannel4 = new Mesh(geometry2, material.clone());
+    visPannel4.position.set(0., 0., -depth / 2);
+    visPannel4.name = "Border Extension 4";
+    pannels.push(visPannel4);
+
+    const visPannel5 = new Mesh(geometry2, material.clone());
+    visPannel5.material.side = DoubleSide;
+    visPannel5.position.set(0., 0., 0);
+    visPannel5.name = "Half X";
+    pannels.push(visPannel5);
+
+    const visPannel6 = new Mesh(geometry1, material.clone());
+    visPannel6.material.side = DoubleSide;
+    visPannel6.position.set(0., 0., 0);
+    visPannel6.name = "Half Z";
+    pannels.push(visPannel6);
+
+    return pannels;
+}
+
+
+function makeBoxAtlasUVs(geometry) {
+
+    const uv = geometry.attributes.uv;
+
+    const cols = 4;
+    const rows = 3;
+
+    const w = 1 / cols;
+    const h = 1 / rows;
+
+    // atlas cell for each face in BoxGeometry order:
+    // +X, -X, +Y, -Y, +Z, -Z
+    const cells = [
+        [2, 1], // +X -> right
+        [0, 1], // -X -> left
+        [1, 2], // +Y -> top
+        [1, 0], // -Y -> bottom
+        [1, 1], // +Z -> front
+        [3, 1], // -Z -> back
+    ];
+
+    for (let face = 0; face < 6; face++) {
+
+        const [cx, cy] = cells[face];
+
+        const u0 = cx * w;
+        const v0 = cy * h;
+        const u1 = u0 + w;
+        const v1 = v0 + h;
+
+        const base = face * 4;
+
+        // Same vertex order as BoxGeometry
+        uv.setXY(base + 0, u0, v1);
+        uv.setXY(base + 1, u1, v1);
+        uv.setXY(base + 2, u0, v0);
+        uv.setXY(base + 3, u1, v0);
+    }
+
+    uv.needsUpdate = true;
+}
+
+export function createEnglobingShape(dimensions, delta) {
+    let geometry;
+    if (dimensions.radius) {
+        geometry = new SphereGeometry(dimensions.radius + delta);
+    }
+    else {
+        geometry = new BoxGeometry(dimensions.width + delta, dimensions.height + delta, dimensions.depth + delta);
+        makeBoxAtlasUVs(geometry);
+    }
+
+    return new Mesh(geometry, new MeshPhongMaterial());
+}
