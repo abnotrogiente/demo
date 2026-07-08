@@ -2,12 +2,12 @@ import { BoxGeometry, DoubleSide, Mesh, MeshBasicMaterial, MeshPhongMaterial, Me
 import { TableEffects } from "./tableEffects";
 import { parseCsv } from "./utils";
 import { Video } from "./video";
-import { BounceModes, EnableModes, SelectorTypes, SportActorInterationTypes, SportName, sportSpecificAssets, sportTrees } from "./constants";
+import { BounceModes, defaultContactCondition, EnableModes, SelectorTypes, SportActorInterationTypes, SportName, sportSpecificAssets, sportTrees } from "./constants";
 import { Physics } from "./physics";
 import { config, configureSelector } from "./config";
 import { SurfaceEffects } from "./surfaceEffects";
 import { ObjectSelector } from "./editor";
-import { createExtendedReferents } from "./extendedReferents";
+import { createEnglobingShape, createExtendedReferents } from "./extendedReferents";
 
 class SportActor {
     constructor() {
@@ -194,7 +194,7 @@ class Sport {
                 // const actor = this.actorByName.get(actorName);
                 const extensions = this.extensionsFromActor.get(actor1);
                 if (extensions) extensions.forEach(extension => {
-                    this.#addInteractions(interaction.types, extension, extension.name, actor2, actor2Name);
+                    this.#addInteractions(interaction.types, interaction.params, extension, extension.name, actor2, actor2Name);
                 });
 
                 // this.visPannels.forEach(visPannel => {
@@ -204,7 +204,7 @@ class Sport {
 
             else {
 
-                this.#addInteractions(interaction.types, actor1, actor1Name, actor2, actor2Name);
+                this.#addInteractions(interaction.types, interaction.params, actor1, actor1Name, actor2, actor2Name);
             }
 
         });
@@ -214,10 +214,11 @@ class Sport {
     }
 
 
-    #addInteractions(interactionTypes, actor1, actor1Name, actor2, actor2Name) {
+    #addInteractions(interactionTypes, interactionParams, actor1, actor1Name, actor2, actor2Name) {
+        const contactCondition = (interactionParams && interactionParams.contactCondition) ? interactionParams.contactCondition : defaultContactCondition;
         interactionTypes.forEach(interactionType => {
             if (actor1 && actor2) {
-                if (!this.surfaceEffectsFromActor.has(actor1)) this.surfaceEffectsFromActor.set(actor1, new SurfaceEffects(actor1));
+                if (!this.surfaceEffectsFromActor.has(actor1)) this.surfaceEffectsFromActor.set(actor1, new SurfaceEffects(actor1, contactCondition));
                 const interaction = new SportActorInteraction(interactionType, actor1, actor2, this.surfaceEffectsFromActor.get(actor1));
                 if (!this.interactionsFromActor.get(actor1).has(actor2Name)) this.interactionsFromActor.get(actor1).set(actor2Name, []);
                 if (!this.interactionsFromActor.get(actor2).has(actor1Name)) this.interactionsFromActor.get(actor2).set(actor1Name, []);
@@ -314,11 +315,19 @@ class Sport {
         this.actors.push(actor);
         actor.name = name;
         this.interactionsFromActor.set(actor, new Map());
+        // return;
         if (dimensions) {
+
+            actor.userData.proxyForSurfaceEffects = createEnglobingShape(dimensions, 0.01);
+            actor.userData.proxyForSurfaceEffects.raycast = () => { };
+            actor.userData.proxyForSurfaceEffects.material.opacity = 0.2;
+            actor.userData.proxyForSurfaceEffects.material.transparent = true;
+            actor.attach(actor.userData.proxyForSurfaceEffects);
+
+
             const extensions = createExtendedReferents(dimensions);
             this.extensionsFromActor.set(actor, extensions);
             extensions.forEach(extension => {
-                console.log("PANNEL : " + extension.name);
                 this.display(extension, false);
                 // extension.layers.set(1);
                 // extension.userData.displayed = false;
@@ -329,6 +338,10 @@ class Sport {
 
         }
 
+    }
+
+    getSurfaceForEffects(actor) {
+        return actor.userData.proxyForSurfaceEffects ? actor.userData.proxyForSurfaceEffects : actor;
     }
 
     isDisplayed(actor) {
@@ -349,6 +362,9 @@ class Sport {
         this.surfaceEffectsFromActor.forEach((surfaceEffects, actor) => {
             // if (surfaceEffects.surface.material.userData.shader && surfaceEffects.surface.name == "vis-wall1") console.log("surface effects on : " + surfaceEffects.surface.material.userData.shader.fragmentShader);
             surfaceEffects.update(t, dt);
+        });
+        this.actors.forEach(actor => {
+            if (actor.userData.shader && actor.userData.shader.uniforms.uTime) actor.userData.shader.uniforms.uTime.value = t;
         })
         if (this.selector) this.selector.updateSelectionPannel();
 

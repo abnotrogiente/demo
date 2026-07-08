@@ -10,11 +10,14 @@ import { sport, SportActorInteraction } from "./sport";
 export class SurfaceEffects {
     /**
      * 
-     * @param {Mesh} surface 
+     * @param {Mesh} actor 
+     * @param {(args: {prevPos: Vector3, pos: Vector3, prevSpeed: Vector3, speed: Vector3, surface: Mesh}) => bool} contactCondition 
      */
-    constructor(actor) {
+    constructor(actor, contactCondition) {
         /**@type {Mesh} */
         this.otherActor = null;
+
+        this.contactCondition = contactCondition;
 
         this.surface = sport.getSurfaceForEffects(actor);
         this.prevPos = new Vector3();
@@ -438,7 +441,14 @@ export class SurfaceEffects {
         this.tmpvec3.normalize();
         this.texturePassQuad.material.uniforms.lineDirection.value.copy(this.tmpvec3);
 
-        this.texturePassQuad.material.uniforms.bounced.value = this.prevSpeed.y < 0 && this.speed.y > 0;
+        // this.texturePassQuad.material.uniforms.bounced.value = this.prevSpeed.y < 0 && this.speed.y > 0;
+        this.texturePassQuad.material.uniforms.bounced.value = this.contactCondition({
+            prevPos: this.prevPos,
+            pos: this.otherActor.position,
+            speed: this.speed,
+            prevSpeed: this.prevSpeed,
+            surface: this.surface
+        });
 
         this.texturePassQuad.material.uniforms.previousTexture.value = this.previousRenderingTarget.texture;
         config.renderer.setRenderTarget(this.currentRenderingTarget);
@@ -502,7 +512,7 @@ export class SurfaceEffects {
             if (this.shader) this.shader.uniforms.bounceMode.value = this.bounceMode;
         }
         this.#texturePass(dt);
-        // if (this.shader) this.shader.uniforms.uTime.value = t;
+        if (this.shader) this.shader.uniforms.uTime.value = t;
         // else console.log("shader does not exist");
     }
 

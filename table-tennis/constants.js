@@ -1,4 +1,4 @@
-import { Vector3 } from "three";
+import { Mesh, PlaneGeometry, Vector3 } from "three";
 import { depth } from "three/tsl";
 
 export const SportActorInterationTypes = Object.freeze({
@@ -98,6 +98,10 @@ export const sportToAssets = {
     ]
 }
 
+export const defaultContactCondition = ({ prevPos, pos, prevSpeed, speed, surface }) => {
+    return prevSpeed.y < 0 && speed.y > 0;
+}
+
 export const sportTrees = {
     [SportName.TABLE_TENNIS]: {
         children: {
@@ -164,7 +168,33 @@ export const sportTrees = {
             {
                 extensions: true,
                 actors: ["Plane", "Ball"],
-                types: [SportActorInterationTypes.BOUNCE, SportActorInterationTypes.PROJECTION]
+                types: [SportActorInterationTypes.BOUNCE, SportActorInterationTypes.PROJECTION],
+                params: {
+                    contactCondition:
+                        /**
+                         * 
+                         * @param {{prevPos: Vector3, pos: Vector3, prevSpeed: Vector3, speed: Vector3,surface: Mesh}} param0 
+                         */
+                        ({ prevPos, pos, prevSpeed, speed, surface }) => {
+                            /**@param {PlaneGeometry} */
+                            const geometry = surface.geometry;
+
+                            const p = new Vector3();
+                            surface.getWorldPosition(p);
+
+                            const worldNormal = new Vector3();
+                            const N = geometry.attributes.normal.array.slice(0, 3)
+                            worldNormal.set(N[0], N[1], N[2]); // or set(0,0,1)
+                            console.log("normal : " + N[0]);
+                            worldNormal.transformDirection(surface.matrixWorld);
+                            console.log("normal : " + JSON.stringify(worldNormal));
+
+
+                            return (new Vector3().subVectors(prevPos, p).dot(worldNormal) * new Vector3().subVectors(pos, p).dot(worldNormal) < 0)
+
+
+                        }
+                }
             }
 
         ],
