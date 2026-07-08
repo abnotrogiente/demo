@@ -64,7 +64,7 @@ export const sportToAssets = {
         {
             name: "Ball",
             collideShape: "sphere",
-            radius: 0.01381 * 3,
+            dimensions: { radius: 0.01381 * 3 },
             position: new Vector3(),
             physicsConstants: {
                 restitution: .9,
@@ -118,7 +118,8 @@ export const sportTrees = {
                     "Plane": {
                         properties: [],
                         attributes: [],
-                        mesh: "Object_3"
+                        mesh: "Object_3",
+                        dimensions: { width: tableDimensions.depth, height: tableDimensions.height, depth: tableDimensions.width }
                     },
                     "Net": {
                         properties: [],
@@ -134,7 +135,8 @@ export const sportTrees = {
                 attributes: [],
                 tracked: true,
                 tracking_file: "./assets/ball_traj_3D.csv",
-                mesh: "Ball"
+                mesh: "Ball",
+                dimensions: { radius: 0.01381 * 3 },
             },
             "ground": {
                 properties: [],
@@ -160,8 +162,8 @@ export const sportTrees = {
             //     types: [SportActorInterationTypes.BOUNCE, SportActorInterationTypes.PROJECTION]
             // },
             {
-                visPannels: true,
-                actor: "Ball",
+                extensions: true,
+                actors: ["Plane", "Ball"],
                 types: [SportActorInterationTypes.BOUNCE, SportActorInterationTypes.PROJECTION]
             }
 

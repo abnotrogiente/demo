@@ -1,3 +1,6 @@
+import { DoubleSide } from "three";
+import { sport } from "./sport";
+
 function applyPanelStyles(element, styles) {
     Object.entries(styles).forEach(([key, value]) => {
         element.style[key] = value;
@@ -34,6 +37,169 @@ function getModeName(modesObj, value) {
         if (modeValue === value) return key;
     }
     return String(value);
+}
+
+function addActorsButtons(container, interactionsMap, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated) {
+    container.appendChild(createLabel('Actors:', { fontWeight: '500', marginBottom: '4px' }));
+
+    const actorsList = document.createElement('div');
+    applyPanelStyles(actorsList, {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '6px',
+    });
+
+    interactionsMap.forEach((interactions, otherActorName) => {
+        const actorBtn = createActionButton(otherActorName);
+        actorBtn.onmouseenter = () => {
+            const otherActor = sport.actorByName.get(otherActorName);
+            otherActor.material.uniforms.isHighLighted.value = true;
+        };
+        actorBtn.onmouseleave = () => {
+            const otherActor = sport.actorByName.get(otherActorName);
+            otherActor.material.uniforms.isHighLighted.value = false;
+        };
+        actorBtn.onclick = (event) => {
+            closeInteractionPanel();
+            closeModePanel();
+
+            const interactionPanel = createRightPanel(container.getBoundingClientRect(), event.clientY, `Interactions with ${otherActorName}`);
+            if (typeof onInteractionPanelCreated === 'function') {
+                onInteractionPanelCreated(interactionPanel);
+            }
+
+            if (!interactions || interactions.length === 0) {
+                interactionPanel.appendChild(createLabel('No interactions available', { opacity: '0.85' }));
+            } else {
+                interactions.forEach(interaction => {
+                    const interactionName = interaction.name;
+                    const interBtn = createActionButton(interactionName, {
+                        display: 'block',
+                        width: '100%',
+                        marginBottom: '6px',
+                        background: 'rgba(255,255,255,0.04)',
+                    });
+
+                    interBtn.onclick = (clickEvent) => {
+                        clickEvent.stopPropagation();
+                        closeModePanel();
+
+                        const modePanel = createRightPanel(interactionPanel.getBoundingClientRect(), clickEvent.clientY, interactionName);
+                        if (typeof onModePanelCreated === 'function') {
+                            onModePanelCreated(modePanel);
+                        }
+
+                        const paramEntries = Object.entries(interaction.params || {}).length > 0
+                            ? Object.entries(interaction.params || {})
+                            : (interaction.enum ? [['value', { value: interaction.value, enum: interaction.enum }]] : []);
+
+                        if (paramEntries.length === 0) {
+                            modePanel.appendChild(createLabel('No parameters', {
+                                opacity: '0.8',
+                                fontSize: '12px',
+                            }));
+                        } else {
+                            paramEntries.forEach(([paramName, paramConfig]) => {
+                                const paramRow = document.createElement('div');
+                                applyPanelStyles(paramRow, {
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '4px',
+                                });
+
+                                const paramLabel = createLabel(`${paramName}: ${getModeName(paramConfig.enum, paramConfig.value)}`, {
+                                    fontSize: '12px',
+                                    opacity: '0.9',
+                                });
+
+                                const paramOptions = document.createElement('div');
+                                applyPanelStyles(paramOptions, {
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '4px',
+                                });
+
+                                Object.entries(paramConfig.enum || {}).forEach(([modeKey, modeValue]) => {
+                                    const modeBtn = createActionButton(modeKey, {
+                                        padding: '4px 6px',
+                                        background: (paramConfig.value === modeValue) ? 'rgba(56, 161, 105, 0.18)' : 'rgba(255,255,255,0.04)',
+                                    });
+
+                                    modeBtn.onclick = (ev) => {
+                                        ev.stopPropagation();
+                                        paramConfig.value = modeValue;
+                                        paramLabel.textContent = `${paramName}: ${modeKey}`;
+                                        Array.from(paramOptions.children).forEach(child => child.style.background = 'rgba(255,255,255,0.04)');
+                                        modeBtn.style.background = 'rgba(56, 161, 105, 0.18)';
+                                    };
+
+                                    paramOptions.appendChild(modeBtn);
+                                });
+
+                                paramRow.appendChild(paramLabel);
+                                paramRow.appendChild(paramOptions);
+                                modePanel.appendChild(paramRow);
+                            });
+                        }
+                    };
+
+                    interactionPanel.appendChild(interBtn);
+                });
+            }
+        };
+
+        actorsList.appendChild(actorBtn);
+    });
+
+    container.appendChild(actorsList);
+}
+
+function addExtensionsButtons(container, selectedMesh) {
+    container.appendChild(createLabel('Extensions:', { fontWeight: '500', marginBottom: '4px' }));
+
+    const extensionsList = document.createElement('div');
+    applyPanelStyles(extensionsList, {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '6px',
+    });
+    const extensions = sport.extensionsFromActor.get(selectedMesh);
+    if (!extensions) return;
+    extensions.forEach(extension => {
+        const extensionButton = createActionButton(extension.name, {
+            background: sport.isDisplayed(extension) ? 'rgba(56, 161, 105, 0.18)' : 'rgba(255,255,255,0.04)',
+
+        });
+        extensionButton.onmouseenter = () => {
+            // extension.material.uniforms.isHighLighted.value = true;
+            // extension.material.needsUpdate = true;
+            extension.userData.memoSide = extension.material.side;
+            extension.material.side = DoubleSide;
+            // extension.material.needsUpdate = true;
+            extension.userData.memoDisplay = sport.isDisplayed(extension);
+            sport.display(extension, true);
+            // extension.visible = true;
+        };
+        extensionButton.onmouseleave = () => {
+            extension.material.side = extension.userData.memoSide;
+            extension.material.uniforms.isHighLighted.value = false;
+            sport.display(extension, extension.userData.memoDisplay);
+            // extension.visible = extension.userData.memoVisible;
+
+        };
+        extensionButton.onclick = (event) => {
+            extension.userData.memoDisplay = !extension.userData.memoDisplay;
+            sport.display(extension, extension.userData.memoDisplay);
+            // extension.layers.set(extension.userData.memoVisible ? 0 : 1);
+            // extension.visible = extension.userData.memoVisible;
+            extensionButton.style.background = (sport.isDisplayed(extension)) ? 'rgba(56, 161, 105, 0.18)' : 'rgba(255,255,255,0.04)';
+        }
+
+
+
+        extensionsList.appendChild(extensionButton);
+    });
+    container.appendChild(extensionsList);
 }
 
 export function fitSelectionPanelToViewport(container) {
@@ -109,7 +275,6 @@ export function createRightPanel(anchorRect, cursorY, titleText) {
 export function createSelectionPanel({
     selectedMesh,
     mouse,
-    sport,
     parent,
     closeSelectionPanel,
     closeInteractionPanel,
@@ -149,120 +314,12 @@ export function createSelectionPanel({
     if (interactionsMap.size === 0) {
         container.appendChild(createLabel('No interactions defined', { opacity: '0.85' }));
     } else {
-        container.appendChild(createLabel('Actors:', { fontWeight: '500', marginBottom: '4px' }));
 
-        const actorsList = document.createElement('div');
-        applyPanelStyles(actorsList, {
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '6px',
-        });
-
-        interactionsMap.forEach((interactions, otherActorName) => {
-            const actorBtn = createActionButton(otherActorName);
-            actorBtn.onmouseenter = () => {
-                const otherActor = sport.actorByName.get(otherActorName);
-                otherActor.material.uniforms.isHighLighted.value = true;
-            };
-            actorBtn.onmouseleave = () => {
-                const otherActor = sport.actorByName.get(otherActorName);
-                otherActor.material.uniforms.isHighLighted.value = false;
-            };
-            actorBtn.onclick = (event) => {
-                closeInteractionPanel();
-                closeModePanel();
-
-                const interactionPanel = createRightPanel(container.getBoundingClientRect(), event.clientY, `Interactions with ${otherActorName}`);
-                if (typeof onInteractionPanelCreated === 'function') {
-                    onInteractionPanelCreated(interactionPanel);
-                }
-
-                if (!interactions || interactions.length === 0) {
-                    interactionPanel.appendChild(createLabel('No interactions available', { opacity: '0.85' }));
-                } else {
-                    interactions.forEach(interaction => {
-                        const interactionName = interaction.name;
-                        const interBtn = createActionButton(interactionName, {
-                            display: 'block',
-                            width: '100%',
-                            marginBottom: '6px',
-                            background: 'rgba(255,255,255,0.04)',
-                        });
-
-                        interBtn.onclick = (clickEvent) => {
-                            clickEvent.stopPropagation();
-                            closeModePanel();
-
-                            const modePanel = createRightPanel(interactionPanel.getBoundingClientRect(), clickEvent.clientY, interactionName);
-                            if (typeof onModePanelCreated === 'function') {
-                                onModePanelCreated(modePanel);
-                            }
-
-                            const paramEntries = Object.entries(interaction.params || {}).length > 0
-                                ? Object.entries(interaction.params || {})
-                                : (interaction.enum ? [['value', { value: interaction.value, enum: interaction.enum }]] : []);
-
-                            if (paramEntries.length === 0) {
-                                modePanel.appendChild(createLabel('No parameters', {
-                                    opacity: '0.8',
-                                    fontSize: '12px',
-                                }));
-                            } else {
-                                paramEntries.forEach(([paramName, paramConfig]) => {
-                                    const paramRow = document.createElement('div');
-                                    applyPanelStyles(paramRow, {
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: '4px',
-                                    });
-
-                                    const paramLabel = createLabel(`${paramName}: ${getModeName(paramConfig.enum, paramConfig.value)}`, {
-                                        fontSize: '12px',
-                                        opacity: '0.9',
-                                    });
-
-                                    const paramOptions = document.createElement('div');
-                                    applyPanelStyles(paramOptions, {
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: '4px',
-                                    });
-
-                                    Object.entries(paramConfig.enum || {}).forEach(([modeKey, modeValue]) => {
-                                        const modeBtn = createActionButton(modeKey, {
-                                            padding: '4px 6px',
-                                            background: (paramConfig.value === modeValue) ? 'rgba(56, 161, 105, 0.18)' : 'rgba(255,255,255,0.04)',
-                                        });
-
-                                        modeBtn.onclick = (ev) => {
-                                            ev.stopPropagation();
-                                            paramConfig.value = modeValue;
-                                            paramLabel.textContent = `${paramName}: ${modeKey}`;
-                                            Array.from(paramOptions.children).forEach(child => child.style.background = 'rgba(255,255,255,0.04)');
-                                            modeBtn.style.background = 'rgba(56, 161, 105, 0.18)';
-                                        };
-
-                                        paramOptions.appendChild(modeBtn);
-                                    });
-
-                                    paramRow.appendChild(paramLabel);
-                                    paramRow.appendChild(paramOptions);
-                                    modePanel.appendChild(paramRow);
-                                });
-                            }
-                        };
-
-                        interactionPanel.appendChild(interBtn);
-                    });
-                }
-            };
-
-            actorsList.appendChild(actorBtn);
-        });
-
-        container.appendChild(actorsList);
     }
 
+    addActorsButtons(container, interactionsMap, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated);
+
+    addExtensionsButtons(container, selectedMesh);
     // const close = createActionButton('Close', {
     //     marginTop: '8px',
     //     padding: '4px 8px',

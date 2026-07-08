@@ -7,6 +7,7 @@ import { Physics } from "./physics";
 import { config, configureSelector } from "./config";
 import { SurfaceEffects } from "./surfaceEffects";
 import { ObjectSelector } from "./editor";
+import { createExtendedReferents } from "./extendedReferents";
 
 class SportActor {
     constructor() {
@@ -139,9 +140,6 @@ class Sport {
         /**@type {Mesh[]} */
         this.actors = [];
 
-        /**@type {Mesh[]} */
-        this.visPannels = [];
-
         this.video_src = config.videoObject.webcamVideo;
         this.videoDuration = config.videoObject.duration;
 
@@ -153,6 +151,9 @@ class Sport {
         this.sportDescription = sportDescription;
 
         this.trackingDataFromActor = new Map();
+
+        /**@type {Map<Mesh, Mesh[]>} */
+        this.extensionsFromActor = new Map();
 
         /**@type {Map<Mesh, Map<string, SportActorInteraction[]>>} */
         this.interactionsFromActor = new Map();
@@ -169,7 +170,7 @@ class Sport {
                     const actor = config.scene.getObjectByName(child.mesh);
                     if (child.cloneMaterial) actor.material = actor.material.clone();
                     if (child.useBoundingBox) actor.userData.useBoundingBox = true;
-                    this.#addActor(actor, name);
+                    this.#addActor(actor, name, child.dimensions);
                 }
                 if (child.tracked) {
                     const trackingData = await parseCsv(child.tracking_file);
@@ -182,22 +183,26 @@ class Sport {
         await parseChildren(sportDescription.children);
 
         this.sportDescription.interactions.forEach(interaction => {
+            const actor1Name = interaction.actors[0];
+            const actor2Name = interaction.actors[1];
 
-            if (interaction.visPannels) {
-                const actorName = interaction.actor;
-                const actor = this.actorByName.get(actorName);
+            const actor1 = this.actorByName.get(actor1Name);
+            const actor2 = this.actorByName.get(actor2Name);
 
-                this.visPannels.forEach(visPannel => {
-                    this.#addInteractions(interaction.types, visPannel, visPannel.name, actor, actorName);
+            if (interaction.extensions) {
+                // const actorName = interaction.actor;
+                // const actor = this.actorByName.get(actorName);
+                const extensions = this.extensionsFromActor.get(actor1);
+                if (extensions) extensions.forEach(extension => {
+                    this.#addInteractions(interaction.types, extension, extension.name, actor2, actor2Name);
                 });
+
+                // this.visPannels.forEach(visPannel => {
+                //     this.#addInteractions(interaction.types, visPannel, visPannel.name, actor, actorName);
+                // });
             }
 
             else {
-                const actor1Name = interaction.actors[0];
-                const actor2Name = interaction.actors[1];
-
-                const actor1 = this.actorByName.get(actor1Name);
-                const actor2 = this.actorByName.get(actor2Name);
 
                 this.#addInteractions(interaction.types, actor1, actor1Name, actor2, actor2Name);
             }
@@ -262,62 +267,6 @@ class Sport {
                         config.scene.add(mesh);
                     }
 
-                    if (asset.visPannels) {
-                        const material = new MeshPhongMaterial();
-                        material.transparent = true;
-                        material.opacity = .4;
-                        // const geometry1 = new BoxGeometry(.01, 3., asset.dimensions.depth);
-                        const geometry1 = new PlaneGeometry(asset.dimensions.depth, 3);
-                        geometry1.rotateY(-Math.PI / 2);
-
-                        // const geometry2 = new BoxGeometry(asset.dimensions.width, 3., .01);
-                        const geometry2 = new PlaneGeometry(asset.dimensions.width, 3);
-                        // geometry1.rotateY(Math.PI/2);
-
-                        const pannels = [];
-
-                        const visPannel1 = new Mesh(geometry1, material);
-                        visPannel1.position.set(asset.dimensions.width / 2, 0., 0.);
-                        visPannel1.name = "Vis Pannel 1";
-                        pannels.push(visPannel1);
-
-                        const visPannel2 = new Mesh(geometry1, material.clone());
-                        visPannel2.position.set(-asset.dimensions.width / 2, 0., 0.);
-                        visPannel2.rotateY(Math.PI);
-                        visPannel2.name = "Vis Pannel 2";
-                        pannels.push(visPannel2);
-
-
-                        const visPannel3 = new Mesh(geometry2, material.clone());
-                        visPannel3.position.set(0., 0., asset.dimensions.depth / 2);
-                        visPannel3.rotateY(Math.PI);
-                        visPannel3.name = "Vis Pannel 3";
-                        pannels.push(visPannel3);
-
-
-                        const visPannel4 = new Mesh(geometry2, material.clone());
-                        visPannel4.position.set(0., 0., -asset.dimensions.depth / 2);
-                        visPannel4.name = "Vis Pannel 4";
-                        pannels.push(visPannel4);
-
-
-                        if (asset.visPannelSmallHalf) {
-                            if (asset.dimensions.depth > asset.dimensions.width) {
-                                const visPannel5 = new Mesh(geometry2, material.clone());
-                                visPannel5.material.side = DoubleSide;
-                                visPannel5.position.set(0., 0., 0);
-                                visPannel5.name = "Vis Pannel 5";
-                                pannels.push(visPannel5)
-                            }
-                        }
-
-                        pannels.forEach(visPannel => {
-                            console.log("PANNEL : " + visPannel.name);
-                            mesh.add(visPannel);
-                            this.#addActor(visPannel, visPannel.name, true);
-                        });
-
-                    }
                     break;
                 case "sphere":
                     if (asset.physics) {
@@ -335,7 +284,7 @@ class Sport {
                     }
                     else {
                         const material = new MeshStandardMaterial();
-                        const geometry = new SphereGeometry(asset.radius);
+                        const geometry = new SphereGeometry(asset.dimensions.radius);
                         mesh = new Mesh(geometry, material);
                         mesh.position.copy(asset.position);
                         mesh.name = asset.name;
@@ -348,19 +297,51 @@ class Sport {
 
 
             }
+
             if (asset.physics) sportSpecificAssets.physics.push(body);
             else sportSpecificAssets.nonPhysics.push(body);
         }
     }
 
-    #addActor(actor, name, isVisPannel = false) {
+    /**
+     * 
+     * @param {Mesh} actor 
+     * @param {*} name 
+     * @param {*} dimensions 
+     */
+    #addActor(actor, name, dimensions = undefined) {
         this.actorByName.set(name, actor);
         this.actors.push(actor);
         actor.name = name;
         this.interactionsFromActor.set(actor, new Map());
-        if (isVisPannel) {
-            this.visPannels.push(actor);
+        if (dimensions) {
+            const extensions = createExtendedReferents(dimensions);
+            this.extensionsFromActor.set(actor, extensions);
+            extensions.forEach(extension => {
+                console.log("PANNEL : " + extension.name);
+                this.display(extension, false);
+                // extension.layers.set(1);
+                // extension.userData.displayed = false;
+                // actor.add(extension);
+                actor.attach(extension);
+                this.#addActor(extension, extension.name);
+            });
+
         }
+
+    }
+
+    isDisplayed(actor) {
+        return actor.userData.display;
+    }
+    /**
+     * 
+     * @param {Mesh} actor 
+     * @param {*} val 
+     */
+    display(actor, val) {
+        actor.userData.display = val;
+        actor.layers.set(val ? 0 : 1);
     }
 
     update(t, dt) {

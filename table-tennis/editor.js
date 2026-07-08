@@ -9,6 +9,7 @@ export class ObjectSelector {
         const near = 0;
         const far = 100;
         this.rayCaster = new Raycaster();
+        this.rayCaster.layers.set(0);
 
         this.mouse = new Vector2(-5, -5);
 
@@ -206,7 +207,6 @@ export class ObjectSelector {
             this.selectionPannelElement = createSelectionPanel({
                 selectedMesh: this.selectedMesh,
                 mouse: this.mouse,
-                sport,
                 parent,
                 closeSelectionPanel: () => this._closeSelectionPanel(),
                 closeInteractionPanel: () => this._closeInteractionPanel(),
