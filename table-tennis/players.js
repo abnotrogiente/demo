@@ -38,6 +38,8 @@ const MEDIAPIPE_BONES = [
     ["right_knee", "right_ankle"]
 ];
 
+const pelvisBones = ["left_hip", "right_hip"];
+
 /**
  * Apply rigged rotation to bone with proper coordinate system transformation
  * @param {Bone} bone 
@@ -67,7 +69,7 @@ function rigRotation(bone, rotation, dampener = 1, lerpAmount = 0.7) {
 }
 
 class Player {
-    constructor(scene) {
+    constructor(scene, id) {
 
         this.mediapipe_joints = {}; // name -> mesh
         // const labels = {};
@@ -108,9 +110,15 @@ class Player {
             const mesh = new Mesh(cylGeo, cylMat);
             mesh.position.z = 10;
             scene.add(mesh);
+            // if (JSON.stringify([a, b]) == JSON.stringify(pelvisBones)) mesh.name = "pelvis" + id;
 
             this.mediapipe_bones.push({ mesh, a, b });
         });
+
+        this.pelvis = new Mesh(sphereGeo, cylMat);
+        this.pelvis.name = "pelvis" + id;
+        scene.add(this.pelvis);
+        if (id == 2) this.pelvis.visible = false; // TODO faire en fonction du nombre de joueurs
     }
 
     updateSkeletonFromLandmarks(landmarks, offset) {
@@ -131,6 +139,12 @@ class Player {
         this.mediapipe_bones.forEach(({ mesh, a, b }) => {
             const p1 = this.mediapipe_joints[a].position;
             const p2 = this.mediapipe_joints[b].position;
+
+            if (JSON.stringify([a, b]) == JSON.stringify(pelvisBones)) {
+                this.pelvis.position.addVectors(p1, p2).divideScalar(2);
+            }
+
+            // console.log(JSON.stringify([a, b]) == JSON.stringify(pelvisBones)
 
             const mid = new Vector3().addVectors(p1, p2).multiplyScalar(0.5);
             mesh.position.copy(mid);
@@ -168,8 +182,8 @@ export class Players {
         this.skeleton = null
 
 
-        this.player1 = new Player(scene);
-        this.player2 = new Player(scene);
+        this.player1 = new Player(scene, 1);
+        this.player2 = new Player(scene, 2);
 
     }
 

@@ -4,18 +4,16 @@ export function createExtendedReferents(dimensions) {
     const depth = dimensions.depth ? dimensions.depth : dimensions.radius * 2;
     const width = dimensions.width ? dimensions.width : dimensions.radius * 2;
 
-    console.log("w : " + width);
-    console.log("h : " + depth);
 
     const material = new MeshPhongMaterial();
     material.transparent = true;
     material.opacity = .4;
     // const geometry1 = new BoxGeometry(.01, 3., asset.dimensions.depth);
-    const geometry1 = new PlaneGeometry(depth, 3);
+    const geometry1 = new PlaneGeometry(depth, 4);
     geometry1.rotateY(-Math.PI / 2);
 
     // const geometry2 = new BoxGeometry(width, 3., .01);
-    const geometry2 = new PlaneGeometry(width, 3);
+    const geometry2 = new PlaneGeometry(width, 4);
     // geometry1.rotateY(Math.PI/2);
 
     const pannels = [];

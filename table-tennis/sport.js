@@ -170,7 +170,7 @@ class Sport {
                     const actor = config.scene.getObjectByName(child.mesh);
                     if (child.cloneMaterial) actor.material = actor.material.clone();
                     if (child.useBoundingBox) actor.userData.useBoundingBox = true;
-                    this.#addActor(actor, name, child.dimensions);
+                    this.#addActor(actor, name, child.dimensions, child.surfaceForEffects);
                 }
                 if (child.tracked) {
                     const trackingData = await parseCsv(child.tracking_file);
@@ -310,7 +310,7 @@ class Sport {
      * @param {*} name 
      * @param {*} dimensions 
      */
-    #addActor(actor, name, dimensions = undefined) {
+    #addActor(actor, name, dimensions = undefined, surfaceForEffects = false) {
         this.actorByName.set(name, actor);
         this.actors.push(actor);
         actor.name = name;
@@ -318,26 +318,31 @@ class Sport {
         // return;
         if (dimensions) {
 
-            actor.userData.proxyForSurfaceEffects = createEnglobingShape(dimensions, 0.01);
-            actor.userData.proxyForSurfaceEffects.raycast = () => { };
-            actor.userData.proxyForSurfaceEffects.material.opacity = 0.2;
-            actor.userData.proxyForSurfaceEffects.material.transparent = true;
-            actor.attach(actor.userData.proxyForSurfaceEffects);
+
+            if (surfaceForEffects) this.#addSurfaceForEffects(actor, dimensions);
 
 
             const extensions = createExtendedReferents(dimensions);
             this.extensionsFromActor.set(actor, extensions);
             extensions.forEach(extension => {
                 this.display(extension, false);
-                // extension.layers.set(1);
-                // extension.userData.displayed = false;
-                // actor.add(extension);
+                const p = new Vector3();
+                actor.getWorldPosition(p);
+                extension.position.add(p);
                 actor.attach(extension);
                 this.#addActor(extension, extension.name);
             });
 
         }
 
+    }
+
+    #addSurfaceForEffects(actor, dimensions) {
+        actor.userData.proxyForSurfaceEffects = createEnglobingShape(dimensions, 0.01);
+        actor.userData.proxyForSurfaceEffects.raycast = () => { };
+        actor.userData.proxyForSurfaceEffects.material.opacity = 0.2;
+        actor.userData.proxyForSurfaceEffects.material.transparent = true;
+        actor.attach(actor.userData.proxyForSurfaceEffects);
     }
 
     getSurfaceForEffects(actor) {

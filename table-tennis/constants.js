@@ -108,6 +108,8 @@ export const sportTrees = {
             "Player": {
                 properties: [],
                 attributes: [],
+                mesh: "pelvis1",
+                dimensions: { radius: 1 },
                 children: [
                     {
                         name: "Racket",
@@ -123,7 +125,8 @@ export const sportTrees = {
                         properties: [],
                         attributes: [],
                         mesh: "Object_3",
-                        dimensions: { width: tableDimensions.depth, height: tableDimensions.height, depth: tableDimensions.width }
+                        dimensions: { width: tableDimensions.depth, height: tableDimensions.height, depth: tableDimensions.width },
+                        surfaceForEffects: true
                     },
                     "Net": {
                         properties: [],
@@ -185,9 +188,7 @@ export const sportTrees = {
                             const worldNormal = new Vector3();
                             const N = geometry.attributes.normal.array.slice(0, 3)
                             worldNormal.set(N[0], N[1], N[2]); // or set(0,0,1)
-                            console.log("normal : " + N[0]);
                             worldNormal.transformDirection(surface.matrixWorld);
-                            console.log("normal : " + JSON.stringify(worldNormal));
 
 
                             return (new Vector3().subVectors(prevPos, p).dot(worldNormal) * new Vector3().subVectors(pos, p).dot(worldNormal) < 0)
