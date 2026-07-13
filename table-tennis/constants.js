@@ -143,7 +143,7 @@ export const sportTrees = {
                 tracked: true,
                 tracking_file: "./assets/ball_traj_3D.csv",
                 mesh: "Ball",
-                dimensions: { radius: 0.01381 * 3 },
+                dimensions: { radius: 1. },
             },
             "ground": {
                 properties: [],

@@ -42,11 +42,18 @@ export function createExtendedReferents(dimensions) {
     visPannel4.name = "Border Extension 4";
     pannels.push(visPannel4);
 
+
     const visPannel5 = new Mesh(geometry2, material.clone());
     visPannel5.material.side = DoubleSide;
     visPannel5.position.set(0., 0., 0);
     visPannel5.name = "Half X";
     pannels.push(visPannel5);
+
+    const labelPlane = new Mesh(geometry2, material.clone());
+    labelPlane.material.side = DoubleSide;
+    labelPlane.position.set(0., 0., 0);
+    labelPlane.name = "Label Plane";
+    pannels.push(labelPlane);
 
     const visPannel6 = new Mesh(geometry1, material.clone());
     visPannel6.material.side = DoubleSide;

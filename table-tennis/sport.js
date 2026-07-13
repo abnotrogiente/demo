@@ -161,6 +161,9 @@ class Sport {
         /**@type {Map<Mesh, SurfaceEffects>} */
         this.surfaceEffectsFromActor = new Map();
 
+        /**@type {Mesh[]} */
+        this.cameraFacingExtendedReferents = [];
+
         await this.setAssets(this.sportDescription.assets);
 
 
@@ -331,6 +334,10 @@ class Sport {
                 extension.position.add(p);
                 actor.attach(extension);
                 this.#addActor(extension, extension.name);
+
+                if (extension.name === "Label Plane") {
+                    this.cameraFacingExtendedReferents.push(extension);
+                }
             });
 
         }
@@ -370,6 +377,9 @@ class Sport {
         });
         this.actors.forEach(actor => {
             if (actor.userData.shader && actor.userData.shader.uniforms.uTime) actor.userData.shader.uniforms.uTime.value = t;
+        });
+        this.cameraFacingExtendedReferents.forEach(extension => {
+            extension.lookAt(config.camera.position);
         })
         if (this.selector) this.selector.updateSelectionPannel();
 
