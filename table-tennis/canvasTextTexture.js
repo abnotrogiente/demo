@@ -39,25 +39,32 @@ export class CanvasTextTexture {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     }
 
-    redraw() {
-        const ctx = this.ctx;
-
-        this.clear();
-
+    drawBackground() {
         if (this.background !== "transparent") {
-            ctx.fillStyle = this.background;
-            ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            this.ctx.fillStyle = this.background;
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         }
 
-        ctx.font = this.font;
-        ctx.fillStyle = this.color;
-        ctx.textBaseline = "top";
+    }
 
-        ctx.fillText(
+    drawText() {
+        this.ctx.font = this.font;
+        this.ctx.fillStyle = this.color;
+        this.ctx.textBaseline = "top";
+
+        this.ctx.fillText(
             this.text,
             this.padding,
             this.padding
         );
+    }
+
+    redraw() {
+        this.clear();
+        this.drawBackground();
+        this.drawText();
+
+
 
         this.texture.needsUpdate = true;
     }

@@ -2,7 +2,7 @@ import { BoxGeometry, DoubleSide, Mesh, MeshBasicMaterial, MeshPhongMaterial, Me
 import { TableEffects } from "./tableEffects";
 import { parseCsv } from "./utils";
 import { Video } from "./video";
-import { BounceModes, defaultContactCondition, EnableModes, SelectorTypes, SportActorInterationTypes, SportName, sportSpecificAssets, sportTrees } from "./constants";
+import { BounceModes, defaultContactCondition, EnableModes, GlyphModes, MetaDataModes, SelectorTypes, SportActorInterationTypes, SportName, sportSpecificAssets, sportTrees } from "./constants";
 import { Physics } from "./physics";
 import { config, configureSelector } from "./config";
 import { SurfaceEffects } from "./surfaceEffects";
@@ -49,12 +49,16 @@ const characteristicsFromInteraction = new Map([
         }
 
     }],
-    [SportActorInterationTypes.STEP, {
-        name: "Step",
+    [SportActorInterationTypes.METADATA, {
+        name: "Meta-data",
         params: {
-            technique: {
-                enum: EnableModes,
-                default: EnableModes.DISABLED
+            metaData: {
+                enum: MetaDataModes,
+                default: MetaDataModes.SPEED
+            },
+            glyph: {
+                enum: GlyphModes,
+                default: GlyphModes.TEXT
             }
         }
     }],
@@ -228,7 +232,7 @@ class Sport {
                 this.interactionsFromActor.get(actor1).get(actor2Name).push(interaction);
                 this.interactionsFromActor.get(actor2).get(actor1Name).push(interaction);
                 // console.log("ADDING INTERACTION : " + this.interactionsFromActor.get(actor1);
-                this.surfaceEffectsFromActor.get(actor1).otherActor = actor2;
+                this.surfaceEffectsFromActor.get(actor1).setOtherActor(actor2);
             }
             // if (interactionType === SportActorInterationTypes.PROJECTION) {
             //     const effects = new TableEffects(actor1, actor2, config.renderer);
@@ -337,6 +341,7 @@ class Sport {
 
                 if (extension.name === "Label Plane") {
                     this.cameraFacingExtendedReferents.push(extension);
+                    this.#addInteractions([SportActorInterationTypes.METADATA], null, extension, extension.name, actor, actor.name);
                 }
             });
 

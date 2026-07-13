@@ -5,7 +5,8 @@ export const SportActorInterationTypes = Object.freeze({
     BOUNCE: 0,
     PROJECTION: 1,
     TECHNIQUE: 2,
-    STEP: 3
+    RULE: 3,
+    METADATA: 4
 });
 
 export const SelectorTypes = Object.freeze({
@@ -41,6 +42,23 @@ export const ProjectionModes = Object.freeze({
 export const EnableModes = Object.freeze({
     ENABLED: true,
     DISABLED: false
+});
+
+export const MetaDataModes = Object.freeze({
+    POSITION: 0,
+    SPEED: 1,
+    ACCELERATION: 2,
+    NAME: 3
+});
+
+export const MetaDataValueFromModeAndActor = new Map([
+    [MetaDataModes.POSITION, (actor) => actor.position],
+    [MetaDataModes.SPEED, (actor) => actor.userData.speed]
+]);
+
+export const GlyphModes = Object.freeze({
+    TEXT: 0,
+    ARROW: 1
 });
 
 export const sportToAssets = {

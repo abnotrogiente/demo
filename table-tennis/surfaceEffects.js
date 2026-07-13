@@ -1,10 +1,11 @@
 import { Camera, Color, FloatType, Float32BufferAttribute, LinearFilter, Mesh, MeshNormalMaterial, MeshPhongMaterial, MeshStandardMaterial, PlaneGeometry, Quaternion, RGBAFormat, ShaderMaterial, SphereGeometry, Vector2, Vector3, WebGLRenderer, WebGLRenderTarget, DoubleSide } from "three";
 import { configureSelector, getShaderConstantsFromEnum } from "./config";
-import { BounceModes, SportActorInterationTypes } from "./constants";
+import { BounceModes, GlyphModes, MetaDataModes, MetaDataValueFromModeAndActor, SportActorInterationTypes } from "./constants";
 import { Scene } from "three";
 import { tableDimensions } from "./constants";
 import { config } from "./config";
 import { sport, SportActorInteraction } from "./sport";
+import { CanvasTextTexture } from "./canvasTextTexture";
 
 
 export class SurfaceEffects {
@@ -16,6 +17,13 @@ export class SurfaceEffects {
     constructor(actor, contactCondition) {
         /**@type {Mesh} */
         this.otherActor = null;
+
+        this.canvasTextTexture = new CanvasTextTexture({
+            width: 512,
+            height: 512,
+            font: "700 64px Inter",
+            color: "#f00"
+        });
 
         this.contactCondition = contactCondition;
 
@@ -45,6 +53,7 @@ export class SurfaceEffects {
             shader.uniforms.tableDimensions = { value: new Vector2(tableDimensions.depth, tableDimensions.width) };
             shader.uniforms.otherActorPosition = { value: new Vector3() };
             shader.uniforms.showShadow = { value: false };
+            shader.uniforms.metaDataTexture = { value: this.canvasTextTexture.texture };
             // shader.uniforms.opacity = { value: 1. };
             shader.vertexShader = shader.vertexShader.replace(
                 "#include <common>",
@@ -93,6 +102,7 @@ export class SurfaceEffects {
                 #include <common>
                 
                 uniform sampler2D displayTexture;
+                uniform sampler2D metaDataTexture;
                 in vec3 vWorldPos;
                 in vec2 vUv;
                 in vec2 vScreenUv;
@@ -260,6 +270,10 @@ export class SurfaceEffects {
                 }
                 // gl_FragColor = vec4(1., 0., 0., 1.);
 
+                vec4 metaDataColor = texture(metaDataTexture, vUv);
+                if(metaDataColor.a > 0.1) gl_FragColor = metaDataColor;
+                // gl_FragColor = vec4(1., 0., 0., 1.);
+
                     `
             );
             this.shader = shader;
@@ -270,6 +284,11 @@ export class SurfaceEffects {
         this.surface.material.needsUpdate = true;
 
         this.#initTexturePass();
+    }
+
+    setOtherActor(actor) {
+        this.otherActor = actor;
+        this.otherActor.userData.speed = this.speed;
     }
 
 
@@ -511,9 +530,26 @@ export class SurfaceEffects {
             this.texturePassQuad.material.uniforms.bounceMode.value = this.bounceMode;
             if (this.shader) this.shader.uniforms.bounceMode.value = this.bounceMode;
         }
+        if (this.metaDataInteraction) {
+            this.#updateMetaDataInteraction();
+        }
         this.#texturePass(dt);
         if (this.shader) this.shader.uniforms.uTime.value = t;
         // else console.log("shader does not exist");
+    }
+
+    #updateMetaDataInteraction() {
+        let val = MetaDataValueFromModeAndActor.get(this.metaDataInteraction.params.metaData.value)(this.otherActor);
+        switch (this.metaDataInteraction.params.glyph.value) {
+            case GlyphModes.TEXT:
+                if (val.isVector3) val = val.length();
+                val = this.speed.length(); // TODO ça devrait degager, le haut devrait suffire, pourquoi le haut n'est pas bon ?
+                this.canvasTextTexture.setText("" + val);
+                console.log("setting texture text : " + this.canvasTextTexture.text);
+                break;
+            default:
+                break;
+        }
     }
 
     /**
@@ -527,6 +563,9 @@ export class SurfaceEffects {
                 break;
             case SportActorInterationTypes.BOUNCE:
                 this.bounceInteraction = interaction;
+                break;
+            case SportActorInterationTypes.METADATA:
+                this.metaDataInteraction = interaction;
                 break;
             default:
                 break;
