@@ -87,6 +87,7 @@ export class ObjectSelector {
                         `);
                     mesh.userData.shader = shader;
                 }
+            mesh.material.customProgramCacheKey = () => "selectionEffects" + (mesh.material.userData.surfaceEffects ? " and surface effects" : "");
             mesh.material.needsUpdate = true;
         });
 

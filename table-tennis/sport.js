@@ -203,6 +203,7 @@ class Sport {
                 if (extensions) extensions.forEach(extension => {
                     this.#addInteractions(interaction.types, interaction.params, extension, extension.name, actor2, actor2Name);
                 });
+                console.log("\n\n");
 
                 // this.visPannels.forEach(visPannel => {
                 //     this.#addInteractions(interaction.types, visPannel, visPannel.name, actor, actorName);
@@ -357,6 +358,11 @@ class Sport {
         actor.attach(actor.userData.proxyForSurfaceEffects);
     }
 
+    /**
+     * 
+     * @param {Mesh} actor 
+     * @returns {Mesh}
+     */
     getSurfaceForEffects(actor) {
         return actor.userData.proxyForSurfaceEffects ? actor.userData.proxyForSurfaceEffects : actor;
     }

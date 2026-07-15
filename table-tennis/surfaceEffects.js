@@ -278,7 +278,10 @@ export class SurfaceEffects {
             );
             this.shader = shader;
             this.surface.material.userData.shader = shader;
+
         };
+
+        this.surface.material.userData.surfaceEffects = true;
 
 
         this.surface.material.needsUpdate = true;
