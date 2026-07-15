@@ -143,6 +143,7 @@ export class ObjectSelector {
 
         this.confirmSelection = () => {
             if (this.selectedMesh) this.selectedMesh.material.uniforms.isSelected.value = false;
+            if (this.preSelectedMesh) this.preSelectedMesh.material.uniforms.isPreSelected.value = false;
             this.selectedMesh = this.preSelectedMesh;
             this.preSelectedMesh = null;
             if (this.selectedMesh) this.selectedMesh.material.uniforms.isSelected.value = true;
