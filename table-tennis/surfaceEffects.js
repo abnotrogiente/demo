@@ -292,6 +292,10 @@ export class SurfaceEffects {
     setOtherActor(actor) {
         this.otherActor = actor;
         this.otherActor.userData.speed = this.speed;
+        // console.log("speed y : " + this.otherActor.userData.speed.y);
+        this.speed.y += 1.;
+        // console.log("speed y after : " + this.otherActor.userData.speed.y + "\n\n");
+
     }
 
 
@@ -548,7 +552,6 @@ export class SurfaceEffects {
                 if (val.isVector3) val = val.length();
                 val = this.speed.length(); // TODO ça devrait degager, le haut devrait suffire, pourquoi le haut n'est pas bon ?
                 this.canvasTextTexture.setText("" + val);
-                console.log("setting texture text : " + this.canvasTextTexture.text);
                 break;
             default:
                 break;

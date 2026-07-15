@@ -1,4 +1,4 @@
-import { BoxGeometry, DoubleSide, Mesh, MeshPhongMaterial, PlaneGeometry, SphereGeometry } from "three";
+import { BackSide, BoxGeometry, DoubleSide, Mesh, MeshPhongMaterial, PlaneGeometry, SphereGeometry } from "three";
 
 export function createExtendedReferents(dimensions) {
     const depth = dimensions.depth ? dimensions.depth : dimensions.radius * 2;
@@ -61,6 +61,17 @@ export function createExtendedReferents(dimensions) {
     visPannel6.name = "Half Z";
     pannels.push(visPannel6);
 
+    const enclosing = new Mesh(createEnglobingShape(dimensions, 1.), material.clone());
+    enclosing.position.set(0, 0, 0);
+    enclosing.name = "Enclosing";
+    pannels.push(enclosing);
+
+    const enclosing2 = new Mesh(createEnglobingShape(dimensions, 1.), material.clone());
+    enclosing2.position.set(0, 0, 0);
+    enclosing2.material.side = BackSide;
+    enclosing2.name = "Enclosing Back Face Cull";
+    pannels.push(enclosing2);
+
     return pannels;
 }
 
@@ -117,5 +128,5 @@ export function createEnglobingShape(dimensions, delta) {
         makeBoxAtlasUVs(geometry);
     }
 
-    return new Mesh(geometry, new MeshPhongMaterial());
+    return geometry;
 }

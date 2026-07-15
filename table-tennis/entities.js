@@ -49,15 +49,15 @@ export async function createEntities(scene, camera, physics, renderer, composer)
     // sportSpecificAssets.physics.push(table);
 
     // // Create Room
-    const roomGeometry = new BoxGeometry(20, 3, 20);
-    const roomMaterial = new MeshStandardMaterial({ side: BackSide });
+    const roomGeometry = new BoxGeometry(20, 5, 20);
+    const roomMaterial = new MeshStandardMaterial({ side: BackSide, color: 0xddffff });
     const room = new Mesh(roomGeometry, roomMaterial);
-    room.position.y = 1.5 - tableDimensions.altitude;
+    room.position.y = 2.5 - tableDimensions.altitude;
     scene.add(room);
 
     const groundThickness = 1.
     const groundGeometry = new BoxGeometry(20, groundThickness, 20);
-    const groundMaterial = new MeshPhongMaterial();
+    const groundMaterial = new MeshPhongMaterial({ color: 0xffaa66 });
     const ground = new Mesh(groundGeometry, groundMaterial);
     ground.position.y = -groundThickness / 2 + 0.01 - tableDimensions.altitude;
     ground.name = "ground";

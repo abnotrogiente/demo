@@ -2,7 +2,7 @@ import { BoxGeometry, DoubleSide, Mesh, MeshBasicMaterial, MeshPhongMaterial, Me
 import { TableEffects } from "./tableEffects";
 import { parseCsv } from "./utils";
 import { Video } from "./video";
-import { BounceModes, defaultContactCondition, EnableModes, GlyphModes, MetaDataModes, SelectorTypes, SportActorInterationTypes, SportName, sportSpecificAssets, sportTrees } from "./constants";
+import { BounceModes, defaultContactCondition, dispose3, EnableModes, GlyphModes, MetaDataModes, SelectorTypes, SportActorInterationTypes, SportName, sportSpecificAssets, sportTrees } from "./constants";
 import { Physics } from "./physics";
 import { config, configureSelector } from "./config";
 import { SurfaceEffects } from "./surfaceEffects";
@@ -144,6 +144,8 @@ class Sport {
         /**@type {Mesh[]} */
         this.actors = [];
 
+        console.log("actors list empited");
+
         this.video_src = config.videoObject.webcamVideo;
         this.videoDuration = config.videoObject.duration;
 
@@ -177,7 +179,9 @@ class Sport {
                     const actor = config.scene.getObjectByName(child.mesh);
                     if (child.cloneMaterial) actor.material = actor.material.clone();
                     if (child.useBoundingBox) actor.userData.useBoundingBox = true;
-                    this.#addActor(actor, name, child.dimensions, child.surfaceForEffects);
+                    console.log("actor name : " + child.mesh);
+                    console.log("actor : " + actor);
+                    this.#addActor(actor, child.keepName ? child.mesh : name, child.dimensions, child.surfaceForEffects);
                 }
                 if (child.tracked) {
                     const trackingData = await parseCsv(child.tracking_file);
@@ -246,9 +250,15 @@ class Sport {
      * @param {*} assets 
      */
     async setAssets(assets) {
+        sportSpecificAssets.nonPhysics.forEach(asset => {
+            config.scene.remove(asset);
+            if (asset) console.log("REMOVING : " + asset.name);
+            dispose3(asset);
+        });
         sportSpecificAssets.physics.forEach(asset => config.physics.deleteBody(asset));
         sportSpecificAssets.physics.splice(0, sportSpecificAssets.physics.length);
 
+        if (!assets) return;
         for (const asset of assets) {
             let body;
             let mesh;
@@ -307,7 +317,7 @@ class Sport {
             }
 
             if (asset.physics) sportSpecificAssets.physics.push(body);
-            else sportSpecificAssets.nonPhysics.push(body);
+            else sportSpecificAssets.nonPhysics.push(mesh);
         }
     }
 
@@ -320,6 +330,7 @@ class Sport {
     #addActor(actor, name, dimensions = undefined, surfaceForEffects = false) {
         this.actorByName.set(name, actor);
         this.actors.push(actor);
+        console.log("pushing : " + actor);
         actor.name = name;
         this.interactionsFromActor.set(actor, new Map());
         // return;
@@ -338,6 +349,7 @@ class Sport {
                 extension.position.add(p);
                 actor.attach(extension);
                 this.#addActor(extension, extension.name);
+                sportSpecificAssets.nonPhysics.push(extension);
 
                 if (extension.name === "Label Plane") {
                     this.cameraFacingExtendedReferents.push(extension);
@@ -350,11 +362,12 @@ class Sport {
     }
 
     #addSurfaceForEffects(actor, dimensions) {
-        actor.userData.proxyForSurfaceEffects = createEnglobingShape(dimensions, 0.01);
+        actor.userData.proxyForSurfaceEffects = new Mesh(createEnglobingShape(dimensions, 0.01), new MeshPhongMaterial());
         actor.userData.proxyForSurfaceEffects.raycast = () => { };
         actor.userData.proxyForSurfaceEffects.material.opacity = 0.2;
         actor.userData.proxyForSurfaceEffects.material.transparent = true;
         actor.attach(actor.userData.proxyForSurfaceEffects);
+        sportSpecificAssets.nonPhysics.push(actor.userData.proxyForSurfaceEffects);
     }
 
     /**
@@ -413,7 +426,7 @@ class Sport {
             callback: async (value) => {
                 // this.sport = new Sport(sportTrees[value], config.renderer, config.scene, this.video);
                 // await this.sport.init(physics);
-                sport.set(sportTrees[value]);
+                await sport.set(sportTrees[value]);
             }
         });
     }

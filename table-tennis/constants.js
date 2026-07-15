@@ -1,6 +1,42 @@
 import { Mesh, PlaneGeometry, Vector3 } from "three";
 import { depth } from "three/tsl";
 
+export function dispose3(obj) {
+    /**
+     *  @author Marco Sulla (marcosullaroma@gmail.com)
+     *  @date Mar 12, 2016
+     */
+
+    if (!obj) return;
+    var children = obj.children;
+    var child;
+
+    if (children) {
+        for (var i = 0; i < children.length; i += 1) {
+            child = children[i];
+
+            dispose3(child);
+        }
+    }
+
+    var geometry = obj.geometry;
+    var material = obj.material;
+
+    if (geometry) {
+        geometry.dispose();
+    }
+
+    if (material) {
+        var texture = material.map;
+
+        if (texture) {
+            texture.dispose();
+        }
+
+        material.dispose();
+    }
+}
+
 export const SportActorInterationTypes = Object.freeze({
     BOUNCE: 0,
     PROJECTION: 1,
@@ -16,7 +52,8 @@ export const SelectorTypes = Object.freeze({
 
 export const SportName = Object.freeze({
     TABLE_TENNIS: 0,
-    BOXING: 1
+    BOXING: 1,
+    GENERIC: 3
 });
 
 
@@ -113,6 +150,21 @@ export const sportToAssets = {
             model: "boxing_ring.glb",
             modelOffset: new Vector3(0, -1.5, 0)
         },
+    ],
+    [SportName.GENERIC]: [
+        {
+            name: "cube",
+            collideShape: "box",
+            dimensions: { width: 1, height: 0.75, depth: 1 },
+            position: new Vector3(0, 1., 0),
+        },
+
+        {
+            name: "sphere",
+            collideShape: "sphere",
+            dimensions: { radius: 0.5 },
+            position: new Vector3(2, 1., 0),
+        },
     ]
 }
 
@@ -127,6 +179,7 @@ export const sportTrees = {
                 properties: [],
                 attributes: [],
                 mesh: "pelvis1",
+                keepName: true,
                 dimensions: { radius: 1 },
                 children: [
                     {
@@ -266,8 +319,32 @@ export const sportTrees = {
             }
         ],
         assets: sportToAssets[SportName.BOXING]
+    },
+    [SportName.GENERIC]: {
+        children: {
+            "Cube": {
+                properties: [],
+                attributes: [],
+                dimensions: { width: 1, height: 0.75, depth: 1 },
+                mesh: "cube"
+                // surfaceForEffects: true
+            },
+
+            "Sphere": {
+                properties: [],
+                attributes: [],
+                dimensions: { radius: 0.5 },
+                mesh: "sphere"
+                // surfaceForEffects: true
+            },
+        },
+        interactions: [
+
+        ],
+        assets: sportToAssets[SportName.GENERIC]
     }
 }
+
 
 
 export const sportSpecificAssets = {
