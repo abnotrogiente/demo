@@ -179,8 +179,6 @@ class Sport {
                     const actor = config.scene.getObjectByName(child.mesh);
                     if (child.cloneMaterial) actor.material = actor.material.clone();
                     if (child.useBoundingBox) actor.userData.useBoundingBox = true;
-                    console.log("actor name : " + child.mesh);
-                    console.log("actor : " + actor);
                     this.#addActor(actor, child.keepName ? child.mesh : name, child.dimensions, child.surfaceForEffects);
                 }
                 if (child.tracked) {
@@ -252,7 +250,6 @@ class Sport {
     async setAssets(assets) {
         sportSpecificAssets.nonPhysics.forEach(asset => {
             config.scene.remove(asset);
-            if (asset) console.log("REMOVING : " + asset.name);
             dispose3(asset);
         });
         sportSpecificAssets.physics.forEach(asset => config.physics.deleteBody(asset));
@@ -330,7 +327,6 @@ class Sport {
     #addActor(actor, name, dimensions = undefined, surfaceForEffects = false) {
         this.actorByName.set(name, actor);
         this.actors.push(actor);
-        console.log("pushing : " + actor);
         actor.name = name;
         this.interactionsFromActor.set(actor, new Map());
         // return;
