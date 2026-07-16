@@ -360,7 +360,7 @@ class Sport {
     #addSurfaceForEffects(actor, dimensions) {
         actor.userData.proxyForSurfaceEffects = new Mesh(createEnglobingShape(dimensions, 0.01), new MeshPhongMaterial());
         actor.userData.proxyForSurfaceEffects.raycast = () => { };
-        actor.userData.proxyForSurfaceEffects.material.opacity = 0.2;
+        actor.userData.proxyForSurfaceEffects.material.opacity = 0.4;
         actor.userData.proxyForSurfaceEffects.material.transparent = true;
         actor.attach(actor.userData.proxyForSurfaceEffects);
         sportSpecificAssets.nonPhysics.push(actor.userData.proxyForSurfaceEffects);

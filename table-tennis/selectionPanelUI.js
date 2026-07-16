@@ -171,7 +171,7 @@ function addExtensionsButtons(container, selectedMesh) {
 
         });
         extensionButton.onmouseenter = () => {
-            // extension.material.uniforms.isHighLighted.value = true;
+            // extension.userData.shader.uniforms.isHighLighted.value = true;
             // extension.material.needsUpdate = true;
             extension.userData.memoSide = extension.material.side;
             extension.material.side = DoubleSide;
@@ -182,7 +182,7 @@ function addExtensionsButtons(container, selectedMesh) {
         };
         extensionButton.onmouseleave = () => {
             extension.material.side = extension.userData.memoSide;
-            extension.material.uniforms.isHighLighted.value = false;
+            // extension.material.uniforms.isHighLighted.value = false;
             sport.display(extension, extension.userData.memoDisplay);
             // extension.visible = extension.userData.memoVisible;
 

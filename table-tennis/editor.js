@@ -79,17 +79,22 @@ export class ObjectSelector {
                                 vec4 yellow = vec4(1., 1., 0., 1.);
                                 vec4 green = vec4(0., 1., 0., 1.);
                                 vec4 red = vec4(1., 0., 0., 1.);
-                                vec4 color = isSelected ? green : isPreSelected? yellow : red;
-                                glowIntensity = isSelected? .5 : cos(2.*PI*glowFrequency*uTime)*.15+.3;
+                                vec4 color = isSelected ? green : isPreSelected? yellow : yellow;
+                                glowIntensity = isSelected || isHighLighted? .5 : cos(2.*PI*glowFrequency*uTime)*.15+.3;
                                 gl_FragColor = (1. - glowIntensity)*gl_FragColor + glowIntensity*color;
                                 gl_FragColor.a = 1.;
                             }
                         `);
-                    mesh.userData.shader = shader;
+                    this.shader = shader;
+                    mesh.userData.shader = this.shader;
+                    console.log("mesh : " + mesh.name);
+                    // console.log("userData : " + JSON.stringify(this.shader) + "\n\n");
                 }
             mesh.material.customProgramCacheKey = () => "selectionEffects" + (mesh.material.userData.surfaceEffects ? " and surface effects" : "");
             mesh.material.needsUpdate = true;
         });
+
+        config.renderer.compile(config.scene, config.camera)
 
         const onMouseMove = (event) => {
             if (!this.selectActorsMode || this.selectedMesh) return;
