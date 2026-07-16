@@ -121,6 +121,18 @@ class Player {
         if (id == 2) this.pelvis.visible = false; // TODO faire en fonction du nombre de joueurs
     }
 
+    show(visible) {
+        Object.entries(this.mediapipe_joints).forEach(([name, joint]) => {
+            joint.visible = visible;
+        });
+
+        this.mediapipe_bones.forEach(({ mesh, a, b }) => {
+            mesh.visible = visible;
+        });
+
+        this.pelvis.visible = visible;
+    }
+
     updateSkeletonFromLandmarks(landmarks, offset) {
         const scale = 1;
 
@@ -185,6 +197,10 @@ export class Players {
         this.player1 = new Player(scene, 1);
         this.player2 = new Player(scene, 2);
 
+        this.players = [this.player1, this.player2];
+
+        this.trackingEnabled = true;
+
     }
 
     /**
@@ -231,8 +247,15 @@ export class Players {
     }
 
     async setNumPoseDetected(num) {
-        if (num <= 0) {
+        if (num < 0) {
             console.warn("Incorrect number of pose for detection");
+            return;
+        }
+        for (let i = 0; i < 2 /*TODO change to max */; i++) {
+            this.players[i].show(i < num);
+        }
+        this.trackingEnabled = num > 0;
+        if (num == 0) {
             return;
         }
         this.poseLandmarker = await PoseLandmarker.createFromOptions(this.vision, {
@@ -243,6 +266,7 @@ export class Players {
             runningMode: "VIDEO",
             numPoses: num
         });
+
     }
 
     setVideo(video) {
@@ -265,6 +289,7 @@ export class Players {
 
 
     detectFrame() {
+        if (!this.trackingEnabled) return;
         if (this.video.webcamVideo.readyState < 2) return;
         const now = performance.now();
         const result = this.poseLandmarker.detectForVideo(this.video.webcamVideo, now);

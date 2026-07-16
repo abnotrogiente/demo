@@ -55,10 +55,10 @@ export function initUI(video, players, cvHelper, physics) {
     });
 
     const numPoseSelect = document.getElementById("num-pose-select");
-    numPoseSelect.value = players.numPose === 1 ? "Single" : "Mulit";
+    numPoseSelect.value = players.numPose === 1 ? "Single" : "Multi";
     numPoseSelect.addEventListener("change", () => {
         const value = numPoseSelect.value;
-        const numPose = value === "Single" ? 1 : 2;
+        const numPose = value === "None" ? 0 : value === "Single" ? 1 : 2;
         console.log("setting num pose to : " + numPose);
         players.setNumPoseDetected(numPose);
     });
