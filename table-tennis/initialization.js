@@ -22,7 +22,7 @@ export async function initializeSystems(scene, renderer, camera, physics, camera
     // Initialize Computer Vision Helper
     const cvHelper = new CV_Helper();
     await cvHelper.init(video, tracked_ball);
-    scene.add(cvHelper.rayHelper);
+    // scene.add(cvHelper.rayHelper);
     cvHelper.camera = cameraDebug;
 
     // Initialize UI
