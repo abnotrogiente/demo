@@ -289,14 +289,13 @@ export class Players {
 
 
     detectFrame() {
+        this.ctx_2D.clearRect(0, 0, this.canvas_2D.width, this.canvas_2D.height);
         if (!this.trackingEnabled) return;
         if (this.video.webcamVideo.readyState < 2) return;
         const now = performance.now();
         const result = this.poseLandmarker.detectForVideo(this.video.webcamVideo, now);
 
         if (result.landmarks.length > 0) {
-
-            this.ctx_2D.clearRect(0, 0, this.canvas_2D.width, this.canvas_2D.height);
             this.drawLandmarks2D(result.landmarks[0]);
 
             const landmarks3D1 = result.worldLandmarks[0];
