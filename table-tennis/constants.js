@@ -196,7 +196,7 @@ export const sportTrees = {
                         properties: [],
                         attributes: [],
                         mesh: "Object_3",
-                        dimensions: { width: tableDimensions.depth, height: tableDimensions.height, depth: tableDimensions.width },
+                        dimensions: { width: tableDimensions.depth, height: tableDimensions.height, depth: tableDimensions.width, modelOffset: new Vector3(0, -tableDimensions.altitude + tableDimensions.height + .015, 0) },
                         surfaceForEffects: true
                     },
                     "Net": {

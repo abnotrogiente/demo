@@ -328,6 +328,7 @@ class Sport {
         this.actorByName.set(name, actor);
         this.actors.push(actor);
         actor.name = name;
+        this.display(actor, true);
         this.interactionsFromActor.set(actor, new Map());
         // return;
         if (dimensions) {
@@ -336,20 +337,25 @@ class Sport {
             if (surfaceForEffects) this.#addSurfaceForEffects(actor, dimensions);
 
 
-            const extensions = createExtendedReferents(dimensions);
+            const extensions = createExtendedReferents(actor, dimensions);
             this.extensionsFromActor.set(actor, extensions);
             extensions.forEach(extension => {
-                this.display(extension, false);
                 const p = new Vector3();
                 actor.getWorldPosition(p);
                 extension.position.add(p);
                 actor.attach(extension);
                 this.#addActor(extension, extension.name);
+                this.display(extension, false);
                 sportSpecificAssets.nonPhysics.push(extension);
 
                 if (extension.name === "Label Plane") {
                     this.cameraFacingExtendedReferents.push(extension);
                     this.#addInteractions([SportActorInterationTypes.METADATA], null, extension, extension.name, actor, actor.name);
+                }
+                else if (extension.name === "Proxy") {
+                    extension.userData.actorFromProxyExtension = actor;
+                    if (surfaceForEffects) this.#addSurfaceForEffects(extension, dimensions);
+                    actor.userData.proxy = extension;
                 }
             });
 
@@ -357,13 +363,38 @@ class Sport {
 
     }
 
+    isProxyExtension(actor) {
+        return actor.userData.actorFromProxyExtension !== undefined;
+    }
+
+    /**
+     * 
+     * @param {*} proxy 
+     * @returns {Mesh}
+     */
+    getActorFromProxyExtension(proxy) {
+        return proxy.userData.actorFromProxyExtension;
+    }
+
+    /**
+     * 
+     * @param {Mesh} actor 
+     * @param {*} dimensions 
+     */
     #addSurfaceForEffects(actor, dimensions) {
-        actor.userData.proxyForSurfaceEffects = new Mesh(createEnglobingShape(dimensions, 0.01), new MeshPhongMaterial());
-        actor.userData.proxyForSurfaceEffects.raycast = () => { };
-        actor.userData.proxyForSurfaceEffects.material.opacity = 0.4;
-        actor.userData.proxyForSurfaceEffects.material.transparent = true;
-        actor.attach(actor.userData.proxyForSurfaceEffects);
-        sportSpecificAssets.nonPhysics.push(actor.userData.proxyForSurfaceEffects);
+        const proxyForSurfaceEffects = new Mesh(createEnglobingShape(dimensions, 0.01), new MeshPhongMaterial());
+        this.display(proxyForSurfaceEffects, this.isDisplayed(actor));
+        actor.getWorldPosition(proxyForSurfaceEffects.position);
+        if (dimensions.modelOffset) proxyForSurfaceEffects.position.sub(dimensions.modelOffset);
+        console.log("proxy surface y : " + proxyForSurfaceEffects.position.y);
+        proxyForSurfaceEffects.raycast = () => { };
+        proxyForSurfaceEffects.material.opacity = 0.4;
+        proxyForSurfaceEffects.material.transparent = true;
+        actor.attach(proxyForSurfaceEffects);
+        sportSpecificAssets.nonPhysics.push(proxyForSurfaceEffects);
+        actor.userData.proxyForSurfaceEffects = proxyForSurfaceEffects;
+
+        if (this.isProxyExtension(actor)) proxyForSurfaceEffects.userData.actorFromProxyExtension = this.getSurfaceForEffects(this.getActorFromProxyExtension(actor));
     }
 
     /**
@@ -386,6 +417,8 @@ class Sport {
     display(actor, val) {
         actor.userData.display = val;
         actor.layers.set(val ? 0 : 1);
+
+        if (actor.userData.proxyForSurfaceEffects) this.display(actor.userData.proxyForSurfaceEffects, val);
     }
 
     update(t, dt) {

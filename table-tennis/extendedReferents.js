@@ -1,6 +1,12 @@
 import { BackSide, BoxGeometry, DoubleSide, Mesh, MeshPhongMaterial, PlaneGeometry, SphereGeometry } from "three";
 
-export function createExtendedReferents(dimensions) {
+/**
+ * 
+ * @param {Mesh} actor 
+ * @param {*} dimensions 
+ * @returns 
+ */
+export function createExtendedReferents(actor, dimensions) {
     const depth = dimensions.depth ? dimensions.depth : dimensions.radius * 2;
     const width = dimensions.width ? dimensions.width : dimensions.radius * 2;
 
@@ -71,6 +77,12 @@ export function createExtendedReferents(dimensions) {
     enclosing2.material.side = BackSide;
     enclosing2.name = "Enclosing Back Face Cull";
     pannels.push(enclosing2);
+
+    const proxy = new Mesh(actor.geometry.clone(), actor.material.clone());
+    proxy.position.set(2, 0, 2);
+    actor.getWorldQuaternion(proxy.rotation);
+    proxy.name = "Proxy";
+    pannels.push(proxy);
 
     return pannels;
 }

@@ -450,6 +450,11 @@ export class SurfaceEffects {
     }
     #texturePass(dt) {
         if (!this.shader) return;
+
+        // let oldSurfacePos = 
+        // if (sport.isProxyExtension(this.surface)) {
+        //TODO mais penser au rendu pas du texture pass mais du materiel de la surface directement, comment faire ? 
+        // }
         // return;
         this.speed.subVectors(this.otherActor.position, this.prevPos).divideScalar(dt);
         // this.texturePassQuad.material.uniforms.otherActorPosition.value.x = this.otherActor.position.x;
