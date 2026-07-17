@@ -203,6 +203,7 @@ class Sport {
                 // const actor = this.actorByName.get(actorName);
                 const extensions = this.extensionsFromActor.get(actor1);
                 if (extensions) extensions.forEach(extension => {
+                    if (this.isProxyExtension(extension)) interaction.params.contactCondition = this.surfaceEffectsFromActor.get(this.getActorFromProxyExtension(extension)).contactCondition;
                     this.#addInteractions(interaction.types, interaction.params, extension, extension.name, actor2, actor2Name);
                 });
 

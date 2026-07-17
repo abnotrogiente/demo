@@ -451,11 +451,15 @@ export class SurfaceEffects {
     #texturePass(dt) {
         if (!this.shader) return;
 
-        // let oldSurfacePos = 
-        // if (sport.isProxyExtension(this.surface)) {
-        //TODO mais penser au rendu pas du texture pass mais du materiel de la surface directement, comment faire ? 
-        // }
-        // return;
+        if (sport.isProxyExtension(this.surface)) {
+            const actor = sport.getActorFromProxyExtension(this.surface);
+            const actorSurface = sport.getSurfaceForEffects(actor);
+            actorSurface.getWorldDirection(this.texturePassQuad.position);
+            actorSurface.getWorldQuaternion(this.texturePassQuad.rotation);
+        }
+
+
+
         this.speed.subVectors(this.otherActor.position, this.prevPos).divideScalar(dt);
         // this.texturePassQuad.material.uniforms.otherActorPosition.value.x = this.otherActor.position.x;
         // this.texturePassQuad.material.uniforms.otherActorPosition.value.z = this.otherActor.position.z;
@@ -480,6 +484,8 @@ export class SurfaceEffects {
             prevSpeed: this.prevSpeed,
             surface: this.surface
         });
+
+        if (this.texturePassQuad.material.uniforms.bounced.value && (this.bounceMode != BounceModes.NONE)) console.log("BOUNCED : " + this.otherActor.name);
 
         this.texturePassQuad.material.uniforms.previousTexture.value = this.previousRenderingTarget.texture;
         config.renderer.setRenderTarget(this.currentRenderingTarget);
