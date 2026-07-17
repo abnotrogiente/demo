@@ -87,7 +87,6 @@ export class ObjectSelector {
                         `);
                     this.shader = shader;
                     mesh.userData.shader = this.shader;
-                    console.log("mesh : " + mesh.name);
                     // console.log("userData : " + JSON.stringify(this.shader) + "\n\n");
                 }
             mesh.material.customProgramCacheKey = () => "selectionEffects" + (mesh.material.userData.surfaceEffects ? " and surface effects" : "");

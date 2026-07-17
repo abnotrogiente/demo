@@ -2,7 +2,7 @@ import { BoxGeometry, DoubleSide, Mesh, MeshBasicMaterial, MeshPhongMaterial, Me
 import { TableEffects } from "./tableEffects";
 import { parseCsv } from "./utils";
 import { Video } from "./video";
-import { BounceModes, defaultContactCondition, dispose3, EnableModes, GlyphModes, MetaDataModes, SelectorTypes, SportActorInterationTypes, SportName, sportSpecificAssets, sportTrees } from "./constants";
+import { BounceModes, defaultContactCondition, dispose3, EnableModes, GlyphModes, MetaDataModes, ReferentsCharacteristics, SelectorTypes, SportActorInterationTypes, SportName, sportSpecificAssets, sportTrees } from "./constants";
 import { Physics } from "./physics";
 import { config, configureSelector } from "./config";
 import { SurfaceEffects } from "./surfaceEffects";
@@ -169,6 +169,11 @@ class Sport {
 
         /**@type {Mesh[]} */
         this.cameraFacingExtendedReferents = [];
+
+        /**@type {Map<int, Mesh[]>} */
+        this.actorsByCaracteristics = new Map();
+
+        Object.entries(ReferentsCharacteristics).forEach(([name, value]) => this.actorsByCaracteristics.set(value, []));
 
         await this.setAssets(this.sportDescription.assets);
 
@@ -350,7 +355,9 @@ class Sport {
                 sportSpecificAssets.nonPhysics.push(extension);
 
                 if (extension.name === "Label Plane") {
-                    this.cameraFacingExtendedReferents.push(extension);
+                    // this.cameraFacingExtendedReferents.push(extension);
+                    this.setCharacteristic(extension, ReferentsCharacteristics.CAMERA_FACING, true);
+
                     this.#addInteractions([SportActorInterationTypes.METADATA], null, extension, extension.name, actor, actor.name);
                 }
                 else if (extension.name === "Proxy") {
@@ -362,6 +369,49 @@ class Sport {
 
         }
 
+    }
+
+    /**
+     * 
+     * @param {Mesh} actor 
+     * @param {*} characteristic 
+     * @param {*} value 
+     */
+    setCharacteristic(actor, characteristic, value) {
+        const actorsByCharacteristic = this.actorsByCaracteristics.get(characteristic);
+        if (value && !actorsByCharacteristic.includes(actor))
+            actorsByCharacteristic.push(actor);
+        else if (!value && actorsByCharacteristic.includes(actor)) {
+            const index = actorsByCharacteristic.indexOf(actor);
+            actorsByCharacteristic.splice(index, 1);
+        }
+        switch (characteristic) {
+            case ReferentsCharacteristics.ALWAYS_VISIBLE:
+                if (value) {
+                    actor.material.depthTest = false;
+                    actor.userData.originalRenderOrder = actor.renderOrder;
+                    if (!this.renderOrderCounter) this.renderOrderCounter = 999;
+                    actor.renderOrder = this.renderOrderCounter;
+                    this.renderOrderCounter++;
+                    actor.userData.originalTransparence = actor.material.transparent;
+                    actor.material.transparent = true;
+                }
+                else {
+                    actor.material.depthTest = true;
+                    actor.renderOrder = actor.userData.originalRenderOrder;
+                    actor.material.transparent = actor.userData.originalTransparence;
+                }
+                const surfaceForEffects = this.getSurfaceForEffects(actor);
+                if (actor != surfaceForEffects) this.setCharacteristic(surfaceForEffects, characteristic, value);
+
+                break;
+            default:
+                break;
+        }
+    }
+
+    hasCharacteristic(actor, characteristic) {
+        return this.actorsByCaracteristics.get(characteristic).includes(actor);
     }
 
     isProxyExtension(actor) {
@@ -387,7 +437,6 @@ class Sport {
         this.display(proxyForSurfaceEffects, this.isDisplayed(actor));
         actor.getWorldPosition(proxyForSurfaceEffects.position);
         if (dimensions.modelOffset) proxyForSurfaceEffects.position.sub(dimensions.modelOffset);
-        console.log("proxy surface y : " + proxyForSurfaceEffects.position.y);
         proxyForSurfaceEffects.raycast = () => { };
         proxyForSurfaceEffects.material.opacity = 0.4;
         proxyForSurfaceEffects.material.transparent = true;
@@ -431,9 +480,10 @@ class Sport {
         this.actors.forEach(actor => {
             if (actor.userData.shader && actor.userData.shader.uniforms.uTime) actor.userData.shader.uniforms.uTime.value = t;
         });
-        this.cameraFacingExtendedReferents.forEach(extension => {
-            extension.lookAt(config.camera.position);
-        })
+        // this.cameraFacingExtendedReferents.forEach(extension => {
+        //     extension.lookAt(config.camera.position);
+        // })
+        this.#updateFromCharacteristics();
         if (this.selector) this.selector.updateSelectionPannel();
 
         this.trackingDataFromActor.forEach((tracking_data, actorName) => {
@@ -444,6 +494,23 @@ class Sport {
 
             if (this.actorByName.has(actorName)) this.actorByName.get(actorName).position.set(traj["x"], z, traj["y"]);
         });
+    }
+
+    #updateFromCharacteristics() {
+
+        this.actorsByCaracteristics.get(ReferentsCharacteristics.CAMERA_FACING).forEach(actor => this.#updateCameraFacing(actor));
+    }
+
+    /**
+     * 
+     * @param {Mesh} actor 
+     */
+    #updateCameraFacing(actor) {
+        actor.lookAt(config.camera.position);
+    }
+
+    #updateScreenSpace(actor) {
+        //TODO
     }
 
     configureSelector() {

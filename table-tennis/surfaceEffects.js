@@ -485,7 +485,7 @@ export class SurfaceEffects {
             surface: this.surface
         });
 
-        if (this.texturePassQuad.material.uniforms.bounced.value && (this.bounceMode != BounceModes.NONE)) console.log("BOUNCED : " + this.otherActor.name);
+        // if (this.texturePassQuad.material.uniforms.bounced.value && (this.bounceMode != BounceModes.NONE)) console.log("BOUNCED : " + this.otherActor.name);
 
         this.texturePassQuad.material.uniforms.previousTexture.value = this.previousRenderingTarget.texture;
         config.renderer.setRenderTarget(this.currentRenderingTarget);

@@ -37,6 +37,13 @@ export function dispose3(obj) {
     }
 }
 
+export const ReferentsCharacteristics = Object.freeze({
+    CAMERA_FACING: 0,
+    SCREEN_SPACE: 1,
+    BACK_FACE_CULLING: 2,
+    ALWAYS_VISIBLE: 3
+});
+
 export const SportActorInterationTypes = Object.freeze({
     BOUNCE: 0,
     PROJECTION: 1,

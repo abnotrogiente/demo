@@ -1,5 +1,6 @@
-import { DoubleSide } from "three";
+import { DoubleSide, Mesh } from "three";
 import { sport } from "./sport";
+import { ReferentsCharacteristics } from "./constants";
 
 function applyPanelStyles(element, styles) {
     Object.entries(styles).forEach(([key, value]) => {
@@ -202,6 +203,38 @@ function addExtensionsButtons(container, selectedMesh) {
     container.appendChild(extensionsList);
 }
 
+/**
+ * 
+ * @param {HTMLElement} container 
+ * @param {Mesh} selectedMesh 
+ * @returns 
+ */
+function addCharacteristicsButton(container, selectedMesh) {
+    if (!sport.isProxyExtension(selectedMesh)) return;
+    container.appendChild(createLabel('Characteristics:', { fontWeight: '500', marginBottom: '4px' }));
+
+    const characteristicsList = document.createElement('div');
+    applyPanelStyles(characteristicsList, {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '6px',
+    });
+
+    Object.entries(ReferentsCharacteristics).forEach(([name, characteristic]) => {
+        console.log("creating button : " + name);
+        const characteristicButton = createActionButton(name, {
+            background: sport.hasCharacteristic(selectedMesh, characteristic) ? 'rgba(56, 161, 105, 0.18)' : 'rgba(255,255,255,0.04)'
+        }
+        );
+        characteristicButton.onmousedown = () => {
+            sport.setCharacteristic(selectedMesh, characteristic, !sport.hasCharacteristic(selectedMesh, characteristic));
+            characteristicButton.style.background = sport.hasCharacteristic(selectedMesh, characteristic) ? 'rgba(56, 161, 105, 0.18)' : 'rgba(255,255,255,0.04)';
+        }
+        characteristicsList.appendChild(characteristicButton);
+    });
+    container.appendChild(characteristicsList);
+}
+
 export function fitSelectionPanelToViewport(container) {
     if (!container || !container.isConnected) return;
 
@@ -320,6 +353,8 @@ export function createSelectionPanel({
     addActorsButtons(container, interactionsMap, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated);
 
     addExtensionsButtons(container, selectedMesh);
+
+    addCharacteristicsButton(container, selectedMesh);
     // const close = createActionButton('Close', {
     //     marginTop: '8px',
     //     padding: '4px 8px',
