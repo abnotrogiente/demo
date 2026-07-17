@@ -492,7 +492,6 @@ export class SurfaceEffects {
         if (this.bounceMode != BounceModes.NONE ||
             this.projectionInteraction && this.projectionInteraction.params.trace.value
         ) {
-            this.texturePassCamera.copy(config.camera);
             config.renderer.render(this.texturePassScene, config.camera);
         }
         // config.renderer.setRenderTarget(null);

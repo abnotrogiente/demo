@@ -25,6 +25,8 @@ export async function initializeScene() {
     camera.position.z = 3;
     camera.position.y = 1.8;
 
+    scene.add(camera);
+
     // Debug camera
     const cameraDebug = new PerspectiveCamera(75, aspect, 0.1, 1000);
     cameraDebug.position.y = 0.2;

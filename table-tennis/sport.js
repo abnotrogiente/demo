@@ -332,6 +332,7 @@ class Sport {
      */
     #addActor(actor, name, dimensions = undefined, surfaceForEffects = false) {
         this.actorByName.set(name, actor);
+        if (dimensions) actor.userData.dimensions = dimensions;
         this.actors.push(actor);
         actor.name = name;
         this.display(actor, true);
@@ -405,8 +406,50 @@ class Sport {
                 if (actor != surfaceForEffects) this.setCharacteristic(surfaceForEffects, characteristic, value);
 
                 break;
+            case ReferentsCharacteristics.SCREEN_SPACE:
+                this.#setScreenSpace(actor, value);
+                break;
             default:
                 break;
+        }
+    }
+
+    /**
+     * 
+     * @param {Mesh} actor 
+     * @param {*} value 
+     */
+    #setScreenSpace(actor, value) {
+        const dimensions = actor.userData.dimensions;
+        if (!dimensions) {
+            console.warn("setting a referent to screen space but no dimensions was provided for this referent : " + actor.name);
+            return;
+        }
+        if (value) {
+
+            // actor.parent.remove(actor);
+            const length = Math.max(dimensions.radius ?? 0, dimensions.width ?? 0, dimensions.depth ?? 0, dimensions.height ?? 0);
+            actor.userData.positionBeforeScreenSpace = actor.position.clone();
+            actor.userData.rotationBeforeScreenSpace = actor.rotation.clone();
+            actor.userData.parentBeforeScreenSpace = actor.parent;
+            config.camera.add(actor);
+
+            actor.position.set(1., 0.4, -1);
+            actor.position.multiplyScalar(length * 2);
+            console.log("length : " + length);
+            const p = new Vector3();
+            actor.getWorldPosition(p);
+            console.log("world position : " + JSON.stringify(p));
+            actor.getWorldScale(p)
+            console.log("world scale : " + JSON.stringify(p));
+
+
+        }
+        else {
+            config.camera.remove(actor);
+            actor.userData.parentBeforeScreenSpace.add(actor);
+            actor.position.copy(actor.userData.positionBeforeScreenSpace);
+            actor.rotation.copy(actor.userData.rotationBeforeScreenSpace);
         }
     }
 
@@ -499,6 +542,13 @@ class Sport {
     #updateFromCharacteristics() {
 
         this.actorsByCaracteristics.get(ReferentsCharacteristics.CAMERA_FACING).forEach(actor => this.#updateCameraFacing(actor));
+        // this.actorsByCaracteristics.get(ReferentsCharacteristics.SCREEN_SPACE).forEach(actor => {
+        //     const p = new Vector3();
+        //     actor.getWorldPosition(p);
+        //     console.log("world position : " + JSON.stringify(p));
+        //     actor.getWorldScale(p)
+        //     console.log("world scale : " + JSON.stringify(p));
+        // });
     }
 
     /**
@@ -509,8 +559,12 @@ class Sport {
         actor.lookAt(config.camera.position);
     }
 
+    /**
+     * 
+     * @param {Mesh} actor 
+     */
     #updateScreenSpace(actor) {
-        //TODO
+
     }
 
     configureSelector() {
