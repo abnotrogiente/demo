@@ -8,6 +8,7 @@ import { config, configureSelector } from "./config";
 import { SurfaceEffects } from "./surfaceEffects";
 import { ObjectSelector } from "./editor";
 import { createEnglobingShape, createExtendedReferents } from "./extendedReferents";
+import { ReferentScoring } from "./referent-selection";
 
 class SportActor {
     constructor() {
@@ -123,7 +124,7 @@ class Sport {
 
     constructor() {
 
-
+        this.referentScoring = new ReferentScoring();
 
 
     }
@@ -537,6 +538,8 @@ class Sport {
 
             if (this.actorByName.has(actorName)) this.actorByName.get(actorName).position.set(traj["x"], z, traj["y"]);
         });
+
+        this.referentScoring.evaluate(this.actors);
     }
 
     #updateFromCharacteristics() {
