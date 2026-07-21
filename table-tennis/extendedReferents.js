@@ -69,11 +69,15 @@ export function createExtendedReferents(actor, dimensions) {
 
     const enclosing = new Mesh(createEnglobingShape(dimensions, 1.), material.clone());
     enclosing.position.set(0, 0, 0);
+    actor.getWorldPosition(enclosing.position);
+    enclosing.position.multiplyScalar(-1);
     enclosing.name = "Enclosing";
     pannels.push(enclosing);
 
     const enclosing2 = new Mesh(createEnglobingShape(dimensions, 1.), material.clone());
     enclosing2.position.set(0, 0, 0);
+    actor.getWorldPosition(enclosing2.position);
+    enclosing2.position.multiplyScalar(-1);
     enclosing2.material.side = BackSide;
     enclosing2.name = "Enclosing Back Face Cull";
     pannels.push(enclosing2);
