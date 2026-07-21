@@ -126,6 +126,18 @@ class Sport {
 
         this.referentScoring = new ReferentScoring();
 
+        this.referentScoringEnabled = false;
+
+        configureSelector({
+            selectorName: "Referent Scoring",
+            variableParent: this,
+            variableName: "referentScoringEnabled",
+            selectorType: SelectorTypes.CHECKBOX,
+            callback: (value) => {
+                this.referentScoring.stop();
+            }
+        });
+
 
     }
 
@@ -539,7 +551,7 @@ class Sport {
             if (this.actorByName.has(actorName)) this.actorByName.get(actorName).position.set(traj["x"], z, traj["y"]);
         });
 
-        this.referentScoring.evaluate(this.actors);
+        if (this.referentScoringEnabled) this.referentScoring.evaluate(this.actors);
     }
 
     #updateFromCharacteristics() {

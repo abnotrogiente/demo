@@ -139,6 +139,7 @@ export class ReferentScoring {
      * @param {Mesh[]} referents 
      */
     evaluate(referents) {
+        this.referents = referents;
         /**@type {Map<Mesh, Material>} */
         this.originalMaterials = new Map();
         let meshId = 0;
@@ -182,7 +183,7 @@ export class ReferentScoring {
             mesh.material = this.originalMaterials.get(mesh);
             mesh.layers.set(mesh.userData.display ? 0 : 1);
 
-        })
+        });
         //TODO e
 
     }
@@ -237,5 +238,12 @@ export class ReferentScoring {
         //     this.bestMesh.material.uniforms.isHighLighted.value = true;
         // }
 
+    }
+
+    stop() {
+        if (this.bestMesh && this.bestMesh.userData.formerDisplay !== undefined) {
+            this.bestMesh.userData.display = this.bestMesh.userData.formerDisplay;
+            this.bestMesh.layers.set(this.bestMesh.userData.display ? 0 : 1);
+        }
     }
 }
