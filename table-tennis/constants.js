@@ -75,7 +75,8 @@ export const tableDimensions = {
 export const BounceModes = Object.freeze({
     NONE: 0,
     COLOR: 1,
-    RIPPLE: 2
+    RIPPLE: 2,
+    HEATMAP: 3
 });
 
 export const ProjectionModes = Object.freeze({

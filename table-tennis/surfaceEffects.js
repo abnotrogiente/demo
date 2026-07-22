@@ -398,7 +398,7 @@ export class SurfaceEffects {
                     }
                     
                     gl_FragColor = texture(previousTexture, vUv);
-                    gl_FragColor.a *= .96;
+                    if (bounceMode != HEATMAP) gl_FragColor.a *= .96;
                     // isInLine = length(vPos - vec3(0.75, 0.5, 0.5)) <= 1.5;
                     if (isInLine && showTrace) {
                         gl_FragColor = vec4(0., 1., 1., 1.);
@@ -417,6 +417,10 @@ export class SurfaceEffects {
                             return;
                         }
                         
+                        if (bounceMode == HEATMAP) {
+                            if (diffSq <= contactRadius) gl_FragColor += vec4(0.1, 0., 0.1, 0.1); //TODO ajouter avec ponderation gaussienne par rapport à la distance, et else changer alpha quand même.
+                            //TODO vérifier la méthode de alpha blending
+                        }
 
                         // gl_FragColor = vec4(1.);
                         // return;
