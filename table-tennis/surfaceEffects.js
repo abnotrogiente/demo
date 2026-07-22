@@ -363,6 +363,10 @@ export class SurfaceEffects {
 
                 `+ getShaderConstantsFromEnum(BounceModes) + /*glsl */`
 
+                #define sqrt_2_PI 2.50662827
+                float gaussian_distribution(float x, float mean, float std) {
+                    return exp(-(x - mean) * (x - mean) / (2. * std * std)) / (std * sqrt_2_PI);
+                }
                 vec3 project(vec3 X) {
                     // vec3 fragToOther = otherActorPosition - vWorldPos;
                     // vec3 normalizedVNormal = normalize(vNormal);
@@ -418,8 +422,9 @@ export class SurfaceEffects {
                         }
                         
                         if (bounceMode == HEATMAP) {
-                            if (diffSq <= contactRadius) gl_FragColor += vec4(0.1, 0., 0.1, 0.1); //TODO ajouter avec ponderation gaussienne par rapport à la distance, et else changer alpha quand même.
+                            // if (diffSq <= contactRadius) gl_FragColor += vec4(0.1, 0., 0.1, 0.1); //TODO ajouter avec ponderation gaussienne par rapport à la distance, et else changer alpha quand même.
                             //TODO vérifier la méthode de alpha blending
+                            gl_FragColor += gaussian_distribution(sqrt(diffSq), 0., 0.2) * vec4(0.1, 0., 0.1, 0.1);
                         }
 
                         // gl_FragColor = vec4(1.);
