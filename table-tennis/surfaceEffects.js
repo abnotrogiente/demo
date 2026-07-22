@@ -358,6 +358,8 @@ export class SurfaceEffects {
                 uniform bool bounced;
                 uniform int bounceMode;
                 uniform bool showTrace;
+                
+                const float contactRadius = .025;
 
                 `+ getShaderConstantsFromEnum(BounceModes) + /*glsl */`
 
@@ -377,26 +379,12 @@ export class SurfaceEffects {
                     vec3 projectionPrev = project(prevotherActorPosition);
                     vec3 projectionCurr = project(otherActorPosition);
 
-
-                    // float l = length(vec3(otherActorPosition.x, 0., otherActorPosition.z) - vPos);
-                    // float shadowIntensity = pow(max(0.,1.-l),30.);
-                    // gl_FragColor = (1.-shadowIntensity)*gl_FragColor + shadowIntensity*vec4(0., 0., 0., 1.);
-                    // float shadowRadiusExt = .06;
-                    // float shadowRadiusIn = .04;
-                    // if (l <= shadowRadiusExt && l >= shadowRadiusIn ) gl_FragColor = vec4(1., 1., 0., 1.);
-                    // return;
-
-
                     vec3 line = projectionCurr - projectionPrev; //P1P2
                     float lineLengthSq = dot(line, line);
                     vec3 diffToPrev = vPos - projectionPrev; //P1X
                     float distToPrevSq = dot(diffToPrev, diffToPrev); // ||P1X||²
                     
                     bool isInLine = false;
-                    
-                    // DEBUG: show the projected positions and line length
-                    // gl_FragColor = vec4(normalize(vNormal) * 0.5 + 0.5, 1.0); // Show surface normal
-                    // gl_FragColor = vec4(vec3(lineLengthSq / 0.1), 1.0); // Show line length squared
                     
                     // Only check line intersection if line has meaningful length
                     if (lineLengthSq > 0.0001) {
@@ -424,9 +412,14 @@ export class SurfaceEffects {
                             }
                             return;
                         }
+                        if (bounceMode == COLOR) {
+                            if (diffSq <= contactRadius) gl_FragColor = vec4(1., 0., 1., 2.);
+                            return;
+                        }
+                        
+
                         // gl_FragColor = vec4(1.);
                         // return;
-                        if (diffSq <= .05) gl_FragColor = vec4(1., 0., 1., 2.);
                     }
                     // gl_FragColor.a = 0.;
                 }
@@ -454,7 +447,7 @@ export class SurfaceEffects {
         if (sport.isProxyExtension(this.surface)) {
             const actor = sport.getActorFromProxyExtension(this.surface);
             const actorSurface = sport.getSurfaceForEffects(actor);
-            actorSurface.getWorldDirection(this.texturePassQuad.position);
+            actorSurface.getWorldPosition(this.texturePassQuad.position);
             actorSurface.getWorldQuaternion(this.texturePassQuad.rotation);
         }
 
