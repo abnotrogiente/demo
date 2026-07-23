@@ -9,17 +9,18 @@ import { BackSide, BoxGeometry, DoubleSide, Mesh, MeshPhongMaterial, PlaneGeomet
 export function createExtendedReferents(actor, dimensions) {
     const depth = dimensions.depth ? dimensions.depth : dimensions.radius * 2;
     const width = dimensions.width ? dimensions.width : dimensions.radius * 2;
+    const height = dimensions.height ?? 2 * dimensions.radius;
 
 
     const material = new MeshPhongMaterial();
     material.transparent = true;
     material.opacity = .4;
-    // const geometry1 = new BoxGeometry(.01, 3., asset.dimensions.depth);
-    const geometry1 = new PlaneGeometry(depth, 4);
+    // const geometry1 = new BoxGeometry(.01, 3., asset.dimensions.depth)
+    const geometry1 = new PlaneGeometry(depth, height);
     geometry1.rotateY(-Math.PI / 2);
 
     // const geometry2 = new BoxGeometry(width, 3., .01);
-    const geometry2 = new PlaneGeometry(width, 4);
+    const geometry2 = new PlaneGeometry(width, height);
     // geometry1.rotateY(Math.PI/2);
 
     const pannels = [];
@@ -84,6 +85,7 @@ export function createExtendedReferents(actor, dimensions) {
 
     const proxy = new Mesh(actor.geometry.clone(), actor.material.clone());
     proxy.position.set(2, 0, 2);
+    proxy.scale.copy(actor.scale);
     actor.getWorldQuaternion(proxy.rotation);
     proxy.name = "Proxy";
     pannels.push(proxy);

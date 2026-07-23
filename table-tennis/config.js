@@ -1,4 +1,4 @@
-import { Camera, Mesh, MeshStandardMaterial, Scene, SphereGeometry, Vector3, WebGLRenderer } from "three";
+import { AnimationMixer, Camera, Mesh, MeshStandardMaterial, Scene, SphereGeometry, Vector3, WebGLRenderer } from "three";
 import { SelectorTypes, SportName } from "./constants";
 import { Physics } from "./physics";
 import { Video } from "./video";
@@ -79,6 +79,8 @@ export class Config {
             }
         }
         this.paused = false;
+        /**@type {AnimationMixer} */
+        this.mixer = null;
     }
 
     /**

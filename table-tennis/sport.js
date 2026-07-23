@@ -1,4 +1,4 @@
-import { BoxGeometry, DoubleSide, Mesh, MeshBasicMaterial, MeshPhongMaterial, MeshStandardMaterial, PlaneGeometry, Scene, SphereGeometry, Vector3 } from "three";
+import { BoxGeometry, DoubleSide, Mesh, MeshBasicMaterial, MeshPhongMaterial, MeshStandardMaterial, PlaneGeometry, Quaternion, Scene, SphereGeometry, Vector3 } from "three";
 import { TableEffects } from "./tableEffects";
 import { parseCsv } from "./utils";
 import { Video } from "./video";
@@ -9,6 +9,10 @@ import { SurfaceEffects } from "./surfaceEffects";
 import { ObjectSelector } from "./editor";
 import { createEnglobingShape, createExtendedReferents } from "./extendedReferents";
 import { ReferentScoring } from "./referent-selection";
+import { loadAsset } from "./asset-loader";
+
+
+const Z = new Vector3(0, 0, 1);
 
 class SportActor {
     constructor() {
@@ -197,7 +201,7 @@ class Sport {
                     const actor = config.scene.getObjectByName(child.mesh);
                     if (child.cloneMaterial) actor.material = actor.material.clone();
                     if (child.useBoundingBox) actor.userData.useBoundingBox = true;
-                    this.#addActor(actor, child.keepName ? child.mesh : name, child.dimensions, child.surfaceForEffects);
+                    this.#addActor(actor, child.keepName ? child.mesh : name, child, child.surfaceForEffects);
                 }
                 if (child.tracked) {
                     const trackingData = await parseCsv(child.tracking_file);
@@ -243,9 +247,12 @@ class Sport {
 
 
     #addInteractions(interactionTypes, interactionParams, actor1, actor1Name, actor2, actor2Name) {
+        // console.log("adding interacions : " + JSON.stringify(interactionTypes));
+        // console.log("for actors : " + actor1Name + " and " + actor2Name + "\n\n");
         const contactCondition = (interactionParams && interactionParams.contactCondition) ? interactionParams.contactCondition : defaultContactCondition;
         interactionTypes.forEach(interactionType => {
             if (actor1 && actor2) {
+                // console.log("")
                 if (!this.surfaceEffectsFromActor.has(actor1)) this.surfaceEffectsFromActor.set(actor1, new SurfaceEffects(actor1, contactCondition));
                 const interaction = new SportActorInteraction(interactionType, actor1, actor2, this.surfaceEffectsFromActor.get(actor1));
                 if (!this.interactionsFromActor.get(actor1).has(actor2Name)) this.interactionsFromActor.get(actor1).set(actor2Name, []);
@@ -283,6 +290,7 @@ class Sport {
                     if (asset.physics) {
                         body = await config.physics.createBox({
                             position: asset.position,
+                            rotation: asset.rotation,
                             // rotation: new Quaternion(0., 0., .02, 1.),
                             dimensions: new Vector3(asset.dimensions.width, asset.dimensions.height, asset.dimensions.depth),
                             restitution: asset.physicsConstants.restitution, // allows bounce
@@ -291,6 +299,16 @@ class Sport {
                             modelOffset: asset.modelOffset
                         });
                         mesh = config.physics.bodyToMesh.get(body);
+                    }
+                    else if (asset.model) {
+                        mesh = await loadAsset({
+                            position: asset.position,
+                            rotation: asset.rotation,
+                            dimesions: asset.dimensions,
+                            model: asset.model,
+                            modelOffset: asset.modelOffset
+                        })
+                        config.scene.add(mesh);
                     }
                     else {
                         const material = new MeshPhongMaterial();
@@ -343,11 +361,15 @@ class Sport {
      * @param {*} name 
      * @param {*} dimensions 
      */
-    #addActor(actor, name, dimensions = undefined, surfaceForEffects = false) {
+    #addActor(actor, name, params = undefined, surfaceForEffects = false) {
+        const dimensionsForExtensions = params?.dimensionsForExtensions ?? params?.dimensions;
+        const dimensions = params?.dimensions;
         this.actorByName.set(name, actor);
+        console.log("NAME : " + params?.mesh);
         if (dimensions) actor.userData.dimensions = dimensions;
         this.actors.push(actor);
         actor.name = name;
+        if (!(params && params.keepMaterial)) actor.material = actor.material.clone();
         this.display(actor, true);
         this.interactionsFromActor.set(actor, new Map());
         // return;
@@ -357,7 +379,7 @@ class Sport {
             if (surfaceForEffects) this.#addSurfaceForEffects(actor, dimensions);
 
 
-            const extensions = createExtendedReferents(actor, dimensions);
+            const extensions = createExtendedReferents(actor, dimensionsForExtensions);
             this.extensionsFromActor.set(actor, extensions);
             extensions.forEach(extension => {
                 const p = new Vector3();
@@ -375,6 +397,9 @@ class Sport {
                     this.#addInteractions([SportActorInterationTypes.METADATA], null, extension, extension.name, actor, actor.name);
                 }
                 else if (extension.name === "Proxy") {
+                    if (dimensionsForExtensions.lookDirection) {
+                        extension.userData.lookDirection = dimensionsForExtensions.lookDirection;
+                    }
                     extension.userData.actorFromProxyExtension = actor;
                     if (surfaceForEffects) this.#addSurfaceForEffects(extension, dimensions);
                     actor.userData.proxy = extension;
@@ -552,6 +577,9 @@ class Sport {
         });
 
         if (this.referentScoringEnabled) this.referentScoring.evaluate(this.actors);
+
+        const climber = config.scene.getObjectByName("Climber");
+        if (climber) console.log("climber pos :  " + JSON.stringify(climber.position));
     }
 
     #updateFromCharacteristics() {
@@ -567,11 +595,46 @@ class Sport {
     }
 
     /**
+ * @param {THREE.Mesh} mesh
+ * @param {THREE.Vector3} localV1
+ * @param {THREE.Vector3} worldV2
+ */
+    #rotateLocalToWorld(mesh, localV1, worldV2) {
+
+        mesh.updateWorldMatrix(true, false);
+
+        const worldV1 = localV1.clone()
+            .applyQuaternion(mesh.getWorldQuaternion(new Quaternion()));
+
+        const target = worldV2.clone().normalize();
+
+        console.log("worldV1 : " + JSON.stringify(worldV1));
+        console.log("target : " + JSON.stringify(target) + "\n\n");
+
+        const delta = new Quaternion().setFromUnitVectors(worldV1, target);
+
+        const worldQuat = mesh.getWorldQuaternion(new Quaternion());
+        worldQuat.premultiply(delta);
+
+        if (mesh.parent) {
+            const parentWorld = mesh.parent.getWorldQuaternion(new Quaternion());
+            parentWorld.invert();
+            mesh.quaternion.copy(parentWorld.multiply(worldQuat));
+        } else {
+            mesh.quaternion.copy(worldQuat);
+        }
+    }
+
+    /**
      * 
      * @param {Mesh} actor 
      */
     #updateCameraFacing(actor) {
-        actor.lookAt(config.camera.position);
+        if (actor.userData.lookDirection) {
+            this.#rotateLocalToWorld(actor, actor.userData.lookDirection, config.camera.getWorldDirection(new Vector3()));
+            // actor.quaternion.setFromUnitVectors(actor.userData.lookDirection, new Vector3(0, 0, 1));
+        }
+        else actor.lookAt(config.camera.position);
     }
 
     /**

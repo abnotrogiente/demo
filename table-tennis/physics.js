@@ -1,6 +1,8 @@
-import { BoxGeometry, Mesh, MeshStandardMaterial, Object3D, Quaternion, Scene, SphereGeometry, Vector3 } from "three";
+import { AnimationMixer, BoxGeometry, Mesh, MeshStandardMaterial, Object3D, Quaternion, Scene, SphereGeometry, Vector3 } from "three";
 import { GLTFLoader } from "three/examples/jsm/Addons.js";
 import { dispose3 } from "./constants";
+import { config } from "./config";
+import { loadAsset } from "./asset-loader";
 
 let ammo;
 
@@ -108,18 +110,13 @@ class Physics {
         //LOAD MODEL
         if (model) {
             dispose3(mesh);
-            mesh = new Object3D();
-            const gltf = await this.loader.loadAsync(model);
-            gltf.scene;
-            if (gltf.scene) {
-
-                mesh.add(gltf.scene);
-                // this.scene.add(gltf.scene);
-                gltf.scene.position.copy(modelOffset);
-
-
-            }
-            else console.log("LOADING FAILED");
+            mesh = await loadAsset({
+                position: position,
+                rotation: rotation,
+                dimensions: dimensions,
+                model: model,
+                modelOffset: modelOffset
+            });
 
         }
         this.bodyToMesh.set(body, mesh);

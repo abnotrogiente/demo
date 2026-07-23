@@ -1,4 +1,4 @@
-import { Mesh, PlaneGeometry, Vector3 } from "three";
+import { Mesh, PlaneGeometry, Quaternion, Vector3 } from "three";
 import { depth } from "three/tsl";
 
 export function dispose3(obj) {
@@ -60,7 +60,8 @@ export const SelectorTypes = Object.freeze({
 export const SportName = Object.freeze({
     TABLE_TENNIS: 0,
     BOXING: 1,
-    GENERIC: 3
+    CLIMBING: 2,
+    GENERIC: 4
 });
 
 
@@ -115,7 +116,7 @@ export const sportToAssets = {
             collideShape: "box",
             dimensions: { width: tableDimensions.depth, height: tableDimensions.height, depth: tableDimensions.width },
             position: new Vector3(0, 0, 0),
-            physics: true,
+            physics: false,
             physicsConstants: {
                 restitution: .9, // allows bounce
                 friction: .6,     // higher friction (grip)}
@@ -159,6 +160,18 @@ export const sportToAssets = {
             modelOffset: new Vector3(0, -1.5, 0)
         },
     ],
+    [SportName.CLIMBING]: [
+        {
+            name: "Climbing",
+            collideShape: "box",
+            dimensions: { width: 10., height: 10., depth: 10. },
+            position: new Vector3(0, -.5, 0),
+            rotation: new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), Math.PI / 2),
+            physics: false,
+            model: "speed1.glb",
+            modelOffset: new Vector3(0, -tableDimensions.altitude + tableDimensions.height + .015, 0)
+        },
+    ],
     [SportName.GENERIC]: [
         {
             name: "cube",
@@ -180,6 +193,28 @@ export const defaultContactCondition = ({ prevPos, pos, prevSpeed, speed, surfac
     return prevSpeed.y < 0 && speed.y > 0;
 }
 
+/**
+ * 
+ * @param {{prevPos: Vector3, pos: Vector3, prevSpeed: Vector3, speed: Vector3,surface: Mesh}} param0 
+ */
+const bounceContactCondition = ({ prevPos, pos, prevSpeed, speed, surface }) => {
+    /**@param {PlaneGeometry} */
+    const geometry = surface.geometry;
+
+    const p = new Vector3();
+    surface.getWorldPosition(p);
+
+    const worldNormal = new Vector3();
+    const N = geometry.attributes.normal.array.slice(0, 3)
+    worldNormal.set(N[0], N[1], N[2]); // or set(0,0,1)
+    worldNormal.transformDirection(surface.matrixWorld);
+
+
+    return (new Vector3().subVectors(prevPos, p).dot(worldNormal) * new Vector3().subVectors(pos, p).dot(worldNormal) < 0)
+
+
+}
+
 export const sportTrees = {
     [SportName.TABLE_TENNIS]: {
         children: {
@@ -188,6 +223,7 @@ export const sportTrees = {
                 attributes: [],
                 mesh: "pelvis1",
                 keepName: true,
+                keepMaterial: true,
                 dimensions: { radius: 1 },
                 children: [
                     {
@@ -205,6 +241,7 @@ export const sportTrees = {
                         attributes: [],
                         mesh: "Object_3",
                         dimensions: { width: tableDimensions.depth, height: tableDimensions.height, depth: tableDimensions.width, modelOffset: new Vector3(0, -tableDimensions.altitude + tableDimensions.height + .015, 0) },
+                        dimensionsForExtensions: { width: tableDimensions.depth, height: 4, depth: tableDimensions.width },
                         surfaceForEffects: true
                     },
                     "Net": {
@@ -222,7 +259,7 @@ export const sportTrees = {
                 tracked: true,
                 tracking_file: "./assets/ball_traj_3D.csv",
                 mesh: "Ball",
-                dimensions: { radius: 1. },
+                dimensions: { radius: .3, height: 1 },
             },
             "ground": {
                 properties: [],
@@ -252,28 +289,7 @@ export const sportTrees = {
                 actors: ["Plane", "Ball"],
                 types: [SportActorInterationTypes.BOUNCE, SportActorInterationTypes.PROJECTION],
                 params: {
-                    contactCondition:
-                        /**
-                         * 
-                         * @param {{prevPos: Vector3, pos: Vector3, prevSpeed: Vector3, speed: Vector3,surface: Mesh}} param0 
-                         */
-                        ({ prevPos, pos, prevSpeed, speed, surface }) => {
-                            /**@param {PlaneGeometry} */
-                            const geometry = surface.geometry;
-
-                            const p = new Vector3();
-                            surface.getWorldPosition(p);
-
-                            const worldNormal = new Vector3();
-                            const N = geometry.attributes.normal.array.slice(0, 3)
-                            worldNormal.set(N[0], N[1], N[2]); // or set(0,0,1)
-                            worldNormal.transformDirection(surface.matrixWorld);
-
-
-                            return (new Vector3().subVectors(prevPos, p).dot(worldNormal) * new Vector3().subVectors(pos, p).dot(worldNormal) < 0)
-
-
-                        }
+                    contactCondition: bounceContactCondition
                 }
             }
 
@@ -327,6 +343,47 @@ export const sportTrees = {
             }
         ],
         assets: sportToAssets[SportName.BOXING]
+    },
+    [SportName.CLIMBING]: {
+        children: {
+            "Climber": {
+                properties: [],
+                attributes: [],
+                mesh: "rABDO",
+                // mesh: "ground",
+                keepMaterial: true,
+                dimensions: { radius: 1 },
+            },
+            "Right Hand": {
+                // mesh: "rRHND",
+                // dimensions: { radius: .1 }
+            },
+            "Wall": {
+                mesh: "wall",
+                dimensions: { width: 4, height: 8, depth: 0.1 },
+                dimensionsForExtensions: { width: 4, height: 25, depth: 2, lookDirection: new Vector3(0, -1, 0) },
+                surfaceForEffects: true
+            }
+        },
+        interactions: [
+            {
+                actors: ["Wall", "Climber"],
+                types: [SportActorInterationTypes.PROJECTION],
+                params: {},
+            },
+            {
+                actors: ["Wall", "Climber"],
+                extensions: true,
+                types: [SportActorInterationTypes.PROJECTION],
+                params: {},
+            },
+            // {
+            //     actors: ["Wall", "Right Hand"],
+            //     types: [SportActorInterationTypes.BOUNCE],
+            //     params: {},
+            // },
+        ],
+        assets: sportToAssets[SportName.CLIMBING]
     },
     [SportName.GENERIC]: {
         children: {

@@ -15,8 +15,13 @@ export class SurfaceEffects {
      * @param {(args: {prevPos: Vector3, pos: Vector3, prevSpeed: Vector3, speed: Vector3, surface: Mesh}) => bool} contactCondition 
      */
     constructor(actor, contactCondition) {
+        this.originalActor = actor;
         /**@type {Mesh} */
         this.otherActor = null;
+
+        this.projectionInteractions = [];
+
+        this.bounceInteractions = [];
 
         this.canvasTextTexture = new CanvasTextTexture({
             width: 512,
@@ -28,6 +33,7 @@ export class SurfaceEffects {
         this.contactCondition = contactCondition;
 
         this.surface = sport.getSurfaceForEffects(actor);
+        this.otherActorPos = new Vector3();
         this.prevPos = new Vector3();
         this.speed = new Vector3();
         this.prevSpeed = new Vector3();
@@ -449,6 +455,22 @@ export class SurfaceEffects {
         this.texturePassScene = new Scene();
         this.texturePassScene.add(this.texturePassQuad);
         this.texturePassCamera = new Camera();
+
+
+        // const debug = this.texturePassQuad.clone();
+        // debug.material = new MeshPhongMaterial({ color: 0xff0000 });
+        // debug.material.needsUpdate = true;
+        // if (this.originalActor.name == "Wall") {
+        //     console.log("surface name : " + JSON.stringify(texturePassGeometry));
+        //     const r = new Quaternion();
+        //     const d = new Vector3();
+        //     console.log("rot : " + JSON.stringify(this.surface.quaternion));
+        //     this.surface.getWorldDirection(d);
+        //     this.surface.getWorldQuaternion(r);
+        //     console.log("world rot : " + JSON.stringify(d));
+        //     config.scene.add(debug);
+        //     // this.surface.visible = false;
+        // }
     }
     #texturePass(dt) {
         if (!this.shader) return;
@@ -461,18 +483,18 @@ export class SurfaceEffects {
         }
 
 
-
-        this.speed.subVectors(this.otherActor.position, this.prevPos).divideScalar(dt);
-        // this.texturePassQuad.material.uniforms.otherActorPosition.value.x = this.otherActor.position.x;
-        // this.texturePassQuad.material.uniforms.otherActorPosition.value.z = this.otherActor.position.z;
-        this.texturePassQuad.material.uniforms.otherActorPosition.value.copy(this.otherActor.position);
-        // this.shader.uniforms.otherActorPosition.value.x = this.otherActor.position.x;
-        // this.shader.uniforms.otherActorPosition.value.z = this.otherActor.position.z;
-        this.shader.uniforms.otherActorPosition.value.copy(this.otherActor.position);
+        this.otherActor.getWorldPosition(this.otherActorPos);
+        this.speed.subVectors(this.otherActorPos, this.prevPos).divideScalar(dt);
+        // this.texturePassQuad.material.uniforms.otherActorPosition.value.x = this.otherActorPos.x;
+        // this.texturePassQuad.material.uniforms.otherActorPosition.value.z = this.otherActorPos.z;
+        this.texturePassQuad.material.uniforms.otherActorPosition.value.copy(this.otherActorPos);
+        // this.shader.uniforms.otherActorPosition.value.x = this.otherActorPos.x;
+        // this.shader.uniforms.otherActorPosition.value.z = this.otherActorPos.z;
+        this.shader.uniforms.otherActorPosition.value.copy(this.otherActorPos);
         // this.texturePassQuad.material.uniforms.prevotherActorPosition.value.x = this.prevPos.x;
         // this.texturePassQuad.material.uniforms.prevotherActorPosition.value.z = this.prevPos.z;
         this.texturePassQuad.material.uniforms.prevotherActorPosition.value.copy(this.prevPos);
-        // this.tmp1.copy(this.otherActor.position).sub(this.prevPos).normalize();
+        // this.tmp1.copy(this.otherActorPos).sub(this.prevPos).normalize();
         this.tmpvec3.copy(this.texturePassQuad.material.uniforms.otherActorPosition.value);
         this.tmpvec3.sub(this.texturePassQuad.material.uniforms.prevotherActorPosition.value);
         this.tmpvec3.normalize();
@@ -481,7 +503,7 @@ export class SurfaceEffects {
         // this.texturePassQuad.material.uniforms.bounced.value = this.prevSpeed.y < 0 && this.speed.y > 0;
         this.texturePassQuad.material.uniforms.bounced.value = this.contactCondition({
             prevPos: this.prevPos,
-            pos: this.otherActor.position,
+            pos: this.otherActorPos,
             speed: this.speed,
             prevSpeed: this.prevSpeed,
             surface: this.surface
@@ -500,7 +522,7 @@ export class SurfaceEffects {
         this.shader.uniforms.displayTexture.value = this.currentRenderingTarget.texture;
         [this.previousRenderingTarget, this.currentRenderingTarget] = [this.currentRenderingTarget, this.previousRenderingTarget];
 
-        this.prevPos.copy(this.otherActor.position);
+        this.prevPos.copy(this.otherActorPos);
         if (this.speed.dot(this.speed) >= .01) this.prevSpeed.copy(this.speed);
 
     }

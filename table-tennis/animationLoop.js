@@ -3,6 +3,7 @@
  * Main render loop and update logic
  */
 
+import { config } from "./config";
 import { ObjectSelector } from "./editor";
 import { sport } from "./sport";
 
@@ -53,6 +54,7 @@ export function startAnimationLoop(renderer, composer, physics, players, cvHelpe
         // ballEffects.update(delta);
         // tableEffects.update(elapsed, delta);
 
+        if (config.mixer) config.mixer.update(delta);
         // Render
         composer.render();
     };
