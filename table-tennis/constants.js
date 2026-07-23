@@ -355,8 +355,8 @@ export const sportTrees = {
                 dimensions: { radius: 1 },
             },
             "Right Hand": {
-                // mesh: "rRHND",
-                // dimensions: { radius: .1 }
+                mesh: "rRHND",
+                dimensions: { radius: .1 }
             },
             "Wall": {
                 mesh: "wall",
@@ -377,11 +377,11 @@ export const sportTrees = {
                 types: [SportActorInterationTypes.PROJECTION],
                 params: {},
             },
-            // {
-            //     actors: ["Wall", "Right Hand"],
-            //     types: [SportActorInterationTypes.BOUNCE],
-            //     params: {},
-            // },
+            {
+                actors: ["Wall", "Right Hand"],
+                types: [SportActorInterationTypes.BOUNCE],
+                params: {},
+            },
         ],
         assets: sportToAssets[SportName.CLIMBING]
     },

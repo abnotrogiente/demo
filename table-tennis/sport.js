@@ -248,7 +248,7 @@ class Sport {
 
     #addInteractions(interactionTypes, interactionParams, actor1, actor1Name, actor2, actor2Name) {
         // console.log("adding interacions : " + JSON.stringify(interactionTypes));
-        // console.log("for actors : " + actor1Name + " and " + actor2Name + "\n\n");
+        console.log("for actors : " + actor1Name + " and " + actor2Name + "\n\n");
         const contactCondition = (interactionParams && interactionParams.contactCondition) ? interactionParams.contactCondition : defaultContactCondition;
         interactionTypes.forEach(interactionType => {
             if (actor1 && actor2) {

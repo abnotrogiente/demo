@@ -19,9 +19,12 @@ export class SurfaceEffects {
         /**@type {Mesh} */
         this.otherActor = null;
 
-        this.projectionInteractions = [];
-
-        this.bounceInteractions = [];
+        /**@type {Map<int, SportActorInteraction[]>} */
+        this.relationships = new Map([
+            [SportActorInterationTypes.PROJECTION, []],
+            [SportActorInterationTypes.BOUNCE, []],
+            [SportActorInterationTypes.METADATA, []],
+        ])
 
         this.canvasTextTexture = new CanvasTextTexture({
             width: 512,
@@ -514,7 +517,7 @@ export class SurfaceEffects {
         this.texturePassQuad.material.uniforms.previousTexture.value = this.previousRenderingTarget.texture;
         config.renderer.setRenderTarget(this.currentRenderingTarget);
         if (this.bounceMode != BounceModes.NONE ||
-            this.projectionInteraction && this.projectionInteraction.params.trace.value
+            this.showTrace
         ) {
             config.renderer.render(this.texturePassScene, config.camera);
         }
@@ -556,33 +559,85 @@ export class SurfaceEffects {
         // }
     }
 
+    #updateProjections() {
+        let projectionInstantaneousEnabled = false;
+        this.prevShowTrace = this.texturePassQuad.material.uniforms.showTrace.value;
+        this.showTrace = false;
+
+        this.relationships.get(SportActorInterationTypes.PROJECTION).forEach(projectionRelationship => {
+            if (projectionRelationship.params.instantaneous.value) {
+                projectionInstantaneousEnabled = true;
+                this.otherActor = projectionRelationship.actor2;
+            }
+            if (projectionRelationship.params.trace.value) {
+                this.showTrace = true;
+                console.log("TRACE");
+                this.otherActor = projectionRelationship.actor2;
+            }
+
+        });
+        // if (this.originalActor.name == "Proxy") console.log("other actor : " + this.otherActor.name);
+        if (this.shader) this.shader.uniforms.showShadow.value = projectionInstantaneousEnabled;
+        this.texturePassQuad.material.uniforms.showTrace.value = this.showTrace;
+        if (this.showTrace != this.prevShowTrace) this.#cleanTextures();
+    }
+
+    #updateContacts() {
+        const prevBouceMode = this.bounceMode;
+        this.bounceMode = false;
+        this.relationships.get(SportActorInterationTypes.BOUNCE).forEach(contactRelationship => {
+            if (contactRelationship.params.bounce.value) {
+                this.bounceMode = true;
+                if (prevBouceMode != this.bounceMode) this.#cleanTextures();
+                this.otherActor = contactRelationship.actor2;
+            }
+        });
+        this.texturePassQuad.material.uniforms.bounceMode.value = this.bounceMode;
+        if (this.shader) this.shader.uniforms.bounceMode.value = this.bounceMode;
+        if (prevBouceMode != this.bounceMode) this.#cleanTextures();
+    }
+
+    #updateInformations() {
+        this.relationships.get(SportActorInterationTypes.METADATA).forEach(informationRelationship => {
+            this.#updateMetaDataInteraction(informationRelationship);
+        });
+    }
+
     update(t, dt) {
         if (config.paused) return;
-        if (this.projectionInteraction) {
-            if (this.shader) this.shader.uniforms.showShadow.value = this.projectionInteraction.params.instantaneous.value;
-            const prevTraceValue = this.texturePassQuad.material.uniforms.showTrace.value;
-            this.texturePassQuad.material.uniforms.showTrace.value = this.projectionInteraction.params.trace.value;
-            if (this.texturePassQuad.material.uniforms.showTrace.value != prevTraceValue) this.#cleanTextures();
-        }
-        if (this.bounceInteraction) {
-            const prevBounceMode = this.bounceMode;
-            this.bounceMode = this.bounceInteraction.params.bounce.value;
-            if (prevBounceMode != this.bounceMode) this.#cleanTextures();
-            this.texturePassQuad.material.uniforms.bounceMode.value = this.bounceMode;
-            if (this.shader) this.shader.uniforms.bounceMode.value = this.bounceMode;
-        }
-        if (this.metaDataInteraction) {
-            this.#updateMetaDataInteraction();
-        }
+        // if (this.projectionInteraction) {
+        //     if (this.shader) this.shader.uniforms.showShadow.value = this.projectionInteraction.params.instantaneous.value;
+        //     const prevTraceValue = this.texturePassQuad.material.uniforms.showTrace.value;
+        //     this.texturePassQuad.material.uniforms.showTrace.value = this.projectionInteraction.params.trace.value;
+        //     if (this.texturePassQuad.material.uniforms.showTrace.value != prevTraceValue) this.#cleanTextures();
+        // }
+        // if (this.bounceInteraction) {
+        //     const prevBounceMode = this.bounceMode;
+        //     this.bounceMode = this.bounceInteraction.params.bounce.value;
+        //     if (prevBounceMode != this.bounceMode) this.#cleanTextures();
+        //     this.texturePassQuad.material.uniforms.bounceMode.value = this.bounceMode;
+        //     if (this.shader) this.shader.uniforms.bounceMode.value = this.bounceMode;
+        // }
+        // if (this.metaDataInteraction) {
+        //     this.#updateMetaDataInteraction();
+        // }
+        this.#updateProjections();
+        this.#updateContacts();
+        this.#updateInformations();
         this.#texturePass(dt);
         if (this.shader) this.shader.uniforms.uTime.value = t;
         // else console.log("shader does not exist");
     }
 
-    #updateMetaDataInteraction() {
-        let val = MetaDataValueFromModeAndActor.get(this.metaDataInteraction.params.metaData.value)(this.otherActor);
-        switch (this.metaDataInteraction.params.glyph.value) {
+    /**
+     * 
+     * @param {SportActorInteraction} informationRelationship 
+     */
+    #updateMetaDataInteraction(informationRelationship) {
+        let val = MetaDataValueFromModeAndActor.get(informationRelationship.params.metaData.value)(this.otherActor);
+        switch (informationRelationship.params.glyph.value) {
             case GlyphModes.TEXT:
+                this.otherActor = informationRelationship.actor2;
                 if (val.isVector3) val = val.length();
                 val = this.speed.length(); // TODO ça devrait degager, le haut devrait suffire, pourquoi le haut n'est pas bon ?
                 this.canvasTextTexture.setText("" + val);
@@ -597,19 +652,6 @@ export class SurfaceEffects {
      * @param {SportActorInteraction} interaction 
      */
     addInteraction(interaction) {
-        switch (interaction.type) {
-            case SportActorInterationTypes.PROJECTION:
-                this.projectionInteraction = interaction;
-                break;
-            case SportActorInterationTypes.BOUNCE:
-                this.bounceInteraction = interaction;
-                break;
-            case SportActorInterationTypes.METADATA:
-                this.metaDataInteraction = interaction;
-                break;
-            default:
-                break;
-
-        }
+        this.relationships.get(interaction.type).push(interaction);
     }
 }
