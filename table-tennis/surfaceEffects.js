@@ -334,7 +334,7 @@ export class SurfaceEffects {
                 otherActorPosition: { value: new Vector3() },
                 prevotherActorPosition: { value: new Vector3() },
                 lineDirection: { value: new Vector3() },
-                lineStroke: { value: .01 },
+                lineStroke: { value: .02 },
                 bounced: { value: false },
                 previousTexture: { value: null },
                 bounceMode: { value: config.params.visualizations.bounce },
@@ -411,7 +411,7 @@ export class SurfaceEffects {
                     }
                     
                     gl_FragColor = texture(previousTexture, vUv);
-                    if (bounceMode != HEATMAP) gl_FragColor.a *= .96;
+                    if (bounceMode != HEATMAP) gl_FragColor.a *= .98;
                     // isInLine = length(vPos - vec3(0.75, 0.5, 0.5)) <= 1.5;
                     if (isInLine && showTrace) {
                         gl_FragColor = vec4(0., 1., 1., 1.);
@@ -584,10 +584,10 @@ export class SurfaceEffects {
 
     #updateContacts() {
         const prevBouceMode = this.bounceMode;
-        this.bounceMode = false;
+        this.bounceMode = BounceModes.NONE;
         this.relationships.get(SportActorInterationTypes.BOUNCE).forEach(contactRelationship => {
-            if (contactRelationship.params.bounce.value) {
-                this.bounceMode = true;
+            if (contactRelationship.params.bounce.value != BounceModes.NONE) {
+                this.bounceMode = contactRelationship.params.bounce.value;
                 if (prevBouceMode != this.bounceMode) this.#cleanTextures();
                 this.otherActor = contactRelationship.actor2;
             }
