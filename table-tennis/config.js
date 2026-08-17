@@ -8,7 +8,7 @@ const uiWindowContent = document.getElementById("window-content");
 
 
 // export function configureSelector(selectorName, variableParent, variableName, variableEnum, callback) {
-export function configureSelector({ selectorName = "selector", variableParent = config.params, variableName = "", variableEnum = {}, callback = () => { }, selectorType = SelectorTypes.CHECKBOX }) {
+export function configureSelector({ selectorName = "selector", variableParent = config.params, variableName = "", variableEnum = {}, callback = () => { }, selectorType = SelectorTypes.CHECKBOX, min = 0, max = 100 }) {
     const div = document.createElement("div");
     div.classList.add("control-group");
     const label = document.createElement("label");
@@ -31,6 +31,10 @@ export function configureSelector({ selectorName = "selector", variableParent = 
             selector.type = "checkbox";
             selector.checked = variableParent[variableName];
             break;
+        case SelectorTypes.NUMBER:
+            selector = document.createElement("input");
+            selector.type = "number";
+            break;
         default:
             break;
     }
@@ -43,6 +47,7 @@ export function configureSelector({ selectorName = "selector", variableParent = 
     selector.addEventListener("change", () => {
         switch (selectorType) {
             case SelectorTypes.SELECT:
+            case SelectorTypes.NUMBER:
                 variableParent[variableName] = selector.value;
                 break;
             case SelectorTypes.CHECKBOX:

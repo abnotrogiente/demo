@@ -1,6 +1,8 @@
 import { BackSide, BufferAttribute, Camera, ClampToEdgeWrapping, CustomBlending, DoubleSide, FloatType, GLSL3, LinearFilter, Material, MaxEquation, Mesh, NearestFilter, Object3D, OneFactor, RawShaderMaterial, RGBAFormat, Scene, ShaderMaterial, Vector2, WebGLRenderer, WebGLRenderTarget } from "three";
-import { config } from "./config";
+import { config, configureSelector } from "./config";
 import { GPU_reduction } from "./gpu-reduction";
+import { topK } from "./utils";
+import { SelectorTypes } from "./constants";
 
 
 export class ReferentScoring {
@@ -9,6 +11,9 @@ export class ReferentScoring {
         this.bestId = new Vector2(-1, -1);
         /**@type {Mesh} */
         this.bestMesh = null;
+
+        /**@type {Mesh[]} */
+        this.bestMeshes = null;
 
         /**@type {ShaderMaterial} */
         this.material = new RawShaderMaterial({
@@ -132,13 +137,26 @@ export class ReferentScoring {
 
             // depthBuffer: false
         });
+
+        this.numProposition = 1;
+
+        configureSelector({
+            selectorName: "Proposition Number",
+            variableParent: this,
+            variableName: "numProposition",
+            selectorType: SelectorTypes.NUMBER,
+            min: 1,
+            callback: (value) => {
+                //TODO unhighlight proposed referents
+            }
+        });
     }
 
     /**
      * 
      * @param {Mesh[]} referents 
      */
-    evaluate(referents) {
+    async evaluate(referents) {
         this.referents = referents;
         /**@type {Map<Mesh, Material>} */
         this.originalMaterials = new Map();
@@ -171,7 +189,7 @@ export class ReferentScoring {
         config.renderer.setRenderTarget(this.scoreRenderTarget);
         // config.renderer.setRenderTarget(this.renderTargets);
         config.renderer.render(config.scene, config.camera);
-        this.#findBest();
+        this.#findBests(this.numProposition);
 
         materials.forEach(mat => mat.uniforms.render.value = true);
         materials.forEach(mat => mat.uniforms.bestId.value.copy(this.bestId));
@@ -219,6 +237,36 @@ export class ReferentScoring {
         );
     }
 
+
+    async #findBests(n) {
+        if (n == 1) {
+            this.#findBest();
+            return;
+        }
+
+        const size = new Vector2();
+        config.renderer.getSize(size);
+        const scores = new Float32Array(size.x * size.y * 4);
+        // const ids = new Float32Array(size.x * size.y * 4);
+
+        config.renderer.readRenderTargetPixels(
+            this.scoreRenderTarget,
+            0, 0, size.x, size.y,
+            scores
+        );
+
+        const top = topK(scores, n, { delta: 4, offset: 0 });
+        for (let k = 0; k < n; k++) {
+            const meshId = scores[top.indices[k] * 4 + 1];
+            const vertexId = scores[top.indices[k] * 4 + 2];
+            // const mesh = 
+            //TODO faire une fonction générique qui fait comme dans findbest, remplacer bestMesh par bestMeshes etc.
+        }
+
+
+
+    }
+
     #findBest() {
         const { bestScore, vertexId, meshId } = GPU_reduction(this.scoreRenderTarget);
         this.bestId.set(vertexId, meshId);
@@ -237,6 +285,7 @@ export class ReferentScoring {
         //     console.log("uniforms : " + JSON.stringify(this.bestMesh.material.uniforms));
         //     this.bestMesh.material.uniforms.isHighLighted.value = true;
         // }
+        return this.bestMesh;
 
     }
 

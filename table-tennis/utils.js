@@ -75,3 +75,66 @@ export function loadCalibrationData() {
         ball_positions: parseCsv("./assets/ball_traj_3D.csv")
     };
 }
+
+export function topK(arr, k, { delta = 1, offset = 0 }) {
+    const values = new Float32Array(k);
+    const indices = new Int32Array(k);
+    let size = 0;
+
+    const siftUp = (i) => {
+        const value = values[i];
+        const index = indices[i];
+
+        while (i > 0) {
+            const parent = (i - 1) >> 1;
+            if (values[parent] <= value) break;
+
+            values[i] = values[parent];
+            indices[i] = indices[parent];
+            i = parent;
+        }
+
+        values[i] = value;
+        indices[i] = index;
+    };
+
+    const siftDown = (i) => {
+        const value = values[i];
+        const index = indices[i];
+
+        while (true) {
+            let child = i * 2 + 1;
+            if (child >= size) break;
+
+            if (child + 1 < size && values[child + 1] < values[child]) {
+                child++;
+            }
+
+            if (values[child] >= value) break;
+
+            values[i] = values[child];
+            indices[i] = indices[child];
+            i = child;
+        }
+
+        values[i] = value;
+        indices[i] = index;
+    };
+
+    for (let i = offset; i < arr.length; i += delta) {
+        const x = arr[i];
+
+        if (size < k) {
+            values[size] = x;
+            indices[size] = i;
+            size++;
+            siftUp(size - 1);
+        } else if (x > values[0]) {
+            values[0] = x;
+            indices[0] = Math.round((i - offset) / delta);
+            siftDown(0);
+        }
+    }
+
+    return { values, indices };
+}

@@ -54,7 +54,8 @@ export const SportActorInterationTypes = Object.freeze({
 
 export const SelectorTypes = Object.freeze({
     CHECKBOX: 0,
-    SELECT: 1
+    SELECT: 1,
+    NUMBER: 2
 });
 
 export const SportName = Object.freeze({

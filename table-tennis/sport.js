@@ -400,6 +400,8 @@ class Sport {
                     if (dimensionsForExtensions.lookDirection) {
                         extension.userData.lookDirection = dimensionsForExtensions.lookDirection;
                     }
+                    // this.setCharacteristic(extension, ReferentsCharacteristics.SCREEN_SPACE, true);
+                    // this.setCharacteristic(extension, ReferentsCharacteristics.CAMERA_FACING, true);
                     extension.userData.actorFromProxyExtension = actor;
                     if (surfaceForEffects) this.#addSurfaceForEffects(extension, dimensions);
                     actor.userData.proxy = extension;
