@@ -12,8 +12,10 @@ export class ReferentScoring {
         /**@type {Mesh} */
         this.bestMesh = null;
 
+        this.numProposition = 1;
+
         /**@type {Mesh[]} */
-        this.bestMeshes = null;
+        this.bestMeshes = Array.from({ length: this.numProposition });
 
         /**@type {ShaderMaterial} */
         this.material = new RawShaderMaterial({
@@ -138,7 +140,6 @@ export class ReferentScoring {
             // depthBuffer: false
         });
 
-        this.numProposition = 1;
 
         configureSelector({
             selectorName: "Proposition Number",
@@ -148,6 +149,8 @@ export class ReferentScoring {
             min: 1,
             callback: (value) => {
                 //TODO unhighlight proposed referents
+                this.bestMeshes = Array.from({ length: this.numProposition });
+
             }
         });
     }
@@ -257,9 +260,27 @@ export class ReferentScoring {
 
         const top = topK(scores, n, { delta: 4, offset: 0 });
         for (let k = 0; k < n; k++) {
+            const bestMesh_k = this.bestMeshes[k];
+            if (bestMesh_k && this.originalMaterials.get(bestMesh_k) && this.originalMaterials.get(bestMesh_k).uniforms && this.originalMaterials.get(bestMesh_k).uniforms.isHighLighted) this.originalMaterials.get(bestMesh_k).uniforms.isHighLighted.value = false;
+            if (bestMesh_k && bestMesh_k.userData.formerDisplay !== undefined) bestMesh_k.userData.display = bestMesh_k.userData.formerDisplay;
+        }
+        for (let k = 0; k < n; k++) {
+            let meshId;
+            let vertexId;
+
             const meshId = scores[top.indices[k] * 4 + 1];
             const vertexId = scores[top.indices[k] * 4 + 2];
-            // const mesh = 
+            const mesh = this.meshById.get(meshId);
+            this.bestMeshes[k] = mesh;
+
+            if (mesh) {
+                mesh.userData.formerDisplay = mesh.userData.display;
+                mesh.userData.display = true;
+            }
+            if (mesh) console.log("best mesh : " + mesh.name);
+            if (mesh && this.originalMaterials.get(mesh).uniforms && this.originalMaterials.get(mesh).uniforms.isHighLighted) this.originalMaterials.get(mesh).uniforms.isHighLighted.value = true;
+
+
             //TODO faire une fonction générique qui fait comme dans findbest, remplacer bestMesh par bestMeshes etc.
         }
 
