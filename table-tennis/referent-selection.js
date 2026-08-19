@@ -265,8 +265,8 @@ export class ReferentScoring {
             if (bestMesh_k && bestMesh_k.userData.formerDisplay !== undefined) bestMesh_k.userData.display = bestMesh_k.userData.formerDisplay;
         }
         for (let k = 0; k < n; k++) {
-            let meshId;
-            let vertexId;
+            // let meshId;
+            // let vertexId;
 
             const meshId = scores[top.indices[k] * 4 + 1];
             const vertexId = scores[top.indices[k] * 4 + 2];
