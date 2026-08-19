@@ -134,6 +134,8 @@ class Sport {
 
         this.directReferentSelection = true;
 
+        //TODO enregistrer ici la préférence selectionnée pour la donnée à visualiser (si le scoring est activé)
+
         configureSelector({
             selectorName: "Referent Scoring",
             variableParent: this,

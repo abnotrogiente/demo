@@ -40,6 +40,82 @@ function getModeName(modesObj, value) {
     return String(value);
 }
 
+
+function createInteractionButton(interaction, closeModePanel, parent) {
+    //TODO enregistrer dans la variable de sport la préférence si le scoring est activé
+    const interactionName = interaction.name;
+    const interBtn = createActionButton(interactionName, {
+        display: 'block',
+        width: '100%',
+        marginBottom: '6px',
+        background: 'rgba(255,255,255,0.04)',
+    });
+
+    interBtn.onclick = (clickEvent) => {
+        clickEvent.stopPropagation();
+        closeModePanel();
+
+        const modePanel = createRightPanel(parent.getBoundingClientRect(), clickEvent.clientY, interactionName);
+        if (typeof onModePanelCreated === 'function') {
+            onModePanelCreated(modePanel);
+        }
+
+        const paramEntries = Object.entries(interaction.params || {}).length > 0
+            ? Object.entries(interaction.params || {})
+            : (interaction.enum ? [['value', { value: interaction.value, enum: interaction.enum }]] : []);
+
+        if (paramEntries.length === 0) {
+            modePanel.appendChild(createLabel('No parameters', {
+                opacity: '0.8',
+                fontSize: '12px',
+            }));
+        } else {
+            paramEntries.forEach(([paramName, paramConfig]) => {
+                const paramRow = document.createElement('div');
+                applyPanelStyles(paramRow, {
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                });
+
+                const paramLabel = createLabel(`${paramName}: ${getModeName(paramConfig.enum, paramConfig.value)}`, {
+                    fontSize: '12px',
+                    opacity: '0.9',
+                });
+
+                const paramOptions = document.createElement('div');
+                applyPanelStyles(paramOptions, {
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                });
+
+                Object.entries(paramConfig.enum || {}).forEach(([modeKey, modeValue]) => {
+                    const modeBtn = createActionButton(modeKey, {
+                        padding: '4px 6px',
+                        background: (paramConfig.value === modeValue) ? 'rgba(56, 161, 105, 0.18)' : 'rgba(255,255,255,0.04)',
+                    });
+
+                    modeBtn.onclick = (ev) => {
+                        ev.stopPropagation();
+                        paramConfig.value = modeValue;
+                        paramLabel.textContent = `${paramName}: ${modeKey}`;
+                        Array.from(paramOptions.children).forEach(child => child.style.background = 'rgba(255,255,255,0.04)');
+                        modeBtn.style.background = 'rgba(56, 161, 105, 0.18)';
+                    };
+
+                    paramOptions.appendChild(modeBtn);
+                });
+
+                paramRow.appendChild(paramLabel);
+                paramRow.appendChild(paramOptions);
+                modePanel.appendChild(paramRow);
+            });
+        }
+    };
+    parent.appendChild(interBtn);
+}
+
 function addActorsButtons(container, interactionsMap, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated) {
     container.appendChild(createLabel('Actors:', { fontWeight: '500', marginBottom: '4px' }));
 
@@ -50,107 +126,59 @@ function addActorsButtons(container, interactionsMap, closeInteractionPanel, clo
         gap: '6px',
     });
 
-    interactionsMap.forEach((interactions, otherActorName) => {
-        const actorBtn = createActionButton(otherActorName);
-        actorBtn.onmouseenter = () => {
-            const otherActor = sport.actorByName.get(otherActorName);
-            otherActor.material.uniforms.isHighLighted.value = true;
-        };
-        actorBtn.onmouseleave = () => {
-            const otherActor = sport.actorByName.get(otherActorName);
-            otherActor.material.uniforms.isHighLighted.value = false;
-        };
-        actorBtn.onclick = (event) => {
-            closeInteractionPanel();
-            closeModePanel();
+    if (!sport.referentScoringEnabled) {
 
-            const interactionPanel = createRightPanel(container.getBoundingClientRect(), event.clientY, `Interactions with ${otherActorName}`);
-            if (typeof onInteractionPanelCreated === 'function') {
-                onInteractionPanelCreated(interactionPanel);
-            }
+        interactionsMap.forEach((interactions, otherActorName) => {
+            const actorBtn = createActionButton(otherActorName);
+            actorBtn.onmouseenter = () => {
+                const otherActor = sport.actorByName.get(otherActorName);
+                otherActor.material.uniforms.isHighLighted.value = true;
+            };
+            actorBtn.onmouseleave = () => {
+                const otherActor = sport.actorByName.get(otherActorName);
+                otherActor.material.uniforms.isHighLighted.value = false;
+            };
+            actorBtn.onclick = (event) => {
+                closeInteractionPanel();
+                closeModePanel();
 
-            if (!interactions || interactions.length === 0) {
-                interactionPanel.appendChild(createLabel('No interactions available', { opacity: '0.85' }));
-            } else {
-                interactions.forEach(interaction => {
-                    const interactionName = interaction.name;
-                    const interBtn = createActionButton(interactionName, {
-                        display: 'block',
-                        width: '100%',
-                        marginBottom: '6px',
-                        background: 'rgba(255,255,255,0.04)',
+                const interactionPanel = createRightPanel(container.getBoundingClientRect(), event.clientY, `Interactions with ${otherActorName}`);
+                if (typeof onInteractionPanelCreated === 'function') {
+                    onInteractionPanelCreated(interactionPanel);
+                }
+
+                if (!interactions || interactions.length === 0) {
+                    interactionPanel.appendChild(createLabel('No interactions available', { opacity: '0.85' }));
+                } else {
+                    interactions.forEach(interaction => {
+                        createInteractionButton(interaction, closeModePanel, interactionPanel);
                     });
+                }
+            };
 
-                    interBtn.onclick = (clickEvent) => {
-                        clickEvent.stopPropagation();
-                        closeModePanel();
+            actorsList.appendChild(actorBtn);
+        });
 
-                        const modePanel = createRightPanel(interactionPanel.getBoundingClientRect(), clickEvent.clientY, interactionName);
-                        if (typeof onModePanelCreated === 'function') {
-                            onModePanelCreated(modePanel);
-                        }
+    }
 
-                        const paramEntries = Object.entries(interaction.params || {}).length > 0
-                            ? Object.entries(interaction.params || {})
-                            : (interaction.enum ? [['value', { value: interaction.value, enum: interaction.enum }]] : []);
+    else {
+        // const interactionPanel = createRightPanel(container.getBoundingClientRect(), event.clientY, `Relationship types`);
+        // if (typeof onInteractionPanelCreated === 'function') {
+        //     onInteractionPanelCreated(interactionPanel);
+        // }
+        interactionsMap.forEach((interactions, otherActorName) => {
+            const interactionSet = new Set();
+            interactions.forEach(interaction => {
+                const interactionName = interaction.name;
+                if (interactionSet.has(interactionName)) return;
+                interactionSet.add(interactionName);
+                const interBtn = createInteractionButton(interaction, closeModePanel, actorsList);
 
-                        if (paramEntries.length === 0) {
-                            modePanel.appendChild(createLabel('No parameters', {
-                                opacity: '0.8',
-                                fontSize: '12px',
-                            }));
-                        } else {
-                            paramEntries.forEach(([paramName, paramConfig]) => {
-                                const paramRow = document.createElement('div');
-                                applyPanelStyles(paramRow, {
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: '4px',
-                                });
+            });
 
-                                const paramLabel = createLabel(`${paramName}: ${getModeName(paramConfig.enum, paramConfig.value)}`, {
-                                    fontSize: '12px',
-                                    opacity: '0.9',
-                                });
+        });
 
-                                const paramOptions = document.createElement('div');
-                                applyPanelStyles(paramOptions, {
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: '4px',
-                                });
-
-                                Object.entries(paramConfig.enum || {}).forEach(([modeKey, modeValue]) => {
-                                    const modeBtn = createActionButton(modeKey, {
-                                        padding: '4px 6px',
-                                        background: (paramConfig.value === modeValue) ? 'rgba(56, 161, 105, 0.18)' : 'rgba(255,255,255,0.04)',
-                                    });
-
-                                    modeBtn.onclick = (ev) => {
-                                        ev.stopPropagation();
-                                        paramConfig.value = modeValue;
-                                        paramLabel.textContent = `${paramName}: ${modeKey}`;
-                                        Array.from(paramOptions.children).forEach(child => child.style.background = 'rgba(255,255,255,0.04)');
-                                        modeBtn.style.background = 'rgba(56, 161, 105, 0.18)';
-                                    };
-
-                                    paramOptions.appendChild(modeBtn);
-                                });
-
-                                paramRow.appendChild(paramLabel);
-                                paramRow.appendChild(paramOptions);
-                                modePanel.appendChild(paramRow);
-                            });
-                        }
-                    };
-
-                    interactionPanel.appendChild(interBtn);
-                });
-            }
-        };
-
-        actorsList.appendChild(actorBtn);
-    });
+    }
 
     container.appendChild(actorsList);
 }
@@ -317,11 +345,12 @@ function addSelectedActorContent(container, selectedMesh, closeInteractionPanel,
         container.appendChild(createLabel('No interactions defined', { opacity: '0.85' }));
     }
 
+    addActorsButtons(container, interactionsMap, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated);
     if (!sport.referentScoringEnabled) {
-        addActorsButtons(container, interactionsMap, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated);
         addExtensionsButtons(container, selectedMesh);
         addCharacteristicsButton(container, selectedMesh);
     }
+
 }
 
 function addActorList(container, onActorSelected, physical = true) {
