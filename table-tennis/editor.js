@@ -199,6 +199,30 @@ export class ObjectSelector {
     updateSelectionPannel() {
         const parent = config.renderer?.domElement?.parentElement || document.body;
 
+        if (!sport.directReferentSelection) {
+            if (this.selectionPannelDisplayed && this.selectionPannelElement?.dataset.panelMode !== 'actor-list') {
+                this._closeSelectionPanel();
+            }
+            if (!this.selectionPannelDisplayed) {
+                this.selectionPannelDisplayed = true;
+                this.selectionPannelElement = createSelectionPanel({
+                    actorListMode: true,
+                    parent,
+                    closeSelectionPanel: () => this._closeSelectionPanel(),
+                    closeInteractionPanel: () => this._closeInteractionPanel(),
+                    closeModePanel: () => this._closeModePanel(),
+                    createRightPanel: (anchorRect, cursorY, titleText) => this._createRightPanel(anchorRect, cursorY, titleText),
+                    onInteractionPanelCreated: (panel) => {
+                        this.interactionPanelElement = panel;
+                    },
+                    onModePanelCreated: (panel) => {
+                        this.modePanelElement = panel;
+                    },
+                });
+            }
+            return;
+        }
+
         if (this.selectionPannelDisplayed && this.selectionPannelElement && this.selectedMesh) {
             const existingMeshId = this.selectionPannelElement.dataset?.meshUuid;
             if (existingMeshId !== this.selectedMesh.uuid) {

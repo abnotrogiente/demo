@@ -305,9 +305,56 @@ export function createRightPanel(anchorRect, cursorY, titleText) {
     return panel;
 }
 
+function addSelectedActorContent(container, selectedMesh, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated) {
+    const interactionsMap = sport.interactionsFromActor.get(selectedMesh) || new Map();
+
+    container.appendChild(createLabel(`Selected: ${selectedMesh.name || 'object'}`, {
+        fontWeight: '600',
+        marginBottom: '6px',
+    }));
+
+    if (interactionsMap.size === 0) {
+        container.appendChild(createLabel('No interactions defined', { opacity: '0.85' }));
+    }
+
+    if (!sport.referentScoringEnabled) {
+        addActorsButtons(container, interactionsMap, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated);
+        addExtensionsButtons(container, selectedMesh);
+        addCharacteristicsButton(container, selectedMesh);
+    }
+}
+
+function addActorList(container, onActorSelected) {
+    container.appendChild(createLabel('Actors:', { fontWeight: '600', marginBottom: '6px' }));
+
+    const actorsList = document.createElement('div');
+    applyPanelStyles(actorsList, {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '6px',
+    });
+
+    sport.actors.forEach(actor => {
+        const actorButton = createActionButton(actor.name || 'object', {
+            background: 'rgba(255,255,255,0.04)',
+        });
+        actorButton.onclick = () => {
+            Array.from(actorsList.children).forEach(button => {
+                if (button.tagName === 'BUTTON') button.style.background = 'rgba(255,255,255,0.04)';
+            });
+            actorButton.style.background = 'rgba(56, 161, 105, 0.18)';
+            onActorSelected(actor, actorButton, actorsList);
+        };
+        actorsList.appendChild(actorButton);
+    });
+
+    container.appendChild(actorsList);
+}
+
 export function createSelectionPanel({
     selectedMesh,
     mouse,
+    actorListMode = false,
     parent,
     closeSelectionPanel,
     closeInteractionPanel,
@@ -316,15 +363,15 @@ export function createSelectionPanel({
     onInteractionPanelCreated,
     onModePanelCreated,
 }) {
-    const interactionsMap = sport.interactionsFromActor.get(selectedMesh);
-
     const container = document.createElement('div');
     container.id = 'selection-pannel';
-    container.dataset.meshUuid = selectedMesh.uuid;
+    container.dataset.panelMode = actorListMode ? 'actor-list' : 'selected-actor';
+    if (selectedMesh) container.dataset.meshUuid = selectedMesh.uuid;
     applyPanelStyles(container, {
         position: 'fixed',
-        left: `${100 * (mouse.x / 2 + .5)}%`,
-        top: `${100 * (-mouse.y / 2 + .5)}%`,
+        left: actorListMode ? 'auto' : `${100 * (mouse.x / 2 + .5)}%`,
+        right: actorListMode ? '8px' : 'auto',
+        top: actorListMode ? '8px' : `${100 * (-mouse.y / 2 + .5)}%`,
         background: 'rgba(0,0,0,0.75)',
         color: '#fff',
         padding: '8px 10px',
@@ -339,22 +386,26 @@ export function createSelectionPanel({
         transform: 'translateX(0)',
     });
 
-    container.appendChild(createLabel(`Selected: ${selectedMesh.name || 'object'}`, {
-        fontWeight: '600',
-        marginBottom: '6px',
-    }));
-
-    if (interactionsMap.size === 0) {
-        container.appendChild(createLabel('No interactions defined', { opacity: '0.85' }));
+    if (actorListMode) {
+        let selectedDetails = null;
+        addActorList(container, (actor, actorButton, actorsList) => {
+            closeInteractionPanel();
+            closeModePanel();
+            selectedDetails?.remove();
+            const details = document.createElement('div');
+            applyPanelStyles(details, {
+                marginTop: '8px',
+                marginBottom: '8px',
+                paddingTop: '8px',
+                borderTop: '1px solid rgba(255,255,255,0.15)',
+            });
+            addSelectedActorContent(details, actor, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated);
+            actorsList.insertBefore(details, actorButton.nextSibling);
+            selectedDetails = details;
+        });
     } else {
-
+        addSelectedActorContent(container, selectedMesh, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated);
     }
-
-    addActorsButtons(container, interactionsMap, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated);
-
-    addExtensionsButtons(container, selectedMesh);
-
-    addCharacteristicsButton(container, selectedMesh);
     // const close = createActionButton('Close', {
     //     marginTop: '8px',
     //     padding: '4px 8px',
