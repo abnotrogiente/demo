@@ -391,6 +391,7 @@ class Sport {
             const extensions = createExtendedReferents(actor, dimensionsForExtensions);
             this.extensionsFromActor.set(actor, extensions);
             extensions.forEach(extension => {
+                extension.userData.isExtension = true;
                 const p = new Vector3();
                 actor.getWorldPosition(p);
                 extension.position.add(p);
@@ -508,6 +509,10 @@ class Sport {
 
     isProxyExtension(actor) {
         return actor.userData.actorFromProxyExtension !== undefined;
+    }
+
+    isExtension(actor) {
+        return actor.userData.isExtension;
     }
 
     /**

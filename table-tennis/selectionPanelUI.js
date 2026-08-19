@@ -324,8 +324,8 @@ function addSelectedActorContent(container, selectedMesh, closeInteractionPanel,
     }
 }
 
-function addActorList(container, onActorSelected) {
-    container.appendChild(createLabel('Actors:', { fontWeight: '600', marginBottom: '6px' }));
+function addActorList(container, onActorSelected, physical = true) {
+    container.appendChild(createLabel((physical ? "" : "Non ") + 'Physical Referents:', { fontWeight: '600', marginBottom: '6px' }));
 
     const actorsList = document.createElement('div');
     applyPanelStyles(actorsList, {
@@ -335,6 +335,7 @@ function addActorList(container, onActorSelected) {
     });
 
     sport.actors.forEach(actor => {
+        if (!(physical && !sport.isExtension(actor) || !physical && sport.isExtension(actor))) return;
         const actorButton = createActionButton(actor.name || 'object', {
             background: 'rgba(255,255,255,0.04)',
         });
@@ -388,7 +389,7 @@ export function createSelectionPanel({
 
     if (actorListMode) {
         let selectedDetails = null;
-        addActorList(container, (actor, actorButton, actorsList) => {
+        const onActorSelected = (actor, actorButton, actorsList) => {
             closeInteractionPanel();
             closeModePanel();
             selectedDetails?.remove();
@@ -402,7 +403,8 @@ export function createSelectionPanel({
             addSelectedActorContent(details, actor, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated);
             actorsList.insertBefore(details, actorButton.nextSibling);
             selectedDetails = details;
-        });
+        };
+        addActorList(container, onActorSelected);
     } else {
         addSelectedActorContent(container, selectedMesh, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated);
     }
