@@ -45,7 +45,7 @@ export const ReferentsCharacteristics = Object.freeze({
 });
 
 export const SportActorInterationTypes = Object.freeze({
-    BOUNCE: 0,
+    CONTACT: 0,
     PROJECTION: 1,
     TECHNIQUE: 2,
     RULE: 3,
@@ -271,24 +271,24 @@ export const sportTrees = {
         interactions: [
             {
                 actors: ["Racket", "Ball"],
-                types: ["technique", SportActorInterationTypes.BOUNCE]
+                types: ["technique", SportActorInterationTypes.CONTACT]
             },
             {
                 actors: ["Net", "Ball"],
-                types: [SportActorInterationTypes.BOUNCE]
+                types: [SportActorInterationTypes.CONTACT]
             },
             {
                 actors: ["Plane", "Ball"],
-                types: [SportActorInterationTypes.BOUNCE, SportActorInterationTypes.PROJECTION]
+                types: [SportActorInterationTypes.CONTACT, SportActorInterationTypes.PROJECTION]
             },
             // {
             //     actors: ["ground", "Player"],
-            //     types: [SportActorInterationTypes.BOUNCE, SportActorInterationTypes.PROJECTION]
+            //     types: [SportActorInterationTypes.CONTACT, SportActorInterationTypes.PROJECTION]
             // },
             {
                 extensions: true,
                 actors: ["Plane", "Ball"],
-                types: [SportActorInterationTypes.BOUNCE, SportActorInterationTypes.PROJECTION],
+                types: [SportActorInterationTypes.CONTACT, SportActorInterationTypes.PROJECTION],
                 params: {
                     contactCondition: bounceContactCondition
                 }
@@ -380,7 +380,7 @@ export const sportTrees = {
             },
             {
                 actors: ["Wall", "Right Hand"],
-                types: [SportActorInterationTypes.BOUNCE],
+                types: [SportActorInterationTypes.CONTACT],
                 params: {},
             },
         ],

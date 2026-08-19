@@ -22,8 +22,8 @@ class SportActor {
 
 
 const characteristicsFromInteraction = new Map([
-    [SportActorInterationTypes.BOUNCE, {
-        name: "Bounce",
+    [SportActorInterationTypes.CONTACT, {
+        name: "Contact",
         params: {
             bounce: {
                 enum: BounceModes,
@@ -70,7 +70,7 @@ const characteristicsFromInteraction = new Map([
 ]);
 
 // const interactionsCharacteristics = new Map([
-//     [SportActorInterationTypes.BOUNCE, {
+//     [SportActorInterationTypes.CONTACT, {
 //         name: "Bounce",
 //         enum: BounceModes,
 //         default: BounceModes.NONE
@@ -132,6 +132,8 @@ class Sport {
 
         this.referentScoringEnabled = false;
 
+        this.directReferentSelection = true;
+
         configureSelector({
             selectorName: "Referent Scoring",
             variableParent: this,
@@ -140,6 +142,13 @@ class Sport {
             callback: (value) => {
                 this.referentScoring.stop();
             }
+        });
+
+        configureSelector({
+            selectorName: "Direct Referent Selection",
+            variableParent: this,
+            variableName: "directReferentSelection",
+            selectorType: SelectorTypes.CHECKBOX
         });
 
 

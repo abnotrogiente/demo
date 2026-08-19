@@ -22,7 +22,7 @@ export class SurfaceEffects {
         /**@type {Map<int, SportActorInteraction[]>} */
         this.relationships = new Map([
             [SportActorInterationTypes.PROJECTION, []],
-            [SportActorInterationTypes.BOUNCE, []],
+            [SportActorInterationTypes.CONTACT, []],
             [SportActorInterationTypes.METADATA, []],
         ])
 
@@ -585,7 +585,7 @@ export class SurfaceEffects {
     #updateContacts() {
         const prevBouceMode = this.bounceMode;
         this.bounceMode = BounceModes.NONE;
-        this.relationships.get(SportActorInterationTypes.BOUNCE).forEach(contactRelationship => {
+        this.relationships.get(SportActorInterationTypes.CONTACT).forEach(contactRelationship => {
             if (contactRelationship.params.bounce.value != BounceModes.NONE) {
                 this.bounceMode = contactRelationship.params.bounce.value;
                 if (prevBouceMode != this.bounceMode) this.#cleanTextures();
