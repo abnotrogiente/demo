@@ -190,6 +190,28 @@ export class ObjectSelector {
         this._removePanel(this.selectionPannelElement);
         this.selectionPannelElement = null;
         this.selectionPannelDisplayed = false;
+        this._removeDocumentClickHandler();
+    }
+
+    _installDocumentClickHandler() {
+        if (this._documentClickHandler) return;
+        this._documentClickHandler = (event) => {
+            const target = event.target;
+            // If click is inside any panel, ignore
+            if (this.selectionPannelElement && this.selectionPannelElement.contains(target)) return;
+            if (this.interactionPanelElement && this.interactionPanelElement.contains(target)) return;
+            if (this.modePanelElement && this.modePanelElement.contains(target)) return;
+
+            // Otherwise close panels
+            this._closeSelectionPanel();
+        };
+        document.addEventListener('mousedown', this._documentClickHandler);
+    }
+
+    _removeDocumentClickHandler() {
+        if (!this._documentClickHandler) return;
+        document.removeEventListener('mousedown', this._documentClickHandler);
+        this._documentClickHandler = null;
     }
 
     _createRightPanel(anchorRect, cursorY, titleText) {
@@ -219,6 +241,7 @@ export class ObjectSelector {
                         this.modePanelElement = panel;
                     },
                 });
+                this._installDocumentClickHandler();
             }
             return;
         }
@@ -250,6 +273,7 @@ export class ObjectSelector {
                 },
             });
             this.selectionPannelElement.dataset.meshUuid = this.selectedMesh.uuid;
+            this._installDocumentClickHandler();
         } else if (this.selectionPannelDisplayed && this.selectedMesh === null) {
             this._closeSelectionPanel();
         }
