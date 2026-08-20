@@ -119,6 +119,7 @@ function createInteractionButton(interaction, parent, closeModePanel, onModePane
 function addActorsButtons(container, selectedMesh, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated) {
     container.appendChild(createLabel('Actors:', { fontWeight: '500', marginBottom: '4px' }));
 
+    /**@type {Map<Mesh, Map<string, Map<int,SportActorInteraction>>>} */
     const interactionsMap = sport.interactionsFromActor.get(selectedMesh) || new Map();
     if (interactionsMap.size === 0) {
         container.appendChild(createLabel('No interactions defined', { opacity: '0.85' }));
@@ -132,7 +133,8 @@ function addActorsButtons(container, selectedMesh, closeInteractionPanel, closeM
 
     if (!sport.referentScoringEnabled) {
 
-        interactionsMap.forEach((interactions, otherActorName) => {
+        interactionsMap.forEach((interactions, otherActor) => {
+            const otherActorName = otherActor.name;
             const actorBtn = createActionButton(otherActorName);
             actorBtn.onmouseenter = () => {
                 const otherActor = sport.actorByName.get(otherActorName);
@@ -151,10 +153,10 @@ function addActorsButtons(container, selectedMesh, closeInteractionPanel, closeM
                     onInteractionPanelCreated(interactionPanel);
                 }
 
-                if (!interactions || interactions.length === 0) {
+                if (!interactions || interactions.size === 0) {
                     interactionPanel.appendChild(createLabel('No interactions available', { opacity: '0.85' }));
                 } else {
-                    interactions.forEach(interaction => {
+                    interactions.forEach((interaction, interactionType) => {
                         createInteractionButton(interaction, interactionPanel, closeModePanel, onModePanelCreated);
                     });
                 }

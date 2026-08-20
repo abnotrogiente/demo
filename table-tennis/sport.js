@@ -112,6 +112,7 @@ export class SportActorInteraction {
         Object.entries(interactionCharacteristics.params).forEach(([paramName, param]) => {
             this.params[paramName] = {
                 value: param.default,
+                default: param.default,
                 enum: param.enum
             }
         });
@@ -128,15 +129,14 @@ class Sport {
 
     constructor() {
 
-        this.referentScoring = new ReferentScoring();
+
 
         this.referentScoringEnabled = false;
 
         this.directReferentSelection = true;
 
         //TODO enregistrer ici la préférence selectionnée pour la donnée à visualiser (si le scoring est activé)
-        /**@type {Map<Mesh, Map<int, SportActorInteraction>} */
-        this.visPreferences = new Map();
+
 
         configureSelector({
             selectorName: "Referent Scoring",
@@ -171,6 +171,9 @@ class Sport {
 
     async set(sportDescription) {
 
+        /**@type {Map<Mesh, Map<int, SportActorInteraction>} */
+        this.visPreferences = new Map();
+
         /**@type {Mesh[]} */
         this.actors = [];
 
@@ -191,7 +194,7 @@ class Sport {
         /**@type {Map<Mesh, Mesh[]>} */
         this.extensionsFromActor = new Map();
 
-        /**@type {Map<Mesh, Map<string, SportActorInteraction[]>>} */
+        /**@type {Map<Mesh, Map<Mesh, Map<int,SportActorInteraction>>>} */
         this.interactionsFromActor = new Map();
 
         /**@type {Map<Mesh, SurfaceEffects>} */
@@ -253,6 +256,8 @@ class Sport {
             }
 
         });
+
+        this.referentScoring = new ReferentScoring(this.interactionsFromActor, this.visPreferences);
         this.selector = new ObjectSelector();
         this.selector.updateObjectShaders();
 
@@ -261,17 +266,17 @@ class Sport {
 
     #addInteractions(interactionTypes, interactionParams, actor1, actor1Name, actor2, actor2Name) {
         // console.log("adding interacions : " + JSON.stringify(interactionTypes));
-        console.log("for actors : " + actor1Name + " and " + actor2Name + "\n\n");
+        // console.log("for actors : " + actor1Name + " and " + actor2Name + "\n\n");
         const contactCondition = (interactionParams && interactionParams.contactCondition) ? interactionParams.contactCondition : defaultContactCondition;
         interactionTypes.forEach(interactionType => {
             if (actor1 && actor2) {
                 // console.log("")
                 if (!this.surfaceEffectsFromActor.has(actor1)) this.surfaceEffectsFromActor.set(actor1, new SurfaceEffects(actor1, contactCondition));
                 const interaction = new SportActorInteraction(interactionType, actor1, actor2, this.surfaceEffectsFromActor.get(actor1));
-                if (!this.interactionsFromActor.get(actor1).has(actor2Name)) this.interactionsFromActor.get(actor1).set(actor2Name, []);
-                if (!this.interactionsFromActor.get(actor2).has(actor1Name)) this.interactionsFromActor.get(actor2).set(actor1Name, []);
-                this.interactionsFromActor.get(actor1).get(actor2Name).push(interaction);
-                this.interactionsFromActor.get(actor2).get(actor1Name).push(interaction);
+                if (!this.interactionsFromActor.get(actor1).has(actor2)) this.interactionsFromActor.get(actor1).set(actor2, new Map());
+                if (!this.interactionsFromActor.get(actor2).has(actor1)) this.interactionsFromActor.get(actor2).set(actor1, new Map());
+                this.interactionsFromActor.get(actor1).get(actor2).set(interactionType, interaction);
+                this.interactionsFromActor.get(actor2).get(actor1).set(interactionType, interaction);
                 // console.log("ADDING INTERACTION : " + this.interactionsFromActor.get(actor1);
                 this.surfaceEffectsFromActor.get(actor1).setOtherActor(actor2);
 
@@ -329,6 +334,13 @@ class Sport {
                             modelOffset: asset.modelOffset
                         })
                         config.scene.add(mesh);
+
+                        // mesh.traverse(child => {
+                        //     if (child.isMesh) {
+                        //         child.material.transparent = true;
+                        //         child.material.opacity = 0.;
+                        //     }
+                        // })
                     }
                     else {
                         const material = new MeshPhongMaterial();
@@ -385,7 +397,6 @@ class Sport {
         const dimensionsForExtensions = params?.dimensionsForExtensions ?? params?.dimensions;
         const dimensions = params?.dimensions;
         this.actorByName.set(name, actor);
-        console.log("NAME : " + params?.mesh);
         if (dimensions) actor.userData.dimensions = dimensions;
         this.actors.push(actor);
         actor.name = name;
@@ -545,6 +556,7 @@ class Sport {
      * @param {*} dimensions 
      */
     #addSurfaceForEffects(actor, dimensions) {
+        // return;
         const proxyForSurfaceEffects = new Mesh(createEnglobingShape(dimensions, 0.01), new MeshPhongMaterial());
         this.display(proxyForSurfaceEffects, this.isDisplayed(actor));
         actor.getWorldPosition(proxyForSurfaceEffects.position);

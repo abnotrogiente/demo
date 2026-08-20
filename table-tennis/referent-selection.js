@@ -3,11 +3,20 @@ import { config, configureSelector } from "./config";
 import { GPU_reduction } from "./gpu-reduction";
 import { getMeshesScoresById, topK } from "./utils";
 import { SelectorTypes } from "./constants";
+import { SportActorInteraction } from "./sport";
 
 
 export class ReferentScoring {
 
-    constructor() {
+    /**
+     * 
+     * @param {Map<Mesh, Map<Mesh, Map<int,SportActorInteraction>>>} interactionsFromActors 
+     * @param {Map<Mesh, Map<int, SportActorInteraction>} visPreferences 
+     */
+    constructor(interactionsFromActors, visPreferences) {
+
+        this.interactionsFromActors = interactionsFromActors;
+        this.visPreferences = visPreferences;
         this.bestId = new Vector2(-1, -1);
         /**@type {Mesh} */
         this.bestMesh = null;
@@ -196,7 +205,7 @@ export class ReferentScoring {
         config.renderer.render(config.scene, config.camera);
         this.#findBests(this.numProposition);
 
-        materials.forEach(mat => mat.uniforms.render.value = true);
+        // materials.forEach(mat => mat.uniforms.render.value = true);
         materials.forEach(mat => mat.uniforms.bestId.value.copy(this.bestId));
         config.renderer.setRenderTarget(null);
         config.renderer.render(config.scene, config.camera);
@@ -209,7 +218,6 @@ export class ReferentScoring {
             if (mesh.userData.display) numDisplayed++;
 
         });
-        console.log("NUM DISPLAYED : " + numDisplayed);
         //TODO e
 
     }
@@ -251,7 +259,34 @@ export class ReferentScoring {
             // if (bestMesh_k && this.originalMaterials.get(bestMesh_k) && this.originalMaterials.get(bestMesh_k).uniforms && this.originalMaterials.get(bestMesh_k).uniforms.isHighLighted) this.originalMaterials.get(bestMesh_k).uniforms.isHighLighted.value = false;
             if (bestMesh_k && bestMesh_k.userData.formerDisplay !== undefined) bestMesh_k.userData.display = bestMesh_k.userData.formerDisplay;
             this.bestMeshes[k] = null;
+            if (bestMesh_k) this.#updateVis(bestMesh_k);
         }
+    }
+
+    /**
+     * 
+     * @param {Mesh} referent 
+     */
+    #updateVis(referent) {
+
+        this.interactionsFromActors.get(referent).forEach((interactions, otherActor) => {
+            console.log("actor name : " + referent.name + "\n");
+            if (!this.visPreferences.has(otherActor)) return;
+            console.log("other actor name : " + otherActor.name);
+            this.visPreferences.get(otherActor).forEach((preference, type) => {
+                if (!interactions.has(type)) return;
+                console.log("INTERACTION TYPE : " + type);
+                console.log("PREFERENCE : " + JSON.stringify(preference.params));
+                Object.entries(preference.params).forEach(([paramName, param]) => {
+                    console.log("PARAM : " + JSON.stringify(param));
+                    const value = referent.userData.display ? param.value : param.default;
+                    console.log("VALUE : " + value);
+                    interactions.get(type).params[paramName].value = value;
+
+                });
+                console.log("\n\n\n");
+            });
+        });
     }
 
 
@@ -277,8 +312,8 @@ export class ReferentScoring {
         this.#cleanPrevBestMeshes();
         let k = 0;
         scoresMap.forEach((scoreResult, id) => {
+            //TODO fix the preference for table proxy, it does not work currently. Why???
             if (k >= n) return;
-            console.log("K : " + k);
 
             const mesh = this.meshById.get(id);
             this.bestMeshes[k] = mesh;
@@ -287,8 +322,9 @@ export class ReferentScoring {
                 mesh.userData.formerDisplay = mesh.userData.display;
                 mesh.userData.display = true;
             }
-            if (mesh) console.log("best mesh : " + mesh.name);
-            if (mesh && this.originalMaterials.get(mesh).uniforms && this.originalMaterials.get(mesh).uniforms.isHighLighted) this.originalMaterials.get(mesh).uniforms.isHighLighted.value = true;
+            // if (mesh && this.originalMaterials.get(mesh).uniforms && this.originalMaterials.get(mesh).uniforms.isHighLighted) this.originalMaterials.get(mesh).uniforms.isHighLighted.value = true;
+            this.#updateVis(mesh);
+            // mesh.userData.isProposed
             k++;
 
         });
