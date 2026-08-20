@@ -41,7 +41,7 @@ function getModeName(modesObj, value) {
 }
 
 
-function createInteractionButton(interaction, closeModePanel, parent) {
+function createInteractionButton(interaction, parent, closeModePanel, onModePanelCreated) {
     //TODO enregistrer dans la variable de sport la préférence si le scoring est activé
     const interactionName = interaction.name;
     const interBtn = createActionButton(interactionName, {
@@ -116,9 +116,13 @@ function createInteractionButton(interaction, closeModePanel, parent) {
     parent.appendChild(interBtn);
 }
 
-function addActorsButtons(container, interactionsMap, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated) {
+function addActorsButtons(container, selectedMesh, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated) {
     container.appendChild(createLabel('Actors:', { fontWeight: '500', marginBottom: '4px' }));
 
+    const interactionsMap = sport.interactionsFromActor.get(selectedMesh) || new Map();
+    if (interactionsMap.size === 0) {
+        container.appendChild(createLabel('No interactions defined', { opacity: '0.85' }));
+    }
     const actorsList = document.createElement('div');
     applyPanelStyles(actorsList, {
         display: 'flex',
@@ -151,7 +155,7 @@ function addActorsButtons(container, interactionsMap, closeInteractionPanel, clo
                     interactionPanel.appendChild(createLabel('No interactions available', { opacity: '0.85' }));
                 } else {
                     interactions.forEach(interaction => {
-                        createInteractionButton(interaction, closeModePanel, interactionPanel);
+                        createInteractionButton(interaction, interactionPanel, closeModePanel, onModePanelCreated);
                     });
                 }
             };
@@ -166,15 +170,17 @@ function addActorsButtons(container, interactionsMap, closeInteractionPanel, clo
         // if (typeof onInteractionPanelCreated === 'function') {
         //     onInteractionPanelCreated(interactionPanel);
         // }
-        interactionsMap.forEach((interactions, otherActorName) => {
-            const interactionSet = new Set();
-            interactions.forEach(interaction => {
-                const interactionName = interaction.name;
-                if (interactionSet.has(interactionName)) return;
-                interactionSet.add(interactionName);
-                const interBtn = createInteractionButton(interaction, closeModePanel, actorsList);
+        sport.visPreferences.get()
+        sport.visPreferences.get(selectedMesh).forEach((preference, type) => {
+            // interactionsMap.forEach((interactions, otherActorName) => {
+            const interBtn = createInteractionButton(preference, actorsList, closeModePanel, onModePanelCreated);
+            // interactions.forEach(interaction => {
+            //     const interactionName = interaction.name;
+            //     if (interactionSet.has(interactionName)) return;
+            //     interactionSet.add(interactionName);
+            //     const interBtn = createInteractionButton(interaction, actorsList, closeModePanel, onModePanelCreated);
 
-            });
+            // });
 
         });
 
@@ -334,18 +340,16 @@ export function createRightPanel(anchorRect, cursorY, titleText) {
 }
 
 function addSelectedActorContent(container, selectedMesh, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated) {
-    const interactionsMap = sport.interactionsFromActor.get(selectedMesh) || new Map();
+
 
     container.appendChild(createLabel(`Selected: ${selectedMesh.name || 'object'}`, {
         fontWeight: '600',
         marginBottom: '6px',
     }));
 
-    if (interactionsMap.size === 0) {
-        container.appendChild(createLabel('No interactions defined', { opacity: '0.85' }));
-    }
 
-    addActorsButtons(container, interactionsMap, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated);
+
+    addActorsButtons(container, selectedMesh, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated);
     if (!sport.referentScoringEnabled) {
         addExtensionsButtons(container, selectedMesh);
         addCharacteristicsButton(container, selectedMesh);

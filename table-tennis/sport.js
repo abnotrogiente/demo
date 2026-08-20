@@ -120,7 +120,7 @@ export class SportActorInteraction {
         // this.name = interactionsCharacteristics.get(type).name;
         this.type = type;
 
-        surfaceEffects.addInteraction(this);
+        if (surfaceEffects) surfaceEffects.addInteraction(this);
     }
 }
 
@@ -135,6 +135,8 @@ class Sport {
         this.directReferentSelection = true;
 
         //TODO enregistrer ici la préférence selectionnée pour la donnée à visualiser (si le scoring est activé)
+        /**@type {Map<Mesh, Map<int, SportActorInteraction>} */
+        this.visPreferences = new Map();
 
         configureSelector({
             selectorName: "Referent Scoring",
@@ -272,6 +274,13 @@ class Sport {
                 this.interactionsFromActor.get(actor2).get(actor1Name).push(interaction);
                 // console.log("ADDING INTERACTION : " + this.interactionsFromActor.get(actor1);
                 this.surfaceEffectsFromActor.get(actor1).setOtherActor(actor2);
+
+                if (!this.isExtension(actor1) && !this.visPreferences.get(actor1).has(interactionType)) {
+                    this.visPreferences.get(actor1).set(interactionType, new SportActorInteraction(interactionType, actor1, null, null));
+                }
+                if (!this.isExtension(actor2) && !this.visPreferences.get(actor2).has(interactionType)) {
+                    this.visPreferences.get(actor2).set(interactionType, new SportActorInteraction(interactionType, null, actor2, null));
+                }
             }
             // if (interactionType === SportActorInterationTypes.PROJECTION) {
             //     const effects = new TableEffects(actor1, actor2, config.renderer);
@@ -383,6 +392,10 @@ class Sport {
         if (!(params && params.keepMaterial)) actor.material = actor.material.clone();
         this.display(actor, true);
         this.interactionsFromActor.set(actor, new Map());
+        if (!this.isExtension(actor)) {
+            this.visPreferences.set(actor, new Map());
+
+        }
         // return;
         if (dimensions) {
 
