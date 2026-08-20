@@ -166,21 +166,9 @@ function addActorsButtons(container, selectedMesh, closeInteractionPanel, closeM
     }
 
     else {
-        // const interactionPanel = createRightPanel(container.getBoundingClientRect(), event.clientY, `Relationship types`);
-        // if (typeof onInteractionPanelCreated === 'function') {
-        //     onInteractionPanelCreated(interactionPanel);
-        // }
         sport.visPreferences.get()
         sport.visPreferences.get(selectedMesh).forEach((preference, type) => {
-            // interactionsMap.forEach((interactions, otherActorName) => {
             const interBtn = createInteractionButton(preference, actorsList, closeModePanel, onModePanelCreated);
-            // interactions.forEach(interaction => {
-            //     const interactionName = interaction.name;
-            //     if (interactionSet.has(interactionName)) return;
-            //     interactionSet.add(interactionName);
-            //     const interBtn = createInteractionButton(interaction, actorsList, closeModePanel, onModePanelCreated);
-
-            // });
 
         });
 
