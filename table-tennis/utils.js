@@ -3,7 +3,7 @@
  * CSV parsing, calibration updates, and other helper functions
  */
 
-import { Vector3, Euler } from 'three';
+import { Vector3, Euler, Mesh } from 'three';
 
 export async function parseCsv(source) {
     try {
@@ -76,7 +76,7 @@ export function loadCalibrationData() {
     };
 }
 
-export function topK(arr, k, { delta = 1, offset = 0 }) {
+export function topK(arr, k, { delta = 4, offset }) {
     const values = new Float32Array(k);
     const indices = new Int32Array(k);
     let size = 0;
@@ -137,4 +137,44 @@ export function topK(arr, k, { delta = 1, offset = 0 }) {
     }
 
     return { values, indices };
+}
+
+const maxScoreAggregation = 1000;
+class ScoreResult {
+    constructor() {
+        this.numScoresUsed = 0;
+        this.totalScore = 0;
+    }
+
+    add(score) {
+        if (this.numScoresUsed >= maxScoreAggregation) return;
+        this.totalScore += score;
+        this.numScoresUsed++;
+
+    }
+}
+
+export function getMeshesScoresById(arr, { delta = 4, offsetScore = 0, offsetId = 1 }) {
+
+    /**@type {Map<int, ScoreResult>} */
+    const scoresMap = new Map();
+
+    for (let i = 0; i < arr.length; i += delta) {
+        const id = arr[i + offsetId];
+        if (!Number.isInteger(id)) continue;
+        const score = arr[i + offsetScore];
+        if (!scoresMap.has(id)) {
+            scoresMap.set(id, new ScoreResult());
+        }
+        scoresMap.get(id).add(score);
+    }
+    const sortedScoresMap = new Map([...scoresMap].sort((a, b) => {
+        return b[1].totalScore - a[1].totalScore
+    }));
+    // sortedScoresMap.forEach((val, key) => {
+    //     console.log("VAL : " + val.totalScore);
+    // });
+    return sortedScoresMap;
+
+
 }

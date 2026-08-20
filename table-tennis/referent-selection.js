@@ -1,7 +1,7 @@
 import { BackSide, BufferAttribute, Camera, ClampToEdgeWrapping, CustomBlending, DoubleSide, FloatType, GLSL3, LinearFilter, Material, MaxEquation, Mesh, NearestFilter, Object3D, OneFactor, RawShaderMaterial, RGBAFormat, Scene, ShaderMaterial, Vector2, WebGLRenderer, WebGLRenderTarget } from "three";
 import { config, configureSelector } from "./config";
 import { GPU_reduction } from "./gpu-reduction";
-import { topK } from "./utils";
+import { getMeshesScoresById, topK } from "./utils";
 import { SelectorTypes } from "./constants";
 
 
@@ -149,6 +149,7 @@ export class ReferentScoring {
             min: 1,
             callback: (value) => {
                 //TODO unhighlight proposed referents
+                this.#cleanPrevBestMeshes();
                 this.bestMeshes = Array.from({ length: this.numProposition });
 
             }
@@ -178,6 +179,7 @@ export class ReferentScoring {
             mesh.layers.set(0);
             mat.opacity = 1.;
             materials.push(mat);
+            // if (mesh.userData.display === undefined) mesh.userData.display = false;
             // if (side == BackSide) {
             //     mesh.material.side = BackSide;
             //     mesh.material.uniforms.isBackFace.value = true;
@@ -200,11 +202,14 @@ export class ReferentScoring {
         config.renderer.render(config.scene, config.camera);
 
 
+        let numDisplayed = 0;
         referents.forEach(mesh => {
             mesh.material = this.originalMaterials.get(mesh);
             mesh.layers.set(mesh.userData.display ? 0 : 1);
+            if (mesh.userData.display) numDisplayed++;
 
         });
+        console.log("NUM DISPLAYED : " + numDisplayed);
         //TODO e
 
     }
@@ -240,10 +245,19 @@ export class ReferentScoring {
         );
     }
 
+    #cleanPrevBestMeshes() {
+        for (let k = 0; k < this.numProposition; k++) {
+            const bestMesh_k = this.bestMeshes[k];
+            // if (bestMesh_k && this.originalMaterials.get(bestMesh_k) && this.originalMaterials.get(bestMesh_k).uniforms && this.originalMaterials.get(bestMesh_k).uniforms.isHighLighted) this.originalMaterials.get(bestMesh_k).uniforms.isHighLighted.value = false;
+            if (bestMesh_k && bestMesh_k.userData.formerDisplay !== undefined) bestMesh_k.userData.display = bestMesh_k.userData.formerDisplay;
+            this.bestMeshes[k] = null;
+        }
+    }
+
 
     async #findBests(n) {
         if (n == 1) {
-            this.#findBest();
+            // this.#findBest();
             return;
         }
 
@@ -258,19 +272,15 @@ export class ReferentScoring {
             scores
         );
 
-        const top = topK(scores, n, { delta: 4, offset: 0 });
-        for (let k = 0; k < n; k++) {
-            const bestMesh_k = this.bestMeshes[k];
-            if (bestMesh_k && this.originalMaterials.get(bestMesh_k) && this.originalMaterials.get(bestMesh_k).uniforms && this.originalMaterials.get(bestMesh_k).uniforms.isHighLighted) this.originalMaterials.get(bestMesh_k).uniforms.isHighLighted.value = false;
-            if (bestMesh_k && bestMesh_k.userData.formerDisplay !== undefined) bestMesh_k.userData.display = bestMesh_k.userData.formerDisplay;
-        }
-        for (let k = 0; k < n; k++) {
-            // let meshId;
-            // let vertexId;
+        const scoresMap = getMeshesScoresById(scores, { delta: 4, offsetId: 1, offsetScore: 0 });
+        // const top = topK(scores, n, { delta: 4, offset: 0 });
+        this.#cleanPrevBestMeshes();
+        let k = 0;
+        scoresMap.forEach((scoreResult, id) => {
+            if (k >= n) return;
+            console.log("K : " + k);
 
-            const meshId = scores[top.indices[k] * 4 + 1];
-            const vertexId = scores[top.indices[k] * 4 + 2];
-            const mesh = this.meshById.get(meshId);
+            const mesh = this.meshById.get(id);
             this.bestMeshes[k] = mesh;
 
             if (mesh) {
@@ -279,10 +289,28 @@ export class ReferentScoring {
             }
             if (mesh) console.log("best mesh : " + mesh.name);
             if (mesh && this.originalMaterials.get(mesh).uniforms && this.originalMaterials.get(mesh).uniforms.isHighLighted) this.originalMaterials.get(mesh).uniforms.isHighLighted.value = true;
+            k++;
+
+        });
+        // for (let k = 0; k < Math.min(scoresMap.size, n); k++) {
+        //     // let meshId;
+        //     // let vertexId;
+
+        //     const meshId = scores[top.indices[k] * 4 + 1];
+        //     const vertexId = scores[top.indices[k] * 4 + 2];
+        //     const mesh = this.meshById.get(meshId);
+        //     this.bestMeshes[k] = mesh;
+
+        //     if (mesh) {
+        //         mesh.userData.formerDisplay = mesh.userData.display;
+        //         mesh.userData.display = true;
+        //     }
+        //     if (mesh) console.log("best mesh : " + mesh.name);
+        //     if (mesh && this.originalMaterials.get(mesh).uniforms && this.originalMaterials.get(mesh).uniforms.isHighLighted) this.originalMaterials.get(mesh).uniforms.isHighLighted.value = true;
 
 
-            //TODO faire une fonction générique qui fait comme dans findbest, remplacer bestMesh par bestMeshes etc.
-        }
+        //     //TODO faire une fonction générique qui fait comme dans findbest, remplacer bestMesh par bestMeshes etc.
+        // }
 
 
 
@@ -311,6 +339,7 @@ export class ReferentScoring {
     }
 
     stop() {
+        //TODO adapt to multiple propositions
         if (this.bestMesh && this.bestMesh.userData.formerDisplay !== undefined) {
             this.bestMesh.userData.display = this.bestMesh.userData.formerDisplay;
             this.bestMesh.layers.set(this.bestMesh.userData.display ? 0 : 1);
