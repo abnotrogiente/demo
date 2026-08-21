@@ -217,6 +217,11 @@ export class ReferentScoring {
             mesh.layers.set(mesh.userData.display ? 0 : 1);
             if (mesh.userData.display) numDisplayed++;
 
+            if (mesh.userData.proxyForSurfaceEffects) {
+                const surface = mesh.userData.proxyForSurfaceEffects;
+                surface.layers.set(surface.userData.display ? 0 : 1);
+            }
+
         });
         //TODO e
 
@@ -253,13 +258,36 @@ export class ReferentScoring {
         );
     }
 
+    /**
+     * 
+     * @param {Mesh} referent 
+     */
+    #disableReferent(referent) {
+        if (referent.userData.formerDisplay !== undefined) referent.userData.display = referent.userData.formerDisplay;
+        this.#updateVis(referent);
+        if (referent && referent.userData.proxyForSurfaceEffects) this.#disableReferent(referent.userData.proxyForSurfaceEffects);
+
+    }
+
+    /**
+     * 
+     * @param {Mesh} referent 
+     */
+    #enableReferent(referent) {
+        referent.userData.formerDisplay = referent.userData.display;
+        referent.userData.display = true;
+
+        // if (referent && this.originalMaterials.get(referent).uniforms && this.originalMaterials.get(referent).uniforms.isHighLighted) this.originalMaterials.get(referent).uniforms.isHighLighted.value = true;
+        this.#updateVis(referent);
+
+        if (referent && referent.userData.proxyForSurfaceEffects) this.#enableReferent(referent.userData.proxyForSurfaceEffects);
+    }
+
     #cleanPrevBestMeshes() {
         for (let k = 0; k < this.numProposition; k++) {
             const bestMesh_k = this.bestMeshes[k];
-            // if (bestMesh_k && this.originalMaterials.get(bestMesh_k) && this.originalMaterials.get(bestMesh_k).uniforms && this.originalMaterials.get(bestMesh_k).uniforms.isHighLighted) this.originalMaterials.get(bestMesh_k).uniforms.isHighLighted.value = false;
-            if (bestMesh_k && bestMesh_k.userData.formerDisplay !== undefined) bestMesh_k.userData.display = bestMesh_k.userData.formerDisplay;
+            if (bestMesh_k) this.#disableReferent(bestMesh_k);
             this.bestMeshes[k] = null;
-            if (bestMesh_k) this.#updateVis(bestMesh_k);
         }
     }
 
@@ -268,7 +296,7 @@ export class ReferentScoring {
      * @param {Mesh} referent 
      */
     #updateVis(referent) {
-
+        if (!this.interactionsFromActors.has(referent)) return;
         this.interactionsFromActors.get(referent).forEach((interactions, otherActor) => {
             console.log("actor name : " + referent.name + "\n");
             if (!this.visPreferences.has(otherActor)) return;
@@ -318,12 +346,7 @@ export class ReferentScoring {
             const mesh = this.meshById.get(id);
             this.bestMeshes[k] = mesh;
 
-            if (mesh) {
-                mesh.userData.formerDisplay = mesh.userData.display;
-                mesh.userData.display = true;
-            }
-            // if (mesh && this.originalMaterials.get(mesh).uniforms && this.originalMaterials.get(mesh).uniforms.isHighLighted) this.originalMaterials.get(mesh).uniforms.isHighLighted.value = true;
-            this.#updateVis(mesh);
+            if (mesh) this.#enableReferent(mesh);
             // mesh.userData.isProposed
             k++;
 
