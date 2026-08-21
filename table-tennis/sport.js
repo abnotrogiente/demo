@@ -491,8 +491,8 @@ class Sport {
             actor.userData.parentBeforeScreenSpace = actor.parent;
             config.camera.add(actor);
 
-            actor.position.set(-1., 0.4, -1);
-            actor.position.multiplyScalar(length * 1.5);
+            actor.position.set(1., 0.4, -1);
+            actor.position.multiplyScalar(length * 0.3);
             console.log("length : " + length);
             const p = new Vector3();
             actor.getWorldPosition(p);
