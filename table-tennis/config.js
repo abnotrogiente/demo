@@ -86,6 +86,8 @@ export class Config {
         this.paused = false;
         /**@type {AnimationMixer} */
         this.mixer = null;
+
+        this.renderScore = false;
     }
 
     /**

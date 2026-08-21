@@ -8,7 +8,6 @@ import { config, configureSelector } from "./config";
 import { SurfaceEffects } from "./surfaceEffects";
 import { ObjectSelector } from "./editor";
 import { createEnglobingShape, createExtendedReferents } from "./extendedReferents";
-import { ReferentScoring } from "./referent-selection";
 import { loadAsset } from "./asset-loader";
 
 
@@ -129,25 +128,7 @@ class Sport {
 
     constructor() {
 
-
-
-        this.referentScoringEnabled = false;
-
         this.directReferentSelection = true;
-
-        //TODO enregistrer ici la préférence selectionnée pour la donnée à visualiser (si le scoring est activé)
-
-
-        configureSelector({
-            selectorName: "Referent Scoring",
-            variableParent: this,
-            variableName: "referentScoringEnabled",
-            selectorType: SelectorTypes.CHECKBOX,
-            callback: (value) => {
-                this.referentScoring.stop();
-            }
-        });
-
         configureSelector({
             selectorName: "Direct Referent Selection",
             variableParent: this,
@@ -257,7 +238,6 @@ class Sport {
 
         });
 
-        this.referentScoring = new ReferentScoring(this.interactionsFromActor, this.visPreferences);
         this.selector = new ObjectSelector();
         this.selector.updateObjectShaders();
 
@@ -432,15 +412,16 @@ class Sport {
 
                     this.#addInteractions([SportActorInterationTypes.METADATA], null, extension, extension.name, actor, actor.name);
                 }
-                else if (extension.name === "Proxy") {
+                else if (extension.name.startsWith("Proxy")) {
                     if (dimensionsForExtensions.lookDirection) {
                         extension.userData.lookDirection = dimensionsForExtensions.lookDirection;
                     }
-                    // this.setCharacteristic(extension, ReferentsCharacteristics.SCREEN_SPACE, true);
-                    // this.setCharacteristic(extension, ReferentsCharacteristics.CAMERA_FACING, true);
                     extension.userData.actorFromProxyExtension = actor;
                     if (surfaceForEffects) this.#addSurfaceForEffects(extension, dimensions);
                     actor.userData.proxy = extension;
+                    // this.setCharacteristic(extension, ReferentsCharacteristics.SCREEN_SPACE, true);
+                    // this.setCharacteristic(extension, ReferentsCharacteristics.CAMERA_FACING, true);
+                    // this.setCharacteristic(extension, ReferentsCharacteristics.ALWAYS_VISIBLE, true);
                 }
             });
 
@@ -510,8 +491,8 @@ class Sport {
             actor.userData.parentBeforeScreenSpace = actor.parent;
             config.camera.add(actor);
 
-            actor.position.set(1., 0.4, -1);
-            actor.position.multiplyScalar(length * 2);
+            actor.position.set(-1., 0.4, -1);
+            actor.position.multiplyScalar(length * 1.5);
             console.log("length : " + length);
             const p = new Vector3();
             actor.getWorldPosition(p);
@@ -618,8 +599,6 @@ class Sport {
 
             if (this.actorByName.has(actorName)) this.actorByName.get(actorName).position.set(traj["x"], z, traj["y"]);
         });
-
-        if (this.referentScoringEnabled) this.referentScoring.evaluate(this.actors);
 
         const climber = config.scene.getObjectByName("Climber");
         if (climber) console.log("climber pos :  " + JSON.stringify(climber.position));

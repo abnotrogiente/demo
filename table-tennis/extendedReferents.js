@@ -87,7 +87,7 @@ export function createExtendedReferents(actor, dimensions) {
     proxy.position.set(2, 0, 2);
     proxy.scale.copy(actor.scale);
     actor.getWorldQuaternion(proxy.rotation);
-    proxy.name = "Proxy";
+    proxy.name = "Proxy " + actor.name;
     pannels.push(proxy);
     proxy.userData.dimensions = dimensions;
 

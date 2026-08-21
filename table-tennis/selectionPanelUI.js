@@ -1,6 +1,7 @@
 import { DoubleSide, Mesh } from "three";
 import { sport } from "./sport";
 import { ReferentsCharacteristics } from "./constants";
+import { referentScoring } from "./referent-selection";
 
 function applyPanelStyles(element, styles) {
     Object.entries(styles).forEach(([key, value]) => {
@@ -117,7 +118,7 @@ function createInteractionButton(interaction, parent, closeModePanel, onModePane
 }
 
 function addActorsButtons(container, selectedMesh, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated) {
-    container.appendChild(createLabel('Actors:', { fontWeight: '500', marginBottom: '4px' }));
+    container.appendChild(createLabel((referentScoring.enabled ? 'Relationship types' : 'Actors:'), { fontWeight: '500', marginBottom: '4px' }));
 
     /**@type {Map<Mesh, Map<string, Map<int,SportActorInteraction>>>} */
     const interactionsMap = sport.interactionsFromActor.get(selectedMesh) || new Map();
@@ -131,7 +132,7 @@ function addActorsButtons(container, selectedMesh, closeInteractionPanel, closeM
         gap: '6px',
     });
 
-    if (!sport.referentScoringEnabled) {
+    if (!referentScoring.enabled) {
 
         interactionsMap.forEach((interactions, otherActor) => {
             const otherActorName = otherActor.name;
@@ -168,7 +169,7 @@ function addActorsButtons(container, selectedMesh, closeInteractionPanel, closeM
     }
 
     else {
-        sport.visPreferences.get()
+        if (!sport.visPreferences.has(selectedMesh)) return;
         sport.visPreferences.get(selectedMesh).forEach((preference, type) => {
             const interBtn = createInteractionButton(preference, actorsList, closeModePanel, onModePanelCreated);
 
@@ -340,7 +341,7 @@ function addSelectedActorContent(container, selectedMesh, closeInteractionPanel,
 
 
     addActorsButtons(container, selectedMesh, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated);
-    if (!sport.referentScoringEnabled) {
+    if (!referentScoring.enabled) {
         addExtensionsButtons(container, selectedMesh);
         addCharacteristicsButton(container, selectedMesh);
     }

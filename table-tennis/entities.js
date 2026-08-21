@@ -24,6 +24,7 @@ import { ObjectSelector } from './editor';
 import { Physics } from './physics';
 import { EffectComposer } from 'three/examples/jsm/Addons.js';
 import { sport } from './sport';
+import { config } from './config';
 
 /**
  * 
@@ -53,7 +54,7 @@ export async function createEntities(scene, camera, physics, renderer, composer)
     const roomMaterial = new MeshStandardMaterial({ side: BackSide, color: 0xddffff });
     const room = new Mesh(roomGeometry, roomMaterial);
     room.position.y = 5 - tableDimensions.altitude;
-    scene.add(room);
+    if (!config.renderScore) scene.add(room);
 
     const groundThickness = 1.
     const groundGeometry = new BoxGeometry(20, groundThickness, 20);
@@ -61,7 +62,7 @@ export async function createEntities(scene, camera, physics, renderer, composer)
     const ground = new Mesh(groundGeometry, groundMaterial);
     ground.position.y = -groundThickness / 2 + 0.01 - tableDimensions.altitude;
     ground.name = "ground";
-    scene.add(ground);
+    if (!config.renderScore) scene.add(ground);
 
 
 

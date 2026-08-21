@@ -2,21 +2,17 @@ import { BackSide, BufferAttribute, Camera, ClampToEdgeWrapping, CustomBlending,
 import { config, configureSelector } from "./config";
 import { GPU_reduction } from "./gpu-reduction";
 import { getMeshesScoresById, topK } from "./utils";
-import { SelectorTypes } from "./constants";
-import { SportActorInteraction } from "./sport";
+import { ReferentsCharacteristics, SelectorTypes } from "./constants";
+import { sport, SportActorInteraction } from "./sport";
 
 
 export class ReferentScoring {
 
-    /**
-     * 
-     * @param {Map<Mesh, Map<Mesh, Map<int,SportActorInteraction>>>} interactionsFromActors 
-     * @param {Map<Mesh, Map<int, SportActorInteraction>} visPreferences 
-     */
-    constructor(interactionsFromActors, visPreferences) {
 
-        this.interactionsFromActors = interactionsFromActors;
-        this.visPreferences = visPreferences;
+    constructor() {
+
+        this.enabled = false;
+
         this.bestId = new Vector2(-1, -1);
         /**@type {Mesh} */
         this.bestMesh = null;
@@ -45,7 +41,8 @@ export class ReferentScoring {
                 isBackFace: { value: false },
                 resolution: { value: new Vector2() },
                 bestId: { value: this.bestId },
-                render: { value: false }
+                render: { value: false },
+                screenSpace: { value: false }
             },
             vertexShader: /*glsl */ `
                 precision highp float;
@@ -102,6 +99,7 @@ export class ReferentScoring {
                 uniform vec2 resolution;
                 uniform vec2 bestId;
                 uniform bool render;
+                uniform bool screenSpace;
 
                 void main() {
                     if (vMeshId < .5) {
@@ -113,12 +111,13 @@ export class ReferentScoring {
                     // float scorePos = length(clipPos.xy);
                     float scorePos = 1.-length(ndc);
                     float scoreDepth = max(1.-depth/5., 0.);
+                    if (screenSpace) scoreDepth = .85;
                     float score = .33*scoreNormal + .33*scorePos + .33*scoreDepth;
                     // score = scoreNormal;
                     // score = scoreDepth;
                     if (render) {
                         fragColor = vec4(vec3(score), 1.);
-                        if (abs(bestId.x-vVertexId) <= 10. && abs(bestId.y - vMeshId) <= 10.) fragColor = vec4(1., 0., 0., 1.);
+                        // if (abs(bestId.x-vVertexId) <= 10. && abs(bestId.y - vMeshId) <= 10.) fragColor = vec4(1., 0., 0., 1.);
                         return;
                     }
                     fragColor = vec4(score, vMeshId, vVertexId, 1.);
@@ -165,11 +164,10 @@ export class ReferentScoring {
         });
     }
 
-    /**
-     * 
-     * @param {Mesh[]} referents 
-     */
-    async evaluate(referents) {
+
+    async evaluate() {
+        const referents = sport.actors;
+        if (!this.enabled) return;
         this.referents = referents;
         /**@type {Map<Mesh, Material>} */
         this.originalMaterials = new Map();
@@ -184,7 +182,8 @@ export class ReferentScoring {
             this.originalMaterials.set(mesh, mesh.material);
             const mat = this.material.clone();
             mesh.material = mat;
-            mat.uniforms.render.value = false;
+            mat.uniforms.render.value = config.renderScore;
+            mat.uniforms.screenSpace.value = sport.hasCharacteristic(mesh, ReferentsCharacteristics.SCREEN_SPACE);
             mesh.layers.set(0);
             mat.opacity = 1.;
             materials.push(mat);
@@ -200,7 +199,7 @@ export class ReferentScoring {
             mat.needsUpdate = true;
 
         });
-        config.renderer.setRenderTarget(this.scoreRenderTarget);
+        if (!config.renderScore) config.renderer.setRenderTarget(this.scoreRenderTarget);
         // config.renderer.setRenderTarget(this.renderTargets);
         config.renderer.render(config.scene, config.camera);
         this.#findBests(this.numProposition);
@@ -223,7 +222,9 @@ export class ReferentScoring {
             }
 
         });
-        //TODO e
+
+        // console.log("NUM DISPLAYED : " + numDisplayed);
+        //TODO REPARER L ALGO POUR LES REFERENTS AVEC LA CHARACTERISTIQUE ALWAYS-VISIBLE
 
     }
 
@@ -296,23 +297,23 @@ export class ReferentScoring {
      * @param {Mesh} referent 
      */
     #updateVis(referent) {
-        if (!this.interactionsFromActors.has(referent)) return;
-        this.interactionsFromActors.get(referent).forEach((interactions, otherActor) => {
-            console.log("actor name : " + referent.name + "\n");
-            if (!this.visPreferences.has(otherActor)) return;
-            console.log("other actor name : " + otherActor.name);
-            this.visPreferences.get(otherActor).forEach((preference, type) => {
+        if (!sport.interactionsFromActor.has(referent)) return;
+        sport.interactionsFromActor.get(referent).forEach((interactions, otherActor) => {
+            // console.log("actor name : " + referent.name + "\n");
+            if (!sport.visPreferences.has(otherActor)) return;
+            // console.log("other actor name : " + otherActor.name);
+            sport.visPreferences.get(otherActor).forEach((preference, type) => {
                 if (!interactions.has(type)) return;
-                console.log("INTERACTION TYPE : " + type);
-                console.log("PREFERENCE : " + JSON.stringify(preference.params));
+                // console.log("INTERACTION TYPE : " + type);
+                // console.log("PREFERENCE : " + JSON.stringify(preference.params));
                 Object.entries(preference.params).forEach(([paramName, param]) => {
-                    console.log("PARAM : " + JSON.stringify(param));
+                    // console.log("PARAM : " + JSON.stringify(param));
                     const value = referent.userData.display ? param.value : param.default;
-                    console.log("VALUE : " + value);
+                    // console.log("VALUE : " + value);
                     interactions.get(type).params[paramName].value = value;
 
                 });
-                console.log("\n\n\n");
+                // console.log("\n\n\n");
             });
         });
     }
@@ -349,6 +350,7 @@ export class ReferentScoring {
             if (mesh) this.#enableReferent(mesh);
             // mesh.userData.isProposed
             k++;
+
 
         });
         // for (let k = 0; k < Math.min(scoresMap.size, n); k++) {
@@ -405,3 +407,14 @@ export class ReferentScoring {
         }
     }
 }
+
+export const referentScoring = new ReferentScoring();
+configureSelector({
+    selectorName: "Referent Scoring",
+    variableParent: referentScoring,
+    variableName: "enabled",
+    selectorType: SelectorTypes.CHECKBOX,
+    callback: (value) => {
+        referentScoring.stop();
+    }
+});
