@@ -419,7 +419,7 @@ class Sport {
                     extension.userData.actorFromProxyExtension = actor;
                     if (surfaceForEffects) this.#addSurfaceForEffects(extension, dimensions);
                     actor.userData.proxy = extension;
-                    // this.setCharacteristic(extension, ReferentsCharacteristics.SCREEN_SPACE, true);
+                    this.setCharacteristic(extension, ReferentsCharacteristics.SCREEN_SPACE, true);
                     // this.setCharacteristic(extension, ReferentsCharacteristics.CAMERA_FACING, true);
                     // this.setCharacteristic(extension, ReferentsCharacteristics.ALWAYS_VISIBLE, true);
                 }
@@ -492,7 +492,7 @@ class Sport {
             config.camera.add(actor);
 
             actor.position.set(1., 0.4, -1);
-            actor.position.multiplyScalar(length * 0.3);
+            actor.position.multiplyScalar(length * 1.5);
             console.log("length : " + length);
             const p = new Vector3();
             actor.getWorldPosition(p);
