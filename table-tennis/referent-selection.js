@@ -1,5 +1,5 @@
 import { BackSide, BufferAttribute, Camera, ClampToEdgeWrapping, CustomBlending, DoubleSide, FloatType, GLSL3, LinearFilter, Material, MaxEquation, Mesh, NearestFilter, Object3D, OneFactor, RawShaderMaterial, RGBAFormat, Scene, ShaderMaterial, Vector2, WebGLRenderer, WebGLRenderTarget } from "three";
-import { config, configureSelector } from "./config";
+import { config, configureButton, configureSelector } from "./config";
 import { GPU_reduction } from "./gpu-reduction";
 import { getMeshesScoresById, topK } from "./utils";
 import { ReferentsCharacteristics, SelectorTypes } from "./constants";
@@ -11,7 +11,13 @@ export class ReferentScoring {
 
     constructor() {
 
-        this.enabled = false;
+        this.modes = Object.freeze({
+            DISABLED: 0,
+            CONTINUOUS: 1,
+            ON_DEMAND: 2
+        });
+
+        this.currentMode = this.modes.DISABLED;
 
         this.bestId = new Vector2(-1, -1);
         /**@type {Mesh} */
@@ -166,8 +172,8 @@ export class ReferentScoring {
 
 
     async evaluate() {
+        console.log("EVALUATE");
         const referents = sport.actors;
-        if (!this.enabled) return;
         this.referents = referents;
         /**@type {Map<Mesh, Material>} */
         this.originalMaterials = new Map();
@@ -406,15 +412,33 @@ export class ReferentScoring {
             this.bestMesh.layers.set(this.bestMesh.userData.display ? 0 : 1);
         }
     }
+
+    update() {
+        this.bestMeshes.forEach(referent => {
+            if (!referent) return;
+            this.#updateVis(referent);
+        })
+        // console.log("current mode : " + this.currentMode);
+        if (this.currentMode == this.modes.CONTINUOUS) this.evaluate();
+    }
 }
 
 export const referentScoring = new ReferentScoring();
 configureSelector({
     selectorName: "Referent Scoring",
     variableParent: referentScoring,
-    variableName: "enabled",
-    selectorType: SelectorTypes.CHECKBOX,
+    variableName: "currentMode",
+    selectorType: SelectorTypes.SELECT,
+    variableEnum: referentScoring.modes,
     callback: (value) => {
         referentScoring.stop();
+    }
+});
+
+configureButton({
+    buttonName: "Propose Referents",
+    callback: (value) => {
+        if (referentScoring.currentMode != referentScoring.modes.ON_DEMAND) return;
+        referentScoring.evaluate();
     }
 });

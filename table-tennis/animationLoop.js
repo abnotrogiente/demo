@@ -56,7 +56,7 @@ export function startAnimationLoop(renderer, composer, physics, players, cvHelpe
         // tableEffects.update(elapsed, delta);
 
         if (config.mixer) config.mixer.update(delta);
-        referentScoring.evaluate();
+        referentScoring.update();
         // Render
         if (!config.renderScore) composer.render();
     };

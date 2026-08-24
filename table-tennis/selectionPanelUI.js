@@ -116,9 +116,35 @@ function createInteractionButton(interaction, parent, closeModePanel, onModePane
     };
     parent.appendChild(interBtn);
 }
+function addDisableButton(container, selectedMesh, closeInteractionPanel, closeModePanel) {
+    container.appendChild(createLabel('', { fontWeight: '500', marginBottom: '4px' }));
+    const btnDiv = document.createElement('div');
+    applyPanelStyles(btnDiv, {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '6px',
+    });
+    const disableBtn = createActionButton("DISPLAYED", {
+        background: sport.isDisplayed(selectedMesh) ? 'rgba(56, 161, 105, 0.18)' : 'rgba(255,255,255,0.04)',
 
+    });
+
+    disableBtn.onclick = (event) => {
+        closeInteractionPanel();
+        closeModePanel();
+
+        sport.display(selectedMesh, !selectedMesh.userData.display);
+        // referentScoring.bestMeshes[referentScoring.bestMeshes.indexOf(selectedMesh)] = null;
+
+        disableBtn.style.background = sport.isDisplayed(selectedMesh) ? 'rgba(56, 161, 105, 0.18)' : 'rgba(255,255,255,0.04)';
+    }
+
+    btnDiv.appendChild(disableBtn);
+    container.appendChild(btnDiv);
+
+}
 function addActorsButtons(container, selectedMesh, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated) {
-    container.appendChild(createLabel((referentScoring.enabled ? 'Relationship types' : 'Actors:'), { fontWeight: '500', marginBottom: '4px' }));
+    container.appendChild(createLabel((referentScoring.currentMode != referentScoring.modes.DISABLED ? 'Relationship types' : 'Actors:'), { fontWeight: '500', marginBottom: '4px' }));
 
     /**@type {Map<Mesh, Map<string, Map<int,SportActorInteraction>>>} */
     const interactionsMap = sport.interactionsFromActor.get(selectedMesh) || new Map();
@@ -132,7 +158,7 @@ function addActorsButtons(container, selectedMesh, closeInteractionPanel, closeM
         gap: '6px',
     });
 
-    if (!referentScoring.enabled) {
+    if (referentScoring.currentMode == referentScoring.modes.DISABLED) {
 
         interactionsMap.forEach((interactions, otherActor) => {
             const otherActorName = otherActor.name;
@@ -330,7 +356,7 @@ export function createRightPanel(anchorRect, cursorY, titleText) {
     return panel;
 }
 
-function addSelectedActorContent(container, selectedMesh, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated) {
+function addSelectedActorContent(container, selectedMesh, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated, isProposedReferent = false) {
 
 
     container.appendChild(createLabel(`Selected: ${selectedMesh.name || 'object'}`, {
@@ -339,13 +365,50 @@ function addSelectedActorContent(container, selectedMesh, closeInteractionPanel,
     }));
 
 
-
+    if (isProposedReferent) {
+        addDisableButton(container, selectedMesh, closeInteractionPanel, closeModePanel);
+        return;
+    }
     addActorsButtons(container, selectedMesh, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated);
-    if (!referentScoring.enabled) {
+    if (referentScoring.currentMode == referentScoring.modes.DISABLED) {
         addExtensionsButtons(container, selectedMesh);
         addCharacteristicsButton(container, selectedMesh);
     }
 
+}
+
+function addProposedReferentsList(container, onActorSelected) {
+    container.appendChild(createLabel('Proposed Referents', { fontWeight: '600', marginBottom: '6px' }));
+
+    const actorsList = document.createElement('div');
+    applyPanelStyles(actorsList, {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '6px',
+    });
+    referentScoring.bestMeshes.forEach(referent => {
+        if (!referent) return;
+        const actorButton = createActionButton(referent.name || 'object', {
+            background: 'rgba(255,255,255,0.04)',
+        });
+
+        actorButton.onmouseenter = () => {
+            referent.material.uniforms.isHighLighted.value = true;
+        };
+        actorButton.onmouseleave = () => {
+            referent.material.uniforms.isHighLighted.value = false;
+        };
+        actorButton.onclick = () => {
+            Array.from(actorsList.children).forEach(button => {
+                if (button.tagName === 'BUTTON') button.style.background = 'rgba(255,255,255,0.04)';
+            });
+            actorButton.style.background = 'rgba(56, 161, 105, 0.18)';
+            onActorSelected(referent, actorButton, actorsList, true);
+        };
+        actorsList.appendChild(actorButton);
+    });
+
+    container.appendChild(actorsList);
 }
 
 function addActorList(container, onActorSelected, physical = true) {
@@ -374,6 +437,8 @@ function addActorList(container, onActorSelected, physical = true) {
     });
 
     container.appendChild(actorsList);
+
+    if (referentScoring.currentMode != referentScoring.modes.DISABLED) addProposedReferentsList(container, onActorSelected);
 }
 
 export function createSelectionPanel({
@@ -413,7 +478,7 @@ export function createSelectionPanel({
 
     if (actorListMode) {
         let selectedDetails = null;
-        const onActorSelected = (actor, actorButton, actorsList) => {
+        const onActorSelected = (actor, actorButton, actorsList, isProposedReferent = false) => {
             closeInteractionPanel();
             closeModePanel();
             selectedDetails?.remove();
@@ -424,7 +489,7 @@ export function createSelectionPanel({
                 paddingTop: '8px',
                 borderTop: '1px solid rgba(255,255,255,0.15)',
             });
-            addSelectedActorContent(details, actor, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated);
+            addSelectedActorContent(details, actor, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated, isProposedReferent);
             actorsList.insertBefore(details, actorButton.nextSibling);
             selectedDetails = details;
         };

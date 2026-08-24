@@ -7,6 +7,18 @@ const uiWindowContent = document.getElementById("window-content");
 
 
 
+export function configureButton({ buttonName = "button", callback = () => { } }) {
+    const div = document.createElement("div");
+    div.classList.add("control-group");
+    const label = document.createElement("label");
+    label.textContent = buttonName;
+    div.appendChild(label);
+    const button = document.createElement("button");
+    button.innerHTML = buttonName;
+    button.onclick = callback;
+    div.appendChild(button);
+    uiWindowContent.appendChild(div);
+}
 // export function configureSelector(selectorName, variableParent, variableName, variableEnum, callback) {
 export function configureSelector({ selectorName = "selector", variableParent = config.params, variableName = "", variableEnum = {}, callback = () => { }, selectorType = SelectorTypes.CHECKBOX, min = 0, max = 100 }) {
     const div = document.createElement("div");
