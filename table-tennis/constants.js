@@ -92,13 +92,15 @@ export const EnableModes = Object.freeze({
 });
 
 export const MetaDataModes = Object.freeze({
-    POSITION: 0,
-    SPEED: 1,
-    ACCELERATION: 2,
-    NAME: 3
+    NONE: 0,
+    POSITION: 1,
+    SPEED: 2,
+    ACCELERATION: 3,
+    NAME: 4
 });
 
 export const MetaDataValueFromModeAndActor = new Map([
+    [MetaDataModes.NONE, (actor) => ""],
     [MetaDataModes.POSITION, (actor) => actor.position],
     [MetaDataModes.SPEED, (actor) => actor.userData.speed]
 ]);
@@ -179,6 +181,7 @@ export const sportToAssets = {
             collideShape: "box",
             dimensions: { width: 1, height: 0.75, depth: 1 },
             position: new Vector3(0, 1., 0),
+            // rotation: new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), Math.PI / 4)
         },
 
         {

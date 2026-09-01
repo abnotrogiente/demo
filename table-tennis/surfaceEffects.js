@@ -300,8 +300,8 @@ export class SurfaceEffects {
 
     setOtherActor(actor) {
         this.otherActor = actor;
-        this.otherActor.userData.speed = this.speed;
-        // console.log("speed y : " + this.otherActor.userData.speed.y);
+        this.otherActor.userData.speed = this.prevSpeed;
+        console.log("speed y : " + this.otherActor.userData.speed.y);
         this.speed.y += 1.;
         // console.log("speed y after : " + this.otherActor.userData.speed.y + "\n\n");
 
@@ -637,9 +637,10 @@ export class SurfaceEffects {
         let val = MetaDataValueFromModeAndActor.get(informationRelationship.params.metaData.value)(this.otherActor);
         switch (informationRelationship.params.glyph.value) {
             case GlyphModes.TEXT:
+                console.log("val : " + JSON.stringify(val));
                 this.otherActor = informationRelationship.actor2;
                 if (val.isVector3) val = val.length();
-                val = this.speed.length(); // TODO ça devrait degager, le haut devrait suffire, pourquoi le haut n'est pas bon ?
+                // val = this.speed.length(); // TODO ça devrait degager, le haut devrait suffire, pourquoi le haut n'est pas bon ?
                 this.canvasTextTexture.setText("" + val);
                 break;
             default:

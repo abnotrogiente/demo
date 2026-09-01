@@ -58,7 +58,7 @@ const characteristicsFromInteraction = new Map([
         params: {
             metaData: {
                 enum: MetaDataModes,
-                default: MetaDataModes.SPEED
+                default: MetaDataModes.NONE
             },
             glyph: {
                 enum: GlyphModes,
@@ -327,6 +327,7 @@ class Sport {
                         const geometry = new BoxGeometry(asset.dimensions.width, asset.dimensions.height, asset.dimensions.depth);
                         mesh = new Mesh(geometry, material);
                         mesh.position.copy(asset.position);
+                        if (asset.rotation) mesh.applyQuaternion(asset.rotation);
                         mesh.name = asset.name;
                         config.scene.add(mesh);
                     }
