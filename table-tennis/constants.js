@@ -99,10 +99,11 @@ export const MetaDataModes = Object.freeze({
     NAME: 4
 });
 
+const tmpVec = new Vector3();
 export const MetaDataValueFromModeAndActor = new Map([
-    [MetaDataModes.NONE, (actor) => ""],
-    [MetaDataModes.POSITION, (actor) => actor.position],
-    [MetaDataModes.SPEED, (actor) => actor.userData.speed]
+    [MetaDataModes.NONE, (actor) => { return { value: "", unit: "" } }],
+    [MetaDataModes.POSITION, (actor) => { return { value: actor.position, unit: "m" } }],
+    [MetaDataModes.SPEED, (actor) => { return { value: tmpVec.copy(actor.userData.speed).multiplyScalar(3.6), unit: "km/h" } }]
 ]);
 
 export const GlyphModes = Object.freeze({

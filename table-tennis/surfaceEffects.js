@@ -301,10 +301,6 @@ export class SurfaceEffects {
     setOtherActor(actor) {
         this.otherActor = actor;
         this.otherActor.userData.speed = this.prevSpeed;
-        console.log("speed y : " + this.otherActor.userData.speed.y);
-        this.speed.y += 1.;
-        // console.log("speed y after : " + this.otherActor.userData.speed.y + "\n\n");
-
     }
 
 
@@ -634,14 +630,16 @@ export class SurfaceEffects {
      * @param {SportActorInteraction} informationRelationship 
      */
     #updateMetaDataInteraction(informationRelationship) {
-        let val = MetaDataValueFromModeAndActor.get(informationRelationship.params.metaData.value)(this.otherActor);
+        const { value, unit } = MetaDataValueFromModeAndActor.get(informationRelationship.params.metaData.value)(this.otherActor);
+        let val = value;
         switch (informationRelationship.params.glyph.value) {
             case GlyphModes.TEXT:
-                console.log("val : " + JSON.stringify(val));
                 this.otherActor = informationRelationship.actor2;
                 if (val.isVector3) val = val.length();
+                console.log("val : " + JSON.stringify(value));
                 // val = this.speed.length(); // TODO ça devrait degager, le haut devrait suffire, pourquoi le haut n'est pas bon ?
-                this.canvasTextTexture.setText("" + val);
+                if (typeof (val) === "number") val = Math.round(val * 10) / 10;
+                this.canvasTextTexture.setText("" + val + "" + unit);
                 break;
             default:
                 break;
