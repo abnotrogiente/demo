@@ -84,7 +84,7 @@ export function createExtendedReferents(actor, dimensions) {
     pannels.push(enclosing2);
 
     const proxy = new Mesh(actor.geometry.clone(), actor.material.clone());
-    proxy.position.set(2, 0, 2);
+    proxy.position.set(2, -1, 2.5);
     proxy.scale.copy(actor.scale);
     actor.getWorldQuaternion(proxy.rotation);
     proxy.name = "Proxy " + actor.name;
