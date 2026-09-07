@@ -1,4 +1,4 @@
-import { BoxGeometry, DoubleSide, Mesh, MeshBasicMaterial, MeshPhongMaterial, MeshStandardMaterial, PlaneGeometry, Quaternion, Scene, SphereGeometry, Vector3 } from "three";
+import { BoxGeometry, DoubleSide, Matrix4, Mesh, MeshBasicMaterial, MeshPhongMaterial, MeshStandardMaterial, PlaneGeometry, Quaternion, Scene, SphereGeometry, Vector3 } from "three";
 import { TableEffects } from "./tableEffects";
 import { parseCsv } from "./utils";
 import { Video } from "./video";
@@ -429,7 +429,7 @@ class Sport {
                     extension.userData.actorFromProxyExtension = actor;
                     if (surfaceForEffects) this.#addSurfaceForEffects(extension, dimensions);
                     actor.userData.proxy = extension;
-                    this.setCharacteristic(extension, ReferentsCharacteristics.SCREEN_SPACE, true);
+                    // this.setCharacteristic(extension, ReferentsCharacteristics.SCREEN_SPACE, true);
                     // this.setCharacteristic(extension, ReferentsCharacteristics.CAMERA_FACING, true);
                     // this.setCharacteristic(extension, ReferentsCharacteristics.ALWAYS_VISIBLE, true);
                 }
@@ -627,34 +627,46 @@ class Sport {
     }
 
     /**
- * @param {THREE.Mesh} mesh
+ * @param {Mesh} mesh
  * @param {THREE.Vector3} localV1
  * @param {THREE.Vector3} worldV2
  */
     #rotateLocalToWorld(mesh, localV1, worldV2) {
-
         mesh.updateWorldMatrix(true, false);
 
+        // Current world direction of localV1.
         const worldV1 = localV1.clone()
-            .applyQuaternion(mesh.getWorldQuaternion(new Quaternion()));
+            .transformDirection(mesh.matrixWorld)
+            .normalize();
 
         const target = worldV2.clone().normalize();
 
-        console.log("worldV1 : " + JSON.stringify(worldV1));
-        console.log("target : " + JSON.stringify(target) + "\n\n");
+        // Rotation in WORLD space.
+        const delta = new Quaternion()
+            .setFromUnitVectors(worldV1, target);
 
-        const delta = new Quaternion().setFromUnitVectors(worldV1, target);
+        const deltaMatrix = new Matrix4()
+            .makeRotationFromQuaternion(delta);
 
-        const worldQuat = mesh.getWorldQuaternion(new Quaternion());
-        worldQuat.premultiply(delta);
+        // Apply rotation to the complete world transform.
+        const newWorldMatrix = deltaMatrix
+            .clone()
+            .multiply(mesh.matrixWorld);
 
+        // Convert world transform back to local space.
         if (mesh.parent) {
-            const parentWorld = mesh.parent.getWorldQuaternion(new Quaternion());
-            parentWorld.invert();
-            mesh.quaternion.copy(parentWorld.multiply(worldQuat));
+            const parentInverse = mesh.parent.matrixWorld
+                .clone()
+                .invert();
+
+            mesh.matrix.copy(
+                parentInverse.multiply(newWorldMatrix)
+            );
         } else {
-            mesh.quaternion.copy(worldQuat);
+            mesh.matrix.copy(newWorldMatrix);
         }
+
+        mesh.matrixAutoUpdate = false;
     }
 
     /**
