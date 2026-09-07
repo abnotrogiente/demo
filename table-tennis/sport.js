@@ -152,6 +152,8 @@ class Sport {
 
     async set(sportDescription) {
 
+        this.cleanMess();
+
         /**@type {Map<Mesh, Map<int, SportActorInteraction>} */
         this.visPreferences = new Map();
 
@@ -274,18 +276,25 @@ class Sport {
         });
     }
 
+
+    cleanMess() {
+        sportSpecificAssets.nonPhysics.forEach(asset => {
+            if (this.hasCharacteristic(asset, ReferentsCharacteristics.SCREEN_SPACE)) {
+                this.setCharacteristic(asset, ReferentsCharacteristics.SCREEN_SPACE, false);
+            }
+            config.scene.remove(asset);
+            dispose3(asset);
+        });
+        sportSpecificAssets.nonPhysics.splice(0, sportSpecificAssets.nonPhysics.length);
+        sportSpecificAssets.physics.forEach(asset => config.physics.deleteBody(asset));
+        sportSpecificAssets.physics.splice(0, sportSpecificAssets.physics.length);
+    }
+
     /**
      * 
      * @param {*} assets 
      */
     async setAssets(assets) {
-        sportSpecificAssets.nonPhysics.forEach(asset => {
-            config.scene.remove(asset);
-            dispose3(asset);
-        });
-        sportSpecificAssets.physics.forEach(asset => config.physics.deleteBody(asset));
-        sportSpecificAssets.physics.splice(0, sportSpecificAssets.physics.length);
-
         if (!assets) return;
         for (const asset of assets) {
             let body;
