@@ -407,9 +407,24 @@ export const sportTrees = {
                 mesh: "sphere"
                 // surfaceForEffects: true
             },
+            "ground": {
+                mesh: "ground"
+            },
+            "Player": {
+                properties: [],
+                attributes: [],
+                mesh: "pelvis1",
+                keepName: true,
+                keepMaterial: true,
+                dimensions: { radius: 1 }
+            },
         },
         interactions: [
-
+            {
+                actors: ["ground", "pelvis1"],
+                types: [SportActorInterationTypes.PROJECTION],
+                params: {},
+            },
         ],
         assets: sportToAssets[SportName.GENERIC]
     }
