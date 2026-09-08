@@ -407,7 +407,7 @@ export class SurfaceEffects {
                     }
                     
                     gl_FragColor = texture(previousTexture, vUv);
-                    if (bounceMode != HEATMAP) gl_FragColor.a *= .98;
+                    if (bounceMode != HEATMAP) gl_FragColor.a *= .96;
                     // isInLine = length(vPos - vec3(0.75, 0.5, 0.5)) <= 1.5;
                     if (isInLine && showTrace) {
                         gl_FragColor = vec4(0., 1., 1., 1.);
@@ -636,7 +636,7 @@ export class SurfaceEffects {
             case GlyphModes.TEXT:
                 this.otherActor = informationRelationship.actor2;
                 if (val.isVector3) val = val.length();
-                console.log("val : " + JSON.stringify(value));
+                // console.log("val : " + JSON.stringify(value));
                 // val = this.speed.length(); // TODO ça devrait degager, le haut devrait suffire, pourquoi le haut n'est pas bon ?
                 if (typeof (val) === "number") val = Math.round(val * 10) / 10;
                 this.canvasTextTexture.setText("" + val + "" + unit);
