@@ -103,7 +103,8 @@ const tmpVec = new Vector3();
 export const MetaDataValueFromModeAndActor = new Map([
     [MetaDataModes.NONE, (actor) => { return { value: "", unit: "" } }],
     [MetaDataModes.POSITION, (actor) => { return { value: actor.position, unit: "m" } }],
-    [MetaDataModes.SPEED, (actor) => { return { value: tmpVec.copy(actor.userData.speed).multiplyScalar(3.6), unit: "km/h" } }]
+    [MetaDataModes.SPEED, (actor) => { return { value: tmpVec.copy(actor.userData.speed).multiplyScalar(3.6), unit: "km/h" } }],
+    [MetaDataModes.NAME, (actor) => { return { value: actor.userData.label, unit: "" } }]
 ]);
 
 export const GlyphModes = Object.freeze({
@@ -227,6 +228,7 @@ export const sportTrees = {
                 properties: [],
                 attributes: [],
                 mesh: "pelvis1",
+                label: "Fan Zhendong",
                 keepName: true,
                 keepMaterial: true,
                 dimensions: { radius: 1 },

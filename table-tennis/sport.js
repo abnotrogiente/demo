@@ -384,6 +384,7 @@ class Sport {
      * @param {*} dimensions 
      */
     #addActor(actor, name, params = undefined, surfaceForEffects = false) {
+        actor.userData.label = params?.label;
         const dimensionsForExtensions = params?.dimensionsForExtensions ?? params?.dimensions;
         const dimensions = params?.dimensions;
         this.actorByName.set(name, actor);
