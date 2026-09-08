@@ -405,7 +405,7 @@ class Sport {
             if (surfaceForEffects) this.#addSurfaceForEffects(actor, dimensions);
 
 
-            const extensions = createExtendedReferents(actor, dimensionsForExtensions);
+            const extensions = createExtendedReferents(actor, dimensionsForExtensions, dimensions);
             this.extensionsFromActor.set(actor, extensions);
             extensions.forEach(extension => {
                 extension.userData.isExtension = true;

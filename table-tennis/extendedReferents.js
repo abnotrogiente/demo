@@ -6,16 +6,16 @@ import { BackSide, BoxGeometry, DoubleSide, Mesh, MeshPhongMaterial, PlaneGeomet
  * @param {*} dimensions 
  * @returns 
  */
-export function createExtendedReferents(actor, dimensions) {
-    const depth = dimensions.depth ? dimensions.depth : dimensions.radius * 2;
-    const width = dimensions.width ? dimensions.width : dimensions.radius * 2;
-    const height = dimensions.height ?? 2 * dimensions.radius;
+export function createExtendedReferents(actor, dimensionsForExtensions, dimensions) {
+    const depth = dimensionsForExtensions.depth ? dimensionsForExtensions.depth : dimensionsForExtensions.radius * 2;
+    const width = dimensionsForExtensions.width ? dimensionsForExtensions.width : dimensionsForExtensions.radius * 2;
+    const height = dimensionsForExtensions.height ?? 2 * dimensionsForExtensions.radius;
 
 
     const material = new MeshPhongMaterial();
     material.transparent = true;
     material.opacity = .4;
-    // const geometry1 = new BoxGeometry(.01, 3., asset.dimensions.depth)
+    // const geometry1 = new BoxGeometry(.01, 3., asset.dimensionsForExtensions.depth)
     const geometry1 = new PlaneGeometry(depth, height);
     geometry1.rotateY(-Math.PI / 2);
 
@@ -68,16 +68,22 @@ export function createExtendedReferents(actor, dimensions) {
     visPannel6.name = "Half Z";
     pannels.push(visPannel6);
 
-    const enclosing = new Mesh(createEnglobingShape(dimensions, 1.), material.clone());
+    const enclosing = new Mesh(createEnglobingShape(dimensionsForExtensions, 1.), material.clone());
     enclosing.position.set(0, 0, 0);
     enclosing.name = "Enclosing";
     pannels.push(enclosing);
 
-    const enclosing2 = new Mesh(createEnglobingShape(dimensions, 1.), material.clone());
+    const enclosing2 = new Mesh(createEnglobingShape(dimensionsForExtensions, 1.), material.clone());
     enclosing2.position.set(0, 0, 0);
     enclosing2.material.side = BackSide;
     enclosing2.name = "Enclosing Back Face Cull";
     pannels.push(enclosing2);
+
+    const inflated = new Mesh(createEnglobingShape(dimensions, 1.), material.clone());
+    inflated.position.set(0, 0, 0);
+    inflated.material.side = BackSide;
+    inflated.name = "Inflated Back Face Cull";
+    pannels.push(inflated);
 
     const proxy = new Mesh(actor.geometry.clone(), actor.material.clone());
     proxy.position.set(2, -1, 2.5);
@@ -85,7 +91,7 @@ export function createExtendedReferents(actor, dimensions) {
     actor.getWorldQuaternion(proxy.rotation);
     proxy.name = "Proxy " + actor.name;
     pannels.push(proxy);
-    proxy.userData.dimensions = dimensions;
+    proxy.userData.dimensions = dimensionsForExtensions;
 
     return pannels;
 }

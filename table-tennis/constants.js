@@ -398,19 +398,20 @@ export const sportTrees = {
                 properties: [],
                 attributes: [],
                 dimensions: { width: 1, height: 0.75, depth: 1 },
+                dimensionsForExtensions: { width: 1, height: 2, depth: 1 },
                 mesh: "cube"
-                // surfaceForEffects: true
             },
 
             "Sphere": {
                 properties: [],
                 attributes: [],
                 dimensions: { radius: 0.5 },
+                dimensionsForExtensions: { width: 1, height: 2, depth: 1 },
                 mesh: "sphere"
                 // surfaceForEffects: true
             },
             "ground": {
-                mesh: "ground"
+                mesh: ""
             },
             "Player": {
                 properties: [],
