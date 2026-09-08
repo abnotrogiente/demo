@@ -9,11 +9,13 @@ import {
     WebGLRenderer,
     AmbientLight,
     DirectionalLight,
-    CameraHelper
+    CameraHelper,
+    Vector3
 } from 'three';
 
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { EffectComposer, RenderPass } from 'three/examples/jsm/Addons.js';
+import { CameraFrustumMesh } from './cameraFrustumMesh';
 
 export async function initializeScene() {
     // Scene
@@ -28,10 +30,17 @@ export async function initializeScene() {
     scene.add(camera);
 
     // Debug camera
-    const cameraDebug = new PerspectiveCamera(75, aspect, 0.1, 1000);
-    cameraDebug.position.y = 0.2;
+    const cameraDebug = new PerspectiveCamera(60, aspect, 0.1, 1000);
+    cameraDebug.position.set(2, 1.5, 2.5);
+    cameraDebug.lookAt(new Vector3(0, 0, 0));
     const helper = new CameraHelper(cameraDebug);
-    helper.material.linewidth = 10;
+    const frustum = new CameraFrustumMesh(cameraDebug, {
+        color: 0x555555,
+        opacity: 0.12
+    });
+    // scene.add(helper);
+    // cameraDebug.add(frustum);
+    // scene.add(cameraDebug);
 
     // Renderer
     const renderer = new WebGLRenderer({ antialias: true });
