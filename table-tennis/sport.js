@@ -417,9 +417,9 @@ class Sport {
                 this.display(extension, false);
                 sportSpecificAssets.nonPhysics.push(extension);
 
-                if (extension.name === "Label Plane") {
+                if (extension.name === "Half X") {
                     // this.cameraFacingExtendedReferents.push(extension);
-                    this.setCharacteristic(extension, ReferentsCharacteristics.CAMERA_FACING, true);
+                    // this.setCharacteristic(extension, ReferentsCharacteristics.CAMERA_FACING, true);
 
                     this.#addInteractions([SportActorInterationTypes.METADATA], null, extension, extension.name, actor, actor.name);
                 }

@@ -56,11 +56,11 @@ export function createExtendedReferents(actor, dimensionsForExtensions, dimensio
     visPannel5.name = "Half X";
     pannels.push(visPannel5);
 
-    const labelPlane = new Mesh(geometry2, material.clone());
-    labelPlane.material.side = DoubleSide;
-    labelPlane.position.set(0., 0., 0);
-    labelPlane.name = "Label Plane";
-    pannels.push(labelPlane);
+    // const labelPlane = new Mesh(geometry2, material.clone());
+    // labelPlane.material.side = DoubleSide;
+    // labelPlane.position.set(0., 0., 0);
+    // labelPlane.name = "Label Plane";
+    // pannels.push(labelPlane);
 
     const visPannel6 = new Mesh(geometry1, material.clone());
     visPannel6.material.side = DoubleSide;

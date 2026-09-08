@@ -261,7 +261,8 @@ function addExtensionsButtons(container, selectedMesh) {
  * @returns 
  */
 function addCharacteristicsButton(container, selectedMesh) {
-    if (!sport.isProxyExtension(selectedMesh)) return;
+    // if (!sport.isProxyExtension(selectedMesh)) return;
+    if (!sport.isExtension(selectedMesh)) return;
     container.appendChild(createLabel('Characteristics:', { fontWeight: '500', marginBottom: '4px' }));
 
     const characteristicsList = document.createElement('div');
