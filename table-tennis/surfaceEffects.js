@@ -632,6 +632,7 @@ export class SurfaceEffects {
     #updateMetaDataInteraction(informationRelationship) {
         const { value, unit } = MetaDataValueFromModeAndActor.get(informationRelationship.params.metaData.value)(this.otherActor);
         let val = value;
+        if (val === undefined) return;
         switch (informationRelationship.params.glyph.value) {
             case GlyphModes.TEXT:
                 this.otherActor = informationRelationship.actor2;
