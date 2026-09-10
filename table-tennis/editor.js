@@ -2,7 +2,7 @@ import { Box3, Camera, Mesh, Raycaster, Scene, ShaderMaterial, Vector2, Vector3,
 import { config, configureSelector } from "./config";
 import { sport } from "./sport";
 import { EnableModes, SelectorTypes } from "./constants";
-import { createSelectionPanel, createRightPanel as createRightPanelUI, fitSelectionPanelToViewport as fitPanelToViewport } from "./selectionPanelUI";
+import { createSelectionPanel, fitSelectionPanelToViewport as fitPanelToViewport } from "./selectionPanelUI";
 
 export class ObjectSelector {
     constructor() {
@@ -214,10 +214,6 @@ export class ObjectSelector {
         this._documentClickHandler = null;
     }
 
-    _createRightPanel(anchorRect, cursorY, titleText) {
-        return createRightPanelUI(anchorRect, cursorY, titleText);
-    }
-
     updateSelectionPannel() {
         const parent = config.renderer?.domElement?.parentElement || document.body;
 
@@ -233,7 +229,6 @@ export class ObjectSelector {
                     closeSelectionPanel: () => this._closeSelectionPanel(),
                     closeInteractionPanel: () => this._closeInteractionPanel(),
                     closeModePanel: () => this._closeModePanel(),
-                    createRightPanel: (anchorRect, cursorY, titleText) => this._createRightPanel(anchorRect, cursorY, titleText),
                     onInteractionPanelCreated: (panel) => {
                         this.interactionPanelElement = panel;
                     },
@@ -264,7 +259,6 @@ export class ObjectSelector {
                 closeSelectionPanel: () => this._closeSelectionPanel(),
                 closeInteractionPanel: () => this._closeInteractionPanel(),
                 closeModePanel: () => this._closeModePanel(),
-                createRightPanel: (anchorRect, cursorY, titleText) => this._createRightPanel(anchorRect, cursorY, titleText),
                 onInteractionPanelCreated: (panel) => {
                     this.interactionPanelElement = panel;
                 },

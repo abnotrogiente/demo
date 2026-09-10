@@ -3,44 +3,16 @@ import { sport } from "./sport";
 import { ReferentsCharacteristics } from "./constants";
 import { referentScoring } from "./referent-selection";
 import { referentMover } from "./manipulation";
+import {
+    applyPanelStyles,
+    createActionButton,
+    createLabel,
+    createRightPanel,
+    fitSelectionPanelToViewport,
+    getModeName,
+} from "./selectionPanelDom";
 
-function applyPanelStyles(element, styles) {
-    Object.entries(styles).forEach(([key, value]) => {
-        element.style[key] = value;
-    });
-}
-
-function createLabel(text, baseStyles = {}) {
-    const element = document.createElement('div');
-    element.textContent = text;
-    applyPanelStyles(element, baseStyles);
-    return element;
-}
-
-function createActionButton(text, baseStyles = {}) {
-    const button = document.createElement('button');
-    button.textContent = text;
-    applyPanelStyles(button, {
-        padding: '6px 8px',
-        border: 'none',
-        borderRadius: '4px',
-        cursor: 'pointer',
-        textAlign: 'left',
-        background: 'rgba(255,255,255,0.06)',
-        color: '#fff',
-        ...baseStyles,
-    });
-    return button;
-}
-
-function getModeName(modesObj, value) {
-    if (!modesObj) return String(value);
-    if (Array.isArray(modesObj)) return String(value);
-    for (const [key, modeValue] of Object.entries(modesObj)) {
-        if (modeValue === value) return key;
-    }
-    return String(value);
-}
+export { createRightPanel, fitSelectionPanelToViewport } from "./selectionPanelDom";
 
 
 function createInteractionButton(interaction, parent, closeModePanel, onModePanelCreated) {
@@ -311,8 +283,6 @@ function addManipulationButtons(container, selectedMesh) {
         );
         buttons.push(manipulationButton);
         manipulationButton.onmousedown = () => {
-            // if (selectedMesh.userData[toolName] === undefined) selectedMesh.userData[toolName] = true;
-            // else selectedMesh.userData[toolName] = !selectedMesh.userData[toolName];
             if (!referentMover.isMeshAndTool(selectedMesh, toolName)) referentMover.init(selectedMesh, toolName);
             else referentMover.end();
             buttons.forEach(button => button.style.background = 'rgba(255,255,255,0.04)');
@@ -324,76 +294,6 @@ function addManipulationButtons(container, selectedMesh) {
     container.appendChild(manipulationsList);
 
 
-}
-
-export function fitSelectionPanelToViewport(container) {
-    if (!container || !container.isConnected) return;
-
-    const style = getComputedStyle(container);
-    const parent = container.parentElement;
-    const parentRect = style.position === 'fixed'
-        ? { left: 0, top: 0 }
-        : (parent?.getBoundingClientRect() || { left: 0, top: 0 });
-
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-
-    const rect = container.getBoundingClientRect();
-    const padding = 8;
-
-    const overflowsLeft = rect.left < padding;
-    const overflowsRight = rect.right > viewportWidth - padding;
-    const overflowsTop = rect.top < padding;
-    const overflowsBottom = rect.bottom > viewportHeight - padding;
-
-    if (!overflowsLeft && !overflowsRight && !overflowsTop && !overflowsBottom) return;
-
-    let nextLeft = rect.left;
-    let nextTop = rect.top;
-
-    if (overflowsLeft) nextLeft = padding;
-    if (overflowsRight) nextLeft = viewportWidth - rect.width - padding;
-    if (overflowsTop) nextTop = padding;
-    if (overflowsBottom) nextTop = viewportHeight - rect.height - padding;
-
-    if (style.position === 'fixed') {
-        container.style.left = `${nextLeft}px`;
-        container.style.top = `${nextTop}px`;
-    } else {
-        container.style.left = `${nextLeft - parentRect.left}px`;
-        container.style.top = `${nextTop - parentRect.top}px`;
-    }
-}
-
-export function createRightPanel(anchorRect, cursorY, titleText) {
-    const panel = document.createElement('div');
-    applyPanelStyles(panel, {
-        position: 'fixed',
-        minWidth: '240px',
-        maxWidth: '320px',
-        background: 'rgba(0,0,0,0.75)',
-        color: '#fff',
-        padding: '8px 10px',
-        borderRadius: '6px',
-        fontFamily: 'Arial, sans-serif',
-        fontSize: '13px',
-        zIndex: '1000',
-        maxHeight: 'calc(100vh - 16px)',
-        overflowY: 'auto',
-        boxSizing: 'border-box',
-        left: `${anchorRect.right + 8}px`,
-        top: `${Math.min(Math.max(cursorY, 8), window.innerHeight - 32)}px`,
-    });
-
-    const title = createLabel(titleText, {
-        fontWeight: '600',
-        marginBottom: '6px',
-    });
-    panel.appendChild(title);
-
-    document.body.appendChild(panel);
-    requestAnimationFrame(() => fitSelectionPanelToViewport(panel));
-    return panel;
 }
 
 function addSelectedActorContent(container, selectedMesh, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated, isProposedReferent = false) {
@@ -490,7 +390,6 @@ export function createSelectionPanel({
     closeSelectionPanel,
     closeInteractionPanel,
     closeModePanel,
-    createRightPanel,
     onInteractionPanelCreated,
     onModePanelCreated,
 }) {
