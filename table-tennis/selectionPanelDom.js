@@ -50,23 +50,27 @@ export function fitSelectionPanelToViewport(container) {
     const rect = container.getBoundingClientRect();
     const padding = 8;
 
-    let left = rect.left;
-    let top = rect.top;
+    // let horizontalOffset = 0;
+    // let verticalOffset = 0;
 
-    if (rect.left < padding) left = padding;
-    if (rect.right > viewportWidth - padding) left = viewportWidth - rect.width - padding;
-    if (rect.top < padding) top = padding;
-    if (rect.bottom > viewportHeight - padding) top = viewportHeight - rect.height - padding;
+    // if (rect.left < padding) horizontalOffset = padding - rect.left;
+    // if (rect.right > viewportWidth - padding) horizontalOffset = viewportWidth - padding - rect.right;
+    // if (rect.top < padding) verticalOffset = padding - rect.top;
+    // if (rect.bottom > viewportHeight - padding) verticalOffset = viewportHeight - padding - rect.bottom;
 
-    if (left === rect.left && top === rect.top) return;
+    // if (horizontalOffset === 0 && verticalOffset === 0) return;
 
-    if (style.position === 'fixed') {
-        container.style.left = `${left}px`;
-        container.style.top = `${top}px`;
-    } else {
-        container.style.left = `${left - parentRect.left}px`;
-        container.style.top = `${top - parentRect.top}px`;
-    }
+    // if (style.position === 'fixed') {
+    //     const currentLeft = parseFloat(style.left) || 0;
+    //     const currentTop = parseFloat(style.top) || 0;
+    //     container.style.left = `${currentLeft + horizontalOffset}px`;
+    //     container.style.top = `${currentTop + verticalOffset}px`;
+    // } else {
+    //     const left = rect.left + horizontalOffset;
+    //     const top = rect.top + verticalOffset;
+    //     container.style.left = `${left - parentRect.left}px`;
+    //     container.style.top = `${top - parentRect.top}px`;
+    // }
 }
 
 export function createRightPanel(anchorRect, cursorY, title) {

@@ -15,7 +15,24 @@ import {
 export { createRightPanel, fitSelectionPanelToViewport } from "./selectionPanelDom";
 
 
-function createInteractionButton(interaction, parent, closeModePanel, onModePanelCreated) {
+function renderInlineView(container, title, onBack, renderContent) {
+    container.replaceChildren();
+    container.appendChild(createLabel(title, {
+        fontWeight: '600',
+        marginBottom: '8px',
+    }));
+
+    const backButton = createActionButton('Back', {
+        display: 'block',
+        marginBottom: '8px',
+        background: 'rgba(255,255,255,0.1)',
+    });
+    backButton.onclick = onBack;
+    container.appendChild(backButton);
+    renderContent(container);
+}
+
+function createInteractionButton(interaction, parent, closeModePanel, onBack) {
     //TODO enregistrer dans la variable de sport la préférence si le scoring est activé
     const interactionName = interaction.name;
     const interBtn = createActionButton(interactionName, {
@@ -29,21 +46,19 @@ function createInteractionButton(interaction, parent, closeModePanel, onModePane
         clickEvent.stopPropagation();
         closeModePanel();
 
-        const modePanel = createRightPanel(parent.getBoundingClientRect(), clickEvent.clientY, interactionName);
-        if (typeof onModePanelCreated === 'function') {
-            onModePanelCreated(modePanel);
-        }
+        renderInlineView(parent, interactionName, onBack, modePanel => {
+            const paramEntries = Object.entries(interaction.params || {}).length > 0
+                ? Object.entries(interaction.params || {})
+                : (interaction.enum ? [['value', { value: interaction.value, enum: interaction.enum }]] : []);
 
-        const paramEntries = Object.entries(interaction.params || {}).length > 0
-            ? Object.entries(interaction.params || {})
-            : (interaction.enum ? [['value', { value: interaction.value, enum: interaction.enum }]] : []);
+            if (paramEntries.length === 0) {
+                modePanel.appendChild(createLabel('No parameters', {
+                    opacity: '0.8',
+                    fontSize: '12px',
+                }));
+                return;
+            }
 
-        if (paramEntries.length === 0) {
-            modePanel.appendChild(createLabel('No parameters', {
-                opacity: '0.8',
-                fontSize: '12px',
-            }));
-        } else {
             paramEntries.forEach(([paramName, paramConfig]) => {
                 const paramRow = document.createElement('div');
                 applyPanelStyles(paramRow, {
@@ -56,7 +71,6 @@ function createInteractionButton(interaction, parent, closeModePanel, onModePane
                     fontSize: '12px',
                     opacity: '0.9',
                 });
-
                 const paramOptions = document.createElement('div');
                 applyPanelStyles(paramOptions, {
                     display: 'flex',
@@ -85,7 +99,7 @@ function createInteractionButton(interaction, parent, closeModePanel, onModePane
                 paramRow.appendChild(paramOptions);
                 modePanel.appendChild(paramRow);
             });
-        }
+        });
     };
     parent.appendChild(interBtn);
 }
@@ -116,7 +130,7 @@ function addDisableButton(container, selectedMesh, closeInteractionPanel, closeM
     container.appendChild(btnDiv);
 
 }
-function addActorsButtons(container, selectedMesh, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated) {
+function addActorsButtons(container, selectedMesh, closeInteractionPanel, closeModePanel, onBack) {
     container.appendChild(createLabel((referentScoring.currentMode != referentScoring.modes.DISABLED ? 'Relationship types' : 'Actors:'), { fontWeight: '500', marginBottom: '4px' }));
 
     /**@type {Map<Mesh, Map<string, Map<int,SportActorInteraction>>>} */
@@ -144,22 +158,32 @@ function addActorsButtons(container, selectedMesh, closeInteractionPanel, closeM
                 const otherActor = sport.actorByName.get(otherActorName);
                 otherActor.material.uniforms.isHighLighted.value = false;
             };
+            // actorBtn.on = () => {
+            //     otherActor.material.uniforms.isHighLighted.value = false;
+
+            // }
             actorBtn.onclick = (event) => {
+                event.stopPropagation();
                 closeInteractionPanel();
                 closeModePanel();
 
-                const interactionPanel = createRightPanel(container.getBoundingClientRect(), event.clientY, `Interactions with ${otherActorName}`);
-                if (typeof onInteractionPanelCreated === 'function') {
-                    onInteractionPanelCreated(interactionPanel);
-                }
-
-                if (!interactions || interactions.size === 0) {
-                    interactionPanel.appendChild(createLabel('No interactions available', { opacity: '0.85' }));
-                } else {
-                    interactions.forEach((interaction, interactionType) => {
-                        createInteractionButton(interaction, interactionPanel, closeModePanel, onModePanelCreated);
+                const showActors = () => {
+                    renderInlineView(container, 'Actors', onBack, actorsPanel => {
+                        addActorsButtons(actorsPanel, selectedMesh, closeInteractionPanel, closeModePanel, onBack);
                     });
-                }
+                };
+
+                const showInteractions = () => renderInlineView(container, `Interactions with ${otherActorName}`, showActors, interactionPanel => {
+                    if (!interactions || interactions.size === 0) {
+                        interactionPanel.appendChild(createLabel('No interactions available', { opacity: '0.85' }));
+                    } else {
+                        interactions.forEach(interaction => {
+                            createInteractionButton(interaction, interactionPanel, closeModePanel, showInteractions);
+                        });
+                    }
+                });
+
+                showInteractions();
             };
 
             actorsList.appendChild(actorBtn);
@@ -170,7 +194,7 @@ function addActorsButtons(container, selectedMesh, closeInteractionPanel, closeM
     else {
         if (!sport.visPreferences.has(selectedMesh)) return;
         sport.visPreferences.get(selectedMesh).forEach((preference, type) => {
-            const interBtn = createInteractionButton(preference, actorsList, closeModePanel, onModePanelCreated);
+            const interBtn = createInteractionButton(preference, actorsList, closeModePanel, onBack);
 
         });
 
@@ -296,25 +320,122 @@ function addManipulationButtons(container, selectedMesh) {
 
 }
 
-function addSelectedActorContent(container, selectedMesh, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated, isProposedReferent = false) {
+const categoryMenuStyles = {
+    position: 'fixed',
+    width: '220px',
+    height: '220px',
+    padding: '0',
+    background: 'rgba(0,0,0,0.72)',
+    border: '1px solid rgba(255,255,255,0.18)',
+    borderRadius: '50%',
+    boxSizing: 'border-box',
+    overflow: 'hidden',
+    transform: 'translate(-50%, -50%)',
+};
 
+const categoryButtonStyles = {
+    position: 'absolute',
+    width: '76px',
+    height: '76px',
+    padding: '8px',
+    borderRadius: '50%',
+    border: '1px solid rgba(255,255,255,0.22)',
+    background: 'rgba(255,255,255,0.1)',
+    color: '#fff',
+    textAlign: 'center',
+    fontSize: '12px',
+    lineHeight: '1.15',
+    transform: 'translate(-50%, -50%)',
+};
 
-    container.appendChild(createLabel(`Selected: ${selectedMesh.name || 'object'}`, {
-        fontWeight: '600',
-        marginBottom: '6px',
-    }));
+function configureCategoryView(container, useRadialMenu) {
+    applyPanelStyles(container, useRadialMenu
+        ? categoryMenuStyles
+        : {
+            ...categoryMenuStyles,
+            position: 'relative',
+            transform: 'none',
+        });
+    container.replaceChildren();
+}
 
+function configureDetailView(container, useRadialMenu) {
+    applyPanelStyles(container, {
+        position: useRadialMenu ? 'fixed' : 'relative',
+        width: 'auto',
+        height: 'auto',
+        minWidth: '220px',
+        maxWidth: '320px',
+        padding: '8px 10px',
+        background: 'rgba(0,0,0,0.75)',
+        border: 'none',
+        borderRadius: '6px',
+        overflow: 'auto',
+        transform: useRadialMenu ? 'translateX(0)' : 'none',
+        boxSizing: 'border-box',
+    });
+    container.replaceChildren();
+}
 
+function addCategoryButton(container, label, position, onClick) {
+    const button = createActionButton(label, {
+        ...categoryButtonStyles,
+        left: `${position.left}%`,
+        top: `${position.top}%`,
+    });
+    button.onclick = onClick;
+    container.appendChild(button);
+}
+
+function addSelectedActorContent(container, selectedMesh, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated, isProposedReferent = false, useRadialMenu = true) {
     if (isProposedReferent) {
+        container.appendChild(createLabel(`Selected: ${selectedMesh.name || 'object'}`, {
+            fontWeight: '600',
+            marginBottom: '6px',
+        }));
         addDisableButton(container, selectedMesh, closeInteractionPanel, closeModePanel);
         return;
     }
-    addActorsButtons(container, selectedMesh, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated);
-    if (referentScoring.currentMode == referentScoring.modes.DISABLED) {
-        addExtensionsButtons(container, selectedMesh);
-        addCharacteristicsButton(container, selectedMesh);
-        addManipulationButtons(container, selectedMesh);
-    }
+
+    const showCategory = (category, addContent) => {
+        configureDetailView(container, useRadialMenu);
+        container.appendChild(createLabel(category, {
+            fontWeight: '600',
+            marginBottom: '8px',
+        }));
+
+        const backButton = createActionButton('Back', {
+            display: 'block',
+            marginBottom: '8px',
+            background: 'rgba(255,255,255,0.1)',
+        });
+        backButton.onclick = () => addCategoryMenu();
+        container.appendChild(backButton);
+        addContent(container);
+        requestAnimationFrame(() => fitSelectionPanelToViewport(container));
+    };
+
+    const addCategoryMenu = () => {
+        configureCategoryView(container, useRadialMenu);
+        addCategoryButton(container, 'Actors', { left: 50, top: 16 }, () => showCategory(
+            'Actors',
+            content => addActorsButtons(content, selectedMesh, closeInteractionPanel, closeModePanel, addCategoryMenu),
+        ));
+        addCategoryButton(container, 'Extensions', { left: 82, top: 50 }, () => showCategory(
+            'Extensions',
+            content => addExtensionsButtons(content, selectedMesh),
+        ));
+        addCategoryButton(container, 'Characteristics', { left: 50, top: 82 }, () => showCategory(
+            'Characteristics',
+            content => addCharacteristicsButton(content, selectedMesh),
+        ));
+        addCategoryButton(container, 'Manipulations', { left: 18, top: 50 }, () => showCategory(
+            'Manipulations',
+            content => addManipulationButtons(content, selectedMesh),
+        ));
+    };
+
+    addCategoryMenu();
 
 }
 
@@ -429,7 +550,7 @@ export function createSelectionPanel({
                 paddingTop: '8px',
                 borderTop: '1px solid rgba(255,255,255,0.15)',
             });
-            addSelectedActorContent(details, actor, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated, isProposedReferent);
+            addSelectedActorContent(details, actor, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated, isProposedReferent, false);
             actorsList.insertBefore(details, actorButton.nextSibling);
             selectedDetails = details;
         };
