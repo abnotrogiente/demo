@@ -101,7 +101,7 @@ export const MetaDataModes = Object.freeze({
 
 const tmpVec = new Vector3();
 export const MetaDataValueFromModeAndActor = new Map([
-    [MetaDataModes.NONE, (actor) => { return { value: "", unit: "" } }],
+    [MetaDataModes.NONE, (actor) => { return { value: undefined, unit: "" } }],
     [MetaDataModes.POSITION, (actor) => { return { value: actor.position, unit: "m" } }],
     [MetaDataModes.SPEED, (actor) => { return { value: tmpVec.copy(actor.userData.speed).multiplyScalar(3.6), unit: "km/h" } }],
     [MetaDataModes.NAME, (actor) => { return { value: actor.userData.label, unit: "" } }]

@@ -101,9 +101,11 @@ export class SportActorInteraction {
      * @param {*} actor2 
      * @param {SurfaceEffects} surfaceEffects 
      */
-    constructor(type, actor1, actor2, surfaceEffects) {
+    constructor(type, actor1, actor2, surfaceEffects, contactCondition) {
         this.actor1 = actor1;
         this.actor2 = actor2;
+
+        this.contactCondition = contactCondition;
 
         const interactionCharacteristics = characteristicsFromInteraction.get(type);
         this.name = interactionCharacteristics.name;
@@ -253,8 +255,8 @@ class Sport {
         interactionTypes.forEach(interactionType => {
             if (actor1 && actor2) {
                 // console.log("")
-                if (!this.surfaceEffectsFromActor.has(actor1)) this.surfaceEffectsFromActor.set(actor1, new SurfaceEffects(actor1, contactCondition));
-                const interaction = new SportActorInteraction(interactionType, actor1, actor2, this.surfaceEffectsFromActor.get(actor1));
+                if (!this.surfaceEffectsFromActor.has(actor1)) this.surfaceEffectsFromActor.set(actor1, new SurfaceEffects(actor1));
+                const interaction = new SportActorInteraction(interactionType, actor1, actor2, this.surfaceEffectsFromActor.get(actor1), contactCondition);
                 if (!this.interactionsFromActor.get(actor1).has(actor2)) this.interactionsFromActor.get(actor1).set(actor2, new Map());
                 if (!this.interactionsFromActor.get(actor2).has(actor1)) this.interactionsFromActor.get(actor2).set(actor1, new Map());
                 this.interactionsFromActor.get(actor1).get(actor2).set(interactionType, interaction);
