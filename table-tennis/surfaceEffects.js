@@ -12,9 +12,8 @@ export class SurfaceEffects {
     /**
      * 
      * @param {Mesh} actor 
-     * @param {(args: {prevPos: Vector3, pos: Vector3, prevSpeed: Vector3, speed: Vector3, surface: Mesh}) => bool} contactCondition 
      */
-    constructor(actor, contactCondition) {
+    constructor(actor) {
         this.originalActor = actor;
         /**@type {Mesh} */
         this.otherActor = null;
@@ -33,7 +32,8 @@ export class SurfaceEffects {
             color: "#f00"
         });
 
-        this.contactCondition = contactCondition;
+        /**@type {(args: {prevPos: Vector3, pos: Vector3, prevSpeed: Vector3, speed: Vector3, surface: Mesh}) => bool} */
+        this.contactCondition = null;
 
         this.surface = sport.getSurfaceForEffects(actor);
         this.otherActorPos = new Vector3();
@@ -500,7 +500,7 @@ export class SurfaceEffects {
         this.texturePassQuad.material.uniforms.lineDirection.value.copy(this.tmpvec3);
 
         // this.texturePassQuad.material.uniforms.bounced.value = this.prevSpeed.y < 0 && this.speed.y > 0;
-        this.texturePassQuad.material.uniforms.bounced.value = this.contactCondition({
+        if (this.contactCondition) this.texturePassQuad.material.uniforms.bounced.value = this.contactCondition({
             prevPos: this.prevPos,
             pos: this.otherActorPos,
             speed: this.speed,
@@ -567,7 +567,6 @@ export class SurfaceEffects {
             }
             if (projectionRelationship.params.trace.value) {
                 this.showTrace = true;
-                console.log("TRACE");
                 this.otherActor = projectionRelationship.actor2;
             }
 
@@ -586,6 +585,7 @@ export class SurfaceEffects {
                 this.bounceMode = contactRelationship.params.bounce.value;
                 if (prevBouceMode != this.bounceMode) this.#cleanTextures();
                 this.otherActor = contactRelationship.actor2;
+                this.contactCondition = contactRelationship.contactCondition;
             }
         });
         this.texturePassQuad.material.uniforms.bounceMode.value = this.bounceMode;
