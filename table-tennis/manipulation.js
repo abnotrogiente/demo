@@ -1,62 +1,35 @@
-import { Mesh, Vector2, Vector3 } from "three";
+import { Mesh } from "three";
 import { config } from "./config";
-import { gizmo } from "three-gizmo";
-import { ObjectSelector } from "./editor";
-import { setColor } from "three-gizmo";
-setColor("color1", 0xff0000)
-setColor("color2", 0x00ff00)
-setColor("color3", 0x0000ff)
+import { TransformControls } from "three/examples/jsm/Addons.js";
 
 export class ReferentMover {
     constructor() {
-        this.tmpVec = new Vector3();
-        this.toolNames = ["rotate", "move", "scale"];
-        this.propertyFromToomName = new Map([
-            ["rotate", "rotation"],
-            ["scale", "scale"],
-            ["move", "position"]
-        ])
+        this.toolNames = ["rotate", "translate", "scale"];
     }
 
+
+    init() {
+        this.transformControls = new TransformControls(config.camera, config.renderer.domElement);
+        config.scene.add(this.transformControls.getHelper());
+        this.transformControls.addEventListener('dragging-changed', (event) => {
+            config.controls.enabled = !event.value;
+        });
+    }
     /**
      * 
      * @param {Mesh} selectedMesh 
-     */
-    init(selectedMesh, toolName) {
+    */
+    setControl(selectedMesh, toolName) {
+        if (!this.transformControls) this.init();
         this.mesh = selectedMesh;
+
+        this.transformControls.attach(selectedMesh);
+        this.transformControls.setMode(toolName);
         this.currentTool = toolName;
-        if (!this.helper) this.helper = gizmo(config.camera, config.renderer);
-        else this.helper.none();
-
-        this.helper.on(toolName, value => {
-            config.controls.enabled = false;
-            if (!selectedMesh) return;
-            const propertyName = this.propertyFromToomName.get(toolName);
-            selectedMesh[propertyName].copy(value);
-
-        });
-        this.helper.on("end-" + toolName, angle => {
-            config.controls.enabled = true;
-            config.controls.update();
-        });
-        selectedMesh.getWorldPosition(this.tmpVec);
-        this.helper.setOrigin(this.tmpVec);
-        // this.helper.setScale(new Vector3(0.2, 0.2, 0.2));
-        this.helper[toolName]();
     }
 
     end() {
-        this.helper.none();
-        this.mesh = null;
-    }
-
-    update() {
-        if (!this.helper) return;
-        const size = config.renderer.getSize(new Vector2());
-        config.renderer.setRenderTarget(null);
-        config.renderer.setViewport(0, 0, size.x, size.y);
-        this.helper.render();
-        // referentMover.update();
+        this.transformControls.detach();
     }
 
     isMeshAndTool(mesh, toolName) {

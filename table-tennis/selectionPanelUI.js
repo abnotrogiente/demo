@@ -2,7 +2,6 @@ import { DoubleSide, Mesh } from "three";
 import { sport } from "./sport";
 import { ReferentsCharacteristics } from "./constants";
 import { referentScoring } from "./referent-selection";
-import { referentMover } from "./manipulation";
 import {
     applyPanelStyles,
     createActionButton,
@@ -11,6 +10,7 @@ import {
     fitSelectionPanelToViewport,
     getModeName,
 } from "./selectionPanelDom";
+import { referentMover } from "./manipulation";
 
 export { createRightPanel, fitSelectionPanelToViewport } from "./selectionPanelDom";
 
@@ -307,7 +307,7 @@ function addManipulationButtons(container, selectedMesh) {
         );
         buttons.push(manipulationButton);
         manipulationButton.onmousedown = () => {
-            if (!referentMover.isMeshAndTool(selectedMesh, toolName)) referentMover.init(selectedMesh, toolName);
+            if (!referentMover.isMeshAndTool(selectedMesh, toolName)) referentMover.setControl(selectedMesh, toolName);
             else referentMover.end();
             buttons.forEach(button => button.style.background = 'rgba(255,255,255,0.04)');
             manipulationButton.style.background = referentMover.isMeshAndTool(selectedMesh, toolName) ? 'rgba(56, 161, 105, 0.18)' : 'rgba(255,255,255,0.04)';

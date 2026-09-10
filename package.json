@@ -28,7 +28,6 @@
     "@techstark/opencv-js": "^4.12.0-release.1",
     "kalidokit": "^1.1.5",
     "three": "^0.173.0",
-    "three-gizmo": "^1.0.30",
     "webm-muxer": "^5.1.4"
   }
 }

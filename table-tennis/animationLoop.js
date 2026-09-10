@@ -61,7 +61,6 @@ export function startAnimationLoop(renderer, composer, physics, players, cvHelpe
         referentScoring.update();
         // Render
         if (!config.renderScore) composer.render();
-        referentMover.update();
     };
 
     animation();
