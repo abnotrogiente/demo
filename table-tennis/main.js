@@ -53,7 +53,7 @@ async function main() {
         surfaceScore
     } = await initializeSystems(scene, renderer, camera, physics, cameraDebug, new Mesh());
 
-    config.init(scene, camera, renderer, video, physics);
+    config.init(scene, camera, renderer, video, physics, controls);
     sport.set(sportTrees[config.params.sport]);
 
 

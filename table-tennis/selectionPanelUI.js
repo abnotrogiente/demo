@@ -2,6 +2,7 @@ import { DoubleSide, Mesh } from "three";
 import { sport } from "./sport";
 import { ReferentsCharacteristics } from "./constants";
 import { referentScoring } from "./referent-selection";
+import { referentMover } from "./manipulation";
 
 function applyPanelStyles(element, styles) {
     Object.entries(styles).forEach(([key, value]) => {
@@ -287,6 +288,44 @@ function addCharacteristicsButton(container, selectedMesh) {
     container.appendChild(characteristicsList);
 }
 
+function addManipulationButtons(container, selectedMesh) {
+    if (!sport.isExtension(selectedMesh)) return;
+    container.appendChild(createLabel('Manipulations:', { fontWeight: '500', marginBottom: '4px' }));
+
+    const manipulationsList = document.createElement('div');
+    applyPanelStyles(manipulationsList, {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '6px',
+    });
+
+
+    // TODO foreach manipulation
+    // console.log("creating button : " + name);
+    const buttons = [];
+    referentMover.toolNames.forEach(toolName => {
+
+        const manipulationButton = createActionButton(toolName, {
+            background: referentMover.isMeshAndTool(selectedMesh, toolName) ? 'rgba(56, 161, 105, 0.18)' : 'rgba(255,255,255,0.04)'
+        }
+        );
+        buttons.push(manipulationButton);
+        manipulationButton.onmousedown = () => {
+            // if (selectedMesh.userData[toolName] === undefined) selectedMesh.userData[toolName] = true;
+            // else selectedMesh.userData[toolName] = !selectedMesh.userData[toolName];
+            if (!referentMover.isMeshAndTool(selectedMesh, toolName)) referentMover.init(selectedMesh, toolName);
+            else referentMover.end();
+            buttons.forEach(button => button.style.background = 'rgba(255,255,255,0.04)');
+            manipulationButton.style.background = referentMover.isMeshAndTool(selectedMesh, toolName) ? 'rgba(56, 161, 105, 0.18)' : 'rgba(255,255,255,0.04)';
+        }
+        manipulationsList.appendChild(manipulationButton);
+    });
+
+    container.appendChild(manipulationsList);
+
+
+}
+
 export function fitSelectionPanelToViewport(container) {
     if (!container || !container.isConnected) return;
 
@@ -374,6 +413,7 @@ function addSelectedActorContent(container, selectedMesh, closeInteractionPanel,
     if (referentScoring.currentMode == referentScoring.modes.DISABLED) {
         addExtensionsButtons(container, selectedMesh);
         addCharacteristicsButton(container, selectedMesh);
+        addManipulationButtons(container, selectedMesh);
     }
 
 }

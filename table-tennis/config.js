@@ -2,6 +2,7 @@ import { AnimationMixer, Camera, Mesh, MeshStandardMaterial, Scene, SphereGeomet
 import { SelectorTypes, SportName } from "./constants";
 import { Physics } from "./physics";
 import { Video } from "./video";
+import { OrbitControls } from "three/examples/jsm/Addons.js";
 
 const uiWindowContent = document.getElementById("window-content");
 
@@ -109,13 +110,15 @@ export class Config {
      * @param {WebGLRenderer} renderer 
      * @param {Video} video 
      * @param {Physics} physics 
+     * @param {OrbitControls} controls 
      */
-    init(scene, camera, renderer, video, physics) {
+    init(scene, camera, renderer, video, physics, controls) {
         this.scene = scene;
         this.camera = camera;
         this.renderer = renderer;
         this.videoObject = video;
         this.physics = physics;
+        this.controls = controls;
     }
 
 

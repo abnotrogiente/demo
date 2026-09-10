@@ -5,6 +5,7 @@
 
 import { config } from "./config";
 import { ObjectSelector } from "./editor";
+import { referentMover } from "./manipulation";
 import { referentScoring } from "./referent-selection";
 import { sport } from "./sport";
 
@@ -55,10 +56,12 @@ export function startAnimationLoop(renderer, composer, physics, players, cvHelpe
         // ballEffects.update(delta);
         // tableEffects.update(elapsed, delta);
 
+
         if (config.mixer) config.mixer.update(delta);
         referentScoring.update();
         // Render
         if (!config.renderScore) composer.render();
+        referentMover.update();
     };
 
     animation();
