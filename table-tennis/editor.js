@@ -122,9 +122,8 @@ export class ObjectSelector {
                 const bbox = new Box3().setFromObject(mesh);
 
                 if (this.rayCaster.ray.intersectsBox(bbox)) {
-                    console.log('hit');
                     if (mesh.material.uniforms) {
-                        console.log("SELECT : " + mesh.name);
+                        // console.log("SELECT : " + mesh.name);
 
                         mesh.material.uniforms.isPreSelected.value = true;
                         this.preSelectedMesh = mesh;
@@ -159,12 +158,14 @@ export class ObjectSelector {
         const onMouseDown = (event) => {
             if (event.which == 1) {
                 this.mouseDownCameraPos.copy(config.camera.position);
+                // this.mouseDownTime = config.getTimeAbsolute();
             }
         }
         const onMouseUp = (event) => {
             if (referentMover.mesh !== undefined) return;
             if (event.which == 1) {
-                if (this.mouseDownCameraPos.distanceToSquared(config.camera.position) >= 1e-4) return;
+                // const currentTime = config.getTimeAbsolute();
+                if (this.mouseDownCameraPos.distanceToSquared(config.camera.position) >= 1e-2) return;
                 this.confirmSelection();
             }
 
