@@ -63,6 +63,7 @@ export class SurfaceEffects {
             shader.uniforms.otherActorPosition = { value: new Vector3() };
             shader.uniforms.showShadow = { value: false };
             shader.uniforms.metaDataTexture = { value: this.canvasTextTexture.texture };
+            shader.uniforms.surfaceScaling = { value: this.surface.scale };
             // shader.uniforms.opacity = { value: 1. };
             shader.vertexShader = shader.vertexShader.replace(
                 "#include <common>",
@@ -112,6 +113,7 @@ export class SurfaceEffects {
                 
                 uniform sampler2D displayTexture;
                 uniform sampler2D metaDataTexture;
+                uniform vec3 surfaceScaling;
                 in vec3 vWorldPos;
                 in vec2 vUv;
                 in vec2 vScreenUv;
@@ -279,7 +281,7 @@ export class SurfaceEffects {
                 }
                 // gl_FragColor = vec4(1., 0., 0., 1.);
 
-                vec4 metaDataColor = texture(metaDataTexture, vUv);
+                vec4 metaDataColor = texture(metaDataTexture, vUv*surfaceScaling.xy + vec2(0, -1.) * surfaceScaling.y + vec2(0., 1.));
                 if(metaDataColor.a > 0.1) gl_FragColor = metaDataColor;
                 // gl_FragColor = vec4(1., 0., 0., 1.);
 
@@ -455,6 +457,8 @@ export class SurfaceEffects {
         this.texturePassScene.add(this.texturePassQuad);
         this.texturePassCamera = new Camera();
 
+        if (this.shader) this.shader.uniforms.surfaceScaling.value = this.texturePassQuad.scale;
+
 
         // const debug = this.texturePassQuad.clone();
         // debug.material = new MeshPhongMaterial({ color: 0xff0000 });
@@ -471,15 +475,22 @@ export class SurfaceEffects {
         //     // this.surface.visible = false;
         // }
     }
+
+    #updateTextureQuad() {
+        const anchorObject = sport.isProxyExtension(this.surface) ?
+            sport.getSurfaceForEffects(sport.getActorFromProxyExtension(this.surface)) :
+            this.surface;
+
+        this.texturePassQuad.scale.copy(this.surface.scale);
+        anchorObject.getWorldScale(this.texturePassQuad.scale);
+        anchorObject.getWorldQuaternion(this.texturePassQuad.rotation);
+        anchorObject.getWorldPosition(this.texturePassQuad.position);
+        // if (!sport.isProxyExtension(this.surface)) this.surface.getWorldPosition(this.texturePassQuad.position);
+    }
     #texturePass(dt) {
         if (!this.shader) return;
 
-        if (sport.isProxyExtension(this.surface)) {
-            const actor = sport.getActorFromProxyExtension(this.surface);
-            const actorSurface = sport.getSurfaceForEffects(actor);
-            actorSurface.getWorldPosition(this.texturePassQuad.position);
-            actorSurface.getWorldQuaternion(this.texturePassQuad.rotation);
-        }
+        this.#updateTextureQuad();
 
 
         this.otherActor.getWorldPosition(this.otherActorPos);
