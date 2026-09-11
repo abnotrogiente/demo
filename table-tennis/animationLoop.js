@@ -28,8 +28,12 @@ export function startAnimationLoop(renderer, composer, physics, players, cvHelpe
     const animation = () => {
         renderer.setAnimationLoop(animation);
 
-        const delta = renderer.getContext().getParameter(renderer.getContext().TIME_ELAPSED) || 0.016;
-        const elapsed = performance.now() / 1000;
+        let delta = config.clockAbsolute.getDelta();
+        if (delta >= 1 / 24) {
+            console.warn("LOW UPDATE FREQUENCY : " + 1 / delta);
+            delta = 1 / 24;
+        }
+        const elapsed = config.getTimeAbsolute();
 
         // if (objectSelector) objectSelector.updateSelectionPannel();
 
@@ -51,6 +55,8 @@ export function startAnimationLoop(renderer, composer, physics, players, cvHelpe
 
         // Physics update
         physics.stepSimulation(delta);
+
+        referentMover.update();
 
         // Effects update
         // ballEffects.update(delta);
