@@ -30,6 +30,8 @@ export class ReferentMover {
 
     end() {
         this.transformControls.detach();
+        this.mesh = undefined;
+        this.currentTool = undefined;
     }
 
     isMeshAndTool(mesh, toolName) {

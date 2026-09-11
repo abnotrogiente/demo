@@ -3,6 +3,7 @@ import { config, configureSelector } from "./config";
 import { sport } from "./sport";
 import { EnableModes, SelectorTypes } from "./constants";
 import { createSelectionPanel, fitSelectionPanelToViewport as fitPanelToViewport } from "./selectionPanelUI";
+import { referentMover } from "./manipulation";
 
 export class ObjectSelector {
     constructor() {
@@ -154,6 +155,7 @@ export class ObjectSelector {
         }
 
         const onMouseClick = (event) => {
+            if (referentMover.mesh !== undefined) return;
             if (event.which == 1) {
                 this.confirmSelection();
             }
@@ -196,6 +198,7 @@ export class ObjectSelector {
     _installDocumentClickHandler() {
         if (this._documentClickHandler) return;
         this._documentClickHandler = (event) => {
+            if (referentMover.mesh !== undefined) return;
             const target = event.target;
             // If click is inside any panel, ignore
             if (this.selectionPannelElement && this.selectionPannelElement.contains(target)) return;
