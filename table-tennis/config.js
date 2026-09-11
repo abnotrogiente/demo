@@ -1,4 +1,4 @@
-import { AnimationMixer, Camera, Mesh, MeshStandardMaterial, Scene, SphereGeometry, Vector3, WebGLRenderer } from "three";
+import { AnimationMixer, Camera, Clock, Mesh, MeshStandardMaterial, Scene, SphereGeometry, Vector3, WebGLRenderer } from "three";
 import { SelectorTypes, SportName } from "./constants";
 import { Physics } from "./physics";
 import { Video } from "./video";
@@ -89,6 +89,9 @@ export function getShaderConstantsFromEnum(e) {
 
 export class Config {
     constructor() {
+        this.sportClock = new Clock();
+        this.clockAbsolute = new Clock();
+        this.clockAbsolute.start();
         this.params = {
             showVideo: true,
             sport: SportName.TABLE_TENNIS,
@@ -101,6 +104,10 @@ export class Config {
         this.mixer = null;
 
         this.renderScore = false;
+    }
+
+    getTimeAbsolute() {
+        return this.clockAbsolute.getElapsedTime();
     }
 
     /**

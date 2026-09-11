@@ -62,8 +62,7 @@ async function main() {
     // const ball_positions = await parseCsv("./assets/ball_traj_3D.csv");
 
     // Setup event handlers
-    const clock = new Clock();
-    setupEventHandlers(camera, renderer, video, clock);
+    setupEventHandlers(camera, renderer, video);
 
     // Create calibration update callback
     // const updateCalibrationFn = createUpdateCalibrationCallback(

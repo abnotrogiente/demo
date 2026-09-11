@@ -5,18 +5,18 @@
 
 import { config } from './config';
 
-export function setupEventHandlers(camera, renderer, video, clock) {
+export function setupEventHandlers(camera, renderer, video) {
     // Keyboard event handler
     const onkeydown = async function (e) {
         if (e.which === ' '.charCodeAt(0)) {
             config.paused = !config.paused;
             if (config.paused) {
-                clock.stop();
+                config.sportClock.stop();
                 if (video.useMock) {
                     video.webcamVideo.pause();
                 }
             } else {
-                clock.start();
+                config.sportClock.start();
                 if (video.useMock) {
                     video.webcamVideo.play();
                 }
