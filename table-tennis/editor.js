@@ -20,6 +20,8 @@ export class ObjectSelector {
         this.selectActorsMode = true;
 
         this.configureUI();
+
+        this.mouseDownCameraPos = new Vector3();
     }
 
 
@@ -154,16 +156,23 @@ export class ObjectSelector {
             if (this.selectedMesh) this.selectedMesh.material.uniforms.isSelected.value = true;
         }
 
-        const onMouseClick = (event) => {
+        const onMouseDown = (event) => {
+            if (event.which == 1) {
+                this.mouseDownCameraPos.copy(config.camera.position);
+            }
+        }
+        const onMouseUp = (event) => {
             if (referentMover.mesh !== undefined) return;
             if (event.which == 1) {
+                if (this.mouseDownCameraPos.distanceToSquared(config.camera.position) >= 1e-4) return;
                 this.confirmSelection();
             }
 
         }
 
         config.renderer.domElement.addEventListener("mousemove", onMouseMove);
-        config.renderer.domElement.addEventListener("mousedown", onMouseClick);
+        config.renderer.domElement.addEventListener("mousedown", onMouseDown);
+        config.renderer.domElement.addEventListener("mouseup", onMouseUp);
     }
 
     fitSelectionPanelToViewport(container) {
