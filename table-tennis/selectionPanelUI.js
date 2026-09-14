@@ -1,5 +1,5 @@
 import { DoubleSide, Mesh } from "three";
-import { sport } from "./sport";
+import { sport, SportActorRelationship } from "./sport";
 import { ReferentsCharacteristics } from "./constants";
 import { referentScoring } from "./referent-selection";
 import {
@@ -32,10 +32,10 @@ function renderInlineView(container, title, onBack, renderContent) {
     renderContent(container);
 }
 
-function createInteractionButton(interaction, parent, closeModePanel, onBack) {
+function createRelationshipOrCharacteristicButton(relationshipOrCharacteristic, parent, closeModePanel, onBack, callback = () => { }) {
     //TODO enregistrer dans la variable de sport la préférence si le scoring est activé
-    const interactionName = interaction.name;
-    const interBtn = createActionButton(interactionName, {
+    const relationshipName = relationshipOrCharacteristic.name;
+    const interBtn = createActionButton(relationshipName, {
         display: 'block',
         width: '100%',
         marginBottom: '6px',
@@ -46,10 +46,10 @@ function createInteractionButton(interaction, parent, closeModePanel, onBack) {
         clickEvent.stopPropagation();
         closeModePanel();
 
-        renderInlineView(parent, interactionName, onBack, modePanel => {
-            const paramEntries = Object.entries(interaction.params || {}).length > 0
-                ? Object.entries(interaction.params || {})
-                : (interaction.enum ? [['value', { value: interaction.value, enum: interaction.enum }]] : []);
+        renderInlineView(parent, relationshipName, onBack, modePanel => {
+            const paramEntries = Object.entries(relationshipOrCharacteristic.params || {}).length > 0
+                ? Object.entries(relationshipOrCharacteristic.params || {})
+                : (relationshipOrCharacteristic.enum ? [['value', { value: relationshipOrCharacteristic.value, enum: relationshipOrCharacteristic.enum }]] : []);
 
             if (paramEntries.length === 0) {
                 modePanel.appendChild(createLabel('No parameters', {
@@ -87,6 +87,7 @@ function createInteractionButton(interaction, parent, closeModePanel, onBack) {
                     modeBtn.onclick = (ev) => {
                         ev.stopPropagation();
                         paramConfig.value = modeValue;
+                        callback(paramName, modeValue);
                         paramLabel.textContent = `${paramName}: ${modeKey}`;
                         Array.from(paramOptions.children).forEach(child => child.style.background = 'rgba(255,255,255,0.04)');
                         modeBtn.style.background = 'rgba(56, 161, 105, 0.18)';
@@ -103,7 +104,7 @@ function createInteractionButton(interaction, parent, closeModePanel, onBack) {
     };
     parent.appendChild(interBtn);
 }
-function addDisableButton(container, selectedMesh, closeInteractionPanel, closeModePanel) {
+function addDisableButton(container, selectedMesh, closeRelationshipPanel, closeModePanel) {
     container.appendChild(createLabel('', { fontWeight: '500', marginBottom: '4px' }));
     const btnDiv = document.createElement('div');
     applyPanelStyles(btnDiv, {
@@ -117,7 +118,7 @@ function addDisableButton(container, selectedMesh, closeInteractionPanel, closeM
     });
 
     disableBtn.onclick = (event) => {
-        closeInteractionPanel();
+        closeRelationshipPanel();
         closeModePanel();
 
         sport.display(selectedMesh, !selectedMesh.userData.display);
@@ -130,13 +131,13 @@ function addDisableButton(container, selectedMesh, closeInteractionPanel, closeM
     container.appendChild(btnDiv);
 
 }
-function addActorsButtons(container, selectedMesh, closeInteractionPanel, closeModePanel, onBack) {
+function addActorsButtons(container, selectedMesh, closeRelationshipPanel, closeModePanel, onBack) {
     container.appendChild(createLabel((referentScoring.currentMode != referentScoring.modes.DISABLED ? 'Relationship types' : 'Actors:'), { fontWeight: '500', marginBottom: '4px' }));
 
-    /**@type {Map<Mesh, Map<string, Map<int,SportActorInteraction>>>} */
-    const interactionsMap = sport.interactionsFromActor.get(selectedMesh) || new Map();
-    if (interactionsMap.size === 0) {
-        container.appendChild(createLabel('No interactions defined', { opacity: '0.85' }));
+    /**@type {Map<Mesh, Map<string, Map<int,SportActorRelationship>>>} */
+    const relationshipsMap = sport.relationshipsFromActor.get(selectedMesh) || new Map();
+    if (relationshipsMap.size === 0) {
+        container.appendChild(createLabel('No relationships defined', { opacity: '0.85' }));
     }
     const actorsList = document.createElement('div');
     applyPanelStyles(actorsList, {
@@ -147,7 +148,7 @@ function addActorsButtons(container, selectedMesh, closeInteractionPanel, closeM
 
     if (referentScoring.currentMode == referentScoring.modes.DISABLED) {
 
-        interactionsMap.forEach((interactions, otherActor) => {
+        relationshipsMap.forEach((relationships, otherActor) => {
             const otherActorName = otherActor.name;
             const actorBtn = createActionButton(otherActorName);
             actorBtn.onmouseenter = () => {
@@ -164,26 +165,26 @@ function addActorsButtons(container, selectedMesh, closeInteractionPanel, closeM
             // }
             actorBtn.onclick = (event) => {
                 event.stopPropagation();
-                closeInteractionPanel();
+                closeRelationshipPanel();
                 closeModePanel();
 
                 const showActors = () => {
                     renderInlineView(container, 'Actors', onBack, actorsPanel => {
-                        addActorsButtons(actorsPanel, selectedMesh, closeInteractionPanel, closeModePanel, onBack);
+                        addActorsButtons(actorsPanel, selectedMesh, closeRelationshipPanel, closeModePanel, onBack);
                     });
                 };
 
-                const showInteractions = () => renderInlineView(container, `Interactions with ${otherActorName}`, showActors, interactionPanel => {
-                    if (!interactions || interactions.size === 0) {
-                        interactionPanel.appendChild(createLabel('No interactions available', { opacity: '0.85' }));
+                const showRelationships = () => renderInlineView(container, `Relationships with ${otherActorName}`, showActors, relationshipPanel => {
+                    if (!relationships || relationships.size === 0) {
+                        relationshipPanel.appendChild(createLabel('No relationships available', { opacity: '0.85' }));
                     } else {
-                        interactions.forEach(interaction => {
-                            createInteractionButton(interaction, interactionPanel, closeModePanel, showInteractions);
+                        relationships.forEach(relationship => {
+                            createRelationshipOrCharacteristicButton(relationship, relationshipPanel, closeModePanel, showRelationships);
                         });
                     }
                 });
 
-                showInteractions();
+                showRelationships();
             };
 
             actorsList.appendChild(actorBtn);
@@ -194,7 +195,7 @@ function addActorsButtons(container, selectedMesh, closeInteractionPanel, closeM
     else {
         if (!sport.visPreferences.has(selectedMesh)) return;
         sport.visPreferences.get(selectedMesh).forEach((preference, type) => {
-            const interBtn = createInteractionButton(preference, actorsList, closeModePanel, onBack);
+            const interBtn = createRelationshipOrCharacteristicButton(preference, actorsList, closeModePanel, onBack);
 
         });
 
@@ -257,7 +258,7 @@ function addExtensionsButtons(container, selectedMesh) {
  * @param {Mesh} selectedMesh 
  * @returns 
  */
-function addCharacteristicsButton(container, selectedMesh) {
+function addCharacteristicsButton(container, selectedMesh, closeModePanel, onBack) {
     // if (!sport.isProxyExtension(selectedMesh)) return;
     if (!sport.isExtension(selectedMesh)) return;
     container.appendChild(createLabel('Characteristics:', { fontWeight: '500', marginBottom: '4px' }));
@@ -269,18 +270,26 @@ function addCharacteristicsButton(container, selectedMesh) {
         gap: '6px',
     });
 
-    Object.entries(ReferentsCharacteristics).forEach(([name, characteristic]) => {
-        console.log("creating button : " + name);
-        const characteristicButton = createActionButton(name, {
-            background: sport.hasCharacteristic(selectedMesh, characteristic) ? 'rgba(56, 161, 105, 0.18)' : 'rgba(255,255,255,0.04)'
-        }
-        );
-        characteristicButton.onmousedown = () => {
-            sport.setCharacteristic(selectedMesh, characteristic, !sport.hasCharacteristic(selectedMesh, characteristic));
-            characteristicButton.style.background = sport.hasCharacteristic(selectedMesh, characteristic) ? 'rgba(56, 161, 105, 0.18)' : 'rgba(255,255,255,0.04)';
-        }
-        characteristicsList.appendChild(characteristicButton);
+    const showCharacteristics = () => renderInlineView(container, `Characteristics`, onBack, characteristicPanel => {
+        Object.entries(ReferentsCharacteristics).forEach(([name, characteristicType]) => {
+            console.log("creating button : " + name);
+            const characteristic = sport.characteristicsFromActor.get(selectedMesh).get(characteristicType);
+            // const characteristicButton = createActionButton(name, {
+            //     background: sport.hasCharacteristic(selectedMesh, characteristic) ? 'rgba(56, 161, 105, 0.18)' : 'rgba(255,255,255,0.04)'
+            // }
+            // );
+            const callback = (param, value) => {
+                sport.setCharacteristic(selectedMesh, characteristicType, value, param);
+            }
+            const characteristicButton = createRelationshipOrCharacteristicButton(characteristic, characteristicPanel, closeModePanel, showCharacteristics, callback);
+            // characteristicButton.onmousedown = () => {
+            //     sport.setCharacteristic(selectedMesh, characteristic, !sport.hasCharacteristic(selectedMesh, characteristic));
+            //     characteristicButton.style.background = sport.hasCharacteristic(selectedMesh, characteristic) ? 'rgba(56, 161, 105, 0.18)' : 'rgba(255,255,255,0.04)';
+            // }
+            // characteristicsList.appendChild(characteristicButton);
+        });
     });
+    showCharacteristics();
     container.appendChild(characteristicsList);
 }
 
@@ -387,13 +396,13 @@ function addCategoryButton(container, label, position, onClick) {
     container.appendChild(button);
 }
 
-function addSelectedActorContent(container, selectedMesh, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated, isProposedReferent = false, useRadialMenu = true) {
+function addSelectedActorContent(container, selectedMesh, closeRelationshipPanel, closeModePanel, onRelationshipPanelCreated, onModePanelCreated, isProposedReferent = false, useRadialMenu = true) {
     if (isProposedReferent) {
         container.appendChild(createLabel(`Selected: ${selectedMesh.name || 'object'}`, {
             fontWeight: '600',
             marginBottom: '6px',
         }));
-        addDisableButton(container, selectedMesh, closeInteractionPanel, closeModePanel);
+        addDisableButton(container, selectedMesh, closeRelationshipPanel, closeModePanel);
         return;
     }
 
@@ -419,7 +428,7 @@ function addSelectedActorContent(container, selectedMesh, closeInteractionPanel,
         configureCategoryView(container, useRadialMenu);
         addCategoryButton(container, 'Actors', { left: 50, top: 16 }, () => showCategory(
             'Actors',
-            content => addActorsButtons(content, selectedMesh, closeInteractionPanel, closeModePanel, addCategoryMenu),
+            content => addActorsButtons(content, selectedMesh, closeRelationshipPanel, closeModePanel, addCategoryMenu),
         ));
         addCategoryButton(container, 'Extensions', { left: 82, top: 50 }, () => showCategory(
             'Extensions',
@@ -427,7 +436,7 @@ function addSelectedActorContent(container, selectedMesh, closeInteractionPanel,
         ));
         addCategoryButton(container, 'Characteristics', { left: 50, top: 82 }, () => showCategory(
             'Characteristics',
-            content => addCharacteristicsButton(content, selectedMesh),
+            content => addCharacteristicsButton(content, selectedMesh, closeModePanel, addCategoryMenu),
         ));
         addCategoryButton(container, 'Manipulations', { left: 18, top: 50 }, () => showCategory(
             'Manipulations',
@@ -509,9 +518,9 @@ export function createSelectionPanel({
     actorListMode = false,
     parent,
     closeSelectionPanel,
-    closeInteractionPanel,
+    closeRelationshipPanel,
     closeModePanel,
-    onInteractionPanelCreated,
+    onRelationshipPanelCreated,
     onModePanelCreated,
 }) {
     const container = document.createElement('div');
@@ -540,7 +549,7 @@ export function createSelectionPanel({
     if (actorListMode) {
         let selectedDetails = null;
         const onActorSelected = (actor, actorButton, actorsList, isProposedReferent = false) => {
-            closeInteractionPanel();
+            closeRelationshipPanel();
             closeModePanel();
             selectedDetails?.remove();
             const details = document.createElement('div');
@@ -550,13 +559,13 @@ export function createSelectionPanel({
                 paddingTop: '8px',
                 borderTop: '1px solid rgba(255,255,255,0.15)',
             });
-            addSelectedActorContent(details, actor, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated, isProposedReferent, false);
+            addSelectedActorContent(details, actor, closeRelationshipPanel, closeModePanel, onRelationshipPanelCreated, onModePanelCreated, isProposedReferent, false);
             actorsList.insertBefore(details, actorButton.nextSibling);
             selectedDetails = details;
         };
         addActorList(container, onActorSelected);
     } else {
-        addSelectedActorContent(container, selectedMesh, closeInteractionPanel, closeModePanel, onInteractionPanelCreated, onModePanelCreated);
+        addSelectedActorContent(container, selectedMesh, closeRelationshipPanel, closeModePanel, onRelationshipPanelCreated, onModePanelCreated);
     }
     // const close = createActionButton('Close', {
     //     marginTop: '8px',

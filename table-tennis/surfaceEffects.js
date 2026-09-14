@@ -4,7 +4,7 @@ import { BounceModes, GlyphModes, MetaDataModes, MetaDataValueFromModeAndActor, 
 import { Scene } from "three";
 import { tableDimensions } from "./constants";
 import { config } from "./config";
-import { sport, SportActorInteraction } from "./sport";
+import { sport, SportActorRelationship } from "./sport";
 import { CanvasTextTexture } from "./canvasTextTexture";
 
 
@@ -18,7 +18,7 @@ export class SurfaceEffects {
         /**@type {Mesh} */
         this.otherActor = null;
 
-        /**@type {Map<int, SportActorInteraction[]>} */
+        /**@type {Map<int, SportActorRelationship[]>} */
         this.relationships = new Map([
             [SportActorInterationTypes.PROJECTION, []],
             [SportActorInterationTypes.CONTACT, []],
@@ -281,7 +281,7 @@ export class SurfaceEffects {
                 }
                 // gl_FragColor = vec4(1., 0., 0., 1.);
 
-                vec4 metaDataColor = texture(metaDataTexture, vUv*surfaceScaling.xy + vec2(0, -1.) * surfaceScaling.y + vec2(0., 1.));
+                vec4 metaDataColor = texture(metaDataTexture, vUv*surfaceScaling.xy + vec2(0, -1.) * surfaceScaling.xy + vec2(0., 1.));
                 if(metaDataColor.a > 0.1) gl_FragColor = metaDataColor;
                 // gl_FragColor = vec4(1., 0., 0., 1.);
 
@@ -606,27 +606,27 @@ export class SurfaceEffects {
 
     #updateInformations() {
         this.relationships.get(SportActorInterationTypes.METADATA).forEach(informationRelationship => {
-            this.#updateMetaDataInteraction(informationRelationship);
+            this.#updateMetaDataRelationship(informationRelationship);
         });
     }
 
     update(t, dt) {
         if (config.paused) return;
-        // if (this.projectionInteraction) {
-        //     if (this.shader) this.shader.uniforms.showShadow.value = this.projectionInteraction.params.instantaneous.value;
+        // if (this.projectionRelationship) {
+        //     if (this.shader) this.shader.uniforms.showShadow.value = this.projectionRelationship.params.instantaneous.value;
         //     const prevTraceValue = this.texturePassQuad.material.uniforms.showTrace.value;
-        //     this.texturePassQuad.material.uniforms.showTrace.value = this.projectionInteraction.params.trace.value;
+        //     this.texturePassQuad.material.uniforms.showTrace.value = this.projectionRelationship.params.trace.value;
         //     if (this.texturePassQuad.material.uniforms.showTrace.value != prevTraceValue) this.#cleanTextures();
         // }
-        // if (this.bounceInteraction) {
+        // if (this.bounceRelationship) {
         //     const prevBounceMode = this.bounceMode;
-        //     this.bounceMode = this.bounceInteraction.params.bounce.value;
+        //     this.bounceMode = this.bounceRelationship.params.bounce.value;
         //     if (prevBounceMode != this.bounceMode) this.#cleanTextures();
         //     this.texturePassQuad.material.uniforms.bounceMode.value = this.bounceMode;
         //     if (this.shader) this.shader.uniforms.bounceMode.value = this.bounceMode;
         // }
-        // if (this.metaDataInteraction) {
-        //     this.#updateMetaDataInteraction();
+        // if (this.metaDataRelationship) {
+        //     this.#updateMetaDataRelationship();
         // }
         this.#updateProjections();
         this.#updateContacts();
@@ -638,9 +638,9 @@ export class SurfaceEffects {
 
     /**
      * 
-     * @param {SportActorInteraction} informationRelationship 
+     * @param {SportActorRelationship} informationRelationship 
      */
-    #updateMetaDataInteraction(informationRelationship) {
+    #updateMetaDataRelationship(informationRelationship) {
         const { value, unit } = MetaDataValueFromModeAndActor.get(informationRelationship.params.metaData.value)(this.otherActor);
         let val = value;
         if (val === undefined) return;
@@ -660,9 +660,9 @@ export class SurfaceEffects {
 
     /**
      * 
-     * @param {SportActorInteraction} interaction 
+     * @param {SportActorRelationship} relationship 
      */
-    addInteraction(interaction) {
-        this.relationships.get(interaction.type).push(interaction);
+    addRelationship(relationship) {
+        this.relationships.get(relationship.type).push(relationship);
     }
 }

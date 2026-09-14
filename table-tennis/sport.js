@@ -1,4 +1,4 @@
-import { BoxGeometry, DoubleSide, Matrix4, Mesh, MeshBasicMaterial, MeshPhongMaterial, MeshStandardMaterial, PlaneGeometry, Quaternion, Scene, SphereGeometry, Vector3 } from "three";
+import { BackSide, BoxGeometry, DoubleSide, Matrix4, Mesh, MeshBasicMaterial, MeshPhongMaterial, MeshStandardMaterial, PlaneGeometry, Quaternion, Scene, SphereGeometry, Vector3 } from "three";
 import { TableEffects } from "./tableEffects";
 import { parseCsv } from "./utils";
 import { Video } from "./video";
@@ -19,8 +19,51 @@ class SportActor {
     }
 }
 
+const dataFromCharacteristic = new Map([
+    [ReferentsCharacteristics.ALWAYS_VISIBLE, {
+        name: "Always Visible",
+        params: {
+            alwaysVisible: {
+                enum: EnableModes,
+                default: EnableModes.DISABLED
+            }
+        },
+        defaultParam: "alwaysVisible"
+    }],
+    [ReferentsCharacteristics.CAMERA_FACING, {
+        name: "Camera Facing",
+        params: {
+            cameraFacing: {
+                enum: EnableModes,
+                default: EnableModes.DISABLED
+            }
+        },
+        defaultParam: "cameraFacing"
+    }],
+    [ReferentsCharacteristics.SCREEN_SPACE, {
+        name: "Screen Space",
+        params: {
+            screenSpace: {
+                enum: EnableModes,
+                default: EnableModes.DISABLED
+            }
+        },
+        defaultParam: "screenSpace"
+    }],
+    [ReferentsCharacteristics.BACK_FACE_CULLING, {
+        name: "Face Culling",
+        params: {
+            faceCulling: {
+                enum: EnableModes,
+                default: EnableModes.DISABLED
+            }
+        },
+        defaultParam: "faceCulling"
+    }],
+])
 
-const characteristicsFromInteraction = new Map([
+
+const dataFromRelationship = new Map([
     [SportActorInterationTypes.CONTACT, {
         name: "Contact",
         params: {
@@ -68,32 +111,36 @@ const characteristicsFromInteraction = new Map([
     }],
 ]);
 
-// const interactionsCharacteristics = new Map([
-//     [SportActorInterationTypes.CONTACT, {
-//         name: "Bounce",
-//         enum: BounceModes,
-//         default: BounceModes.NONE
-//     }],
-//     [SportActorInterationTypes.PROJECTION, {
-//         name: "Projection",
-//         enum: EnableModes,
-//         default: EnableModes.DISABLED
-//     }],
-//     [SportActorInterationTypes.TECHNIQUE, {
-//         name: "Technique",
-//         enum: EnableModes,
-//         default: EnableModes.DISABLED
-//     }],
-//     [SportActorInterationTypes.STEP, {
-//         name: "Step",
-//         enum: EnableModes,
-//         default: EnableModes.DISABLED
-//     }],
-// ]);
 
 
 
-export class SportActorInteraction {
+export class SportActorCharacteristic {
+
+    /**
+     * 
+     * @param {*} type 
+     * @param {Mesh} actor 
+     */
+    constructor(type) {
+        const characteristicData = dataFromCharacteristic.get(type);
+        this.name = characteristicData.name;
+        this.defaultParam = characteristicData.defaultParam;
+        this.params = {};
+        Object.entries(characteristicData.params).forEach(([paramName, param]) => {
+            this.params[paramName] = {
+                value: param.default,
+                default: param.default,
+                enum: param.enum
+            }
+        });
+
+        this.type = type;
+    }
+}
+
+
+
+export class SportActorRelationship {
     /**
      * 
      * @param {*} type 
@@ -107,22 +154,22 @@ export class SportActorInteraction {
 
         this.contactCondition = contactCondition;
 
-        const interactionCharacteristics = characteristicsFromInteraction.get(type);
-        this.name = interactionCharacteristics.name;
+        const relationshipData = dataFromRelationship.get(type);
+        this.name = relationshipData.name;
         this.params = {};
-        Object.entries(interactionCharacteristics.params).forEach(([paramName, param]) => {
+        Object.entries(relationshipData.params).forEach(([paramName, param]) => {
             this.params[paramName] = {
                 value: param.default,
                 default: param.default,
                 enum: param.enum
             }
         });
-        // this.enum = interactionsCharacteristics.get(type).enum;
-        // this.value = interactionsCharacteristics.get(type).default;
-        // this.name = interactionsCharacteristics.get(type).name;
+        // this.enum = relationshipData.get(type).enum;
+        // this.value = relationshipData.get(type).default;
+        // this.name = relationshipData.get(type).name;
         this.type = type;
 
-        if (surfaceEffects) surfaceEffects.addInteraction(this);
+        if (surfaceEffects) surfaceEffects.addRelationship(this);
     }
 }
 
@@ -156,7 +203,7 @@ class Sport {
 
         this.cleanMess();
 
-        /**@type {Map<Mesh, Map<int, SportActorInteraction>} */
+        /**@type {Map<Mesh, Map<int, SportActorRelationship>} */
         this.visPreferences = new Map();
 
         /**@type {Mesh[]} */
@@ -179,19 +226,17 @@ class Sport {
         /**@type {Map<Mesh, Mesh[]>} */
         this.extensionsFromActor = new Map();
 
-        /**@type {Map<Mesh, Map<Mesh, Map<int,SportActorInteraction>>>} */
-        this.interactionsFromActor = new Map();
+        /**@type {Map<Mesh, Map<Mesh, Map<int,SportActorRelationship>>>} */
+        this.relationshipsFromActor = new Map();
+
+        /**@type {Map<Mesh, Map<int,SportActorCharacteristic>>} */
+        this.characteristicsFromActor = new Map();
 
         /**@type {Map<Mesh, SurfaceEffects>} */
         this.surfaceEffectsFromActor = new Map();
 
         /**@type {Mesh[]} */
         this.cameraFacingExtendedReferents = [];
-
-        /**@type {Map<int, Mesh[]>} */
-        this.actorsByCaracteristics = new Map();
-
-        Object.entries(ReferentsCharacteristics).forEach(([name, value]) => this.actorsByCaracteristics.set(value, []));
 
         await this.setAssets(this.sportDescription.assets);
 
@@ -214,30 +259,30 @@ class Sport {
 
         await parseChildren(sportDescription.children);
 
-        this.sportDescription.interactions.forEach(interaction => {
-            const actor1Name = interaction.actors[0];
-            const actor2Name = interaction.actors[1];
+        this.sportDescription.relationships.forEach(relationship => {
+            const actor1Name = relationship.actors[0];
+            const actor2Name = relationship.actors[1];
 
             const actor1 = this.actorByName.get(actor1Name);
             const actor2 = this.actorByName.get(actor2Name);
 
-            if (interaction.extensions) {
-                // const actorName = interaction.actor;
+            if (relationship.extensions) {
+                // const actorName = relationship.actor;
                 // const actor = this.actorByName.get(actorName);
                 const extensions = this.extensionsFromActor.get(actor1);
                 if (extensions) extensions.forEach(extension => {
-                    if (this.isProxyExtension(extension)) interaction.params.contactCondition = this.surfaceEffectsFromActor.get(this.getActorFromProxyExtension(extension)).contactCondition;
-                    this.#addInteractions(interaction.types, interaction.params, extension, extension.name, actor2, actor2Name);
+                    if (this.isProxyExtension(extension)) relationship.params.contactCondition = this.surfaceEffectsFromActor.get(this.getActorFromProxyExtension(extension)).contactCondition;
+                    this.#addRelationship(relationship.types, relationship.params, extension, extension.name, actor2, actor2Name);
                 });
 
                 // this.visPannels.forEach(visPannel => {
-                //     this.#addInteractions(interaction.types, visPannel, visPannel.name, actor, actorName);
+                //     this.#addRelationship(relationship.types, visPannel, visPannel.name, actor, actorName);
                 // });
             }
 
             else {
 
-                this.#addInteractions(interaction.types, interaction.params, actor1, actor1Name, actor2, actor2Name);
+                this.#addRelationship(relationship.types, relationship.params, actor1, actor1Name, actor2, actor2Name);
             }
 
         });
@@ -248,34 +293,38 @@ class Sport {
     }
 
 
-    #addInteractions(interactionTypes, interactionParams, actor1, actor1Name, actor2, actor2Name) {
-        // console.log("adding interacions : " + JSON.stringify(interactionTypes));
+    #addRelationship(relationshipTypes, relationshipParams, actor1, actor1Name, actor2, actor2Name) {
+        // console.log("adding interacions : " + JSON.stringify(relationshipTypes));
         // console.log("for actors : " + actor1Name + " and " + actor2Name + "\n\n");
-        const contactCondition = (interactionParams && interactionParams.contactCondition) ? interactionParams.contactCondition : defaultContactCondition;
-        interactionTypes.forEach(interactionType => {
+        const contactCondition = (relationshipParams && relationshipParams.contactCondition) ? relationshipParams.contactCondition : defaultContactCondition;
+        relationshipTypes.forEach(relationshipType => {
             if (actor1 && actor2) {
                 // console.log("")
                 if (!this.surfaceEffectsFromActor.has(actor1)) this.surfaceEffectsFromActor.set(actor1, new SurfaceEffects(actor1));
-                const interaction = new SportActorInteraction(interactionType, actor1, actor2, this.surfaceEffectsFromActor.get(actor1), contactCondition);
-                if (!this.interactionsFromActor.get(actor1).has(actor2)) this.interactionsFromActor.get(actor1).set(actor2, new Map());
-                if (!this.interactionsFromActor.get(actor2).has(actor1)) this.interactionsFromActor.get(actor2).set(actor1, new Map());
-                this.interactionsFromActor.get(actor1).get(actor2).set(interactionType, interaction);
-                this.interactionsFromActor.get(actor2).get(actor1).set(interactionType, interaction);
-                // console.log("ADDING INTERACTION : " + this.interactionsFromActor.get(actor1);
+                const relationship = new SportActorRelationship(relationshipType, actor1, actor2, this.surfaceEffectsFromActor.get(actor1), contactCondition);
+                if (!this.relationshipsFromActor.get(actor1).has(actor2)) this.relationshipsFromActor.get(actor1).set(actor2, new Map());
+                if (!this.relationshipsFromActor.get(actor2).has(actor1)) this.relationshipsFromActor.get(actor2).set(actor1, new Map());
+                this.relationshipsFromActor.get(actor1).get(actor2).set(relationshipType, relationship);
+                this.relationshipsFromActor.get(actor2).get(actor1).set(relationshipType, relationship);
                 this.surfaceEffectsFromActor.get(actor1).setOtherActor(actor2);
 
-                if (!this.isExtension(actor1) && !this.visPreferences.get(actor1).has(interactionType)) {
-                    this.visPreferences.get(actor1).set(interactionType, new SportActorInteraction(interactionType, actor1, null, null));
+                if (!this.isExtension(actor1) && !this.visPreferences.get(actor1).has(relationshipType)) {
+                    this.visPreferences.get(actor1).set(relationshipType, new SportActorRelationship(relationshipType, actor1, null, null));
                 }
-                if (!this.isExtension(actor2) && !this.visPreferences.get(actor2).has(interactionType)) {
-                    this.visPreferences.get(actor2).set(interactionType, new SportActorInteraction(interactionType, null, actor2, null));
+                if (!this.isExtension(actor2) && !this.visPreferences.get(actor2).has(relationshipType)) {
+                    this.visPreferences.get(actor2).set(relationshipType, new SportActorRelationship(relationshipType, null, actor2, null));
                 }
             }
-            // if (interactionType === SportActorInterationTypes.PROJECTION) {
+            // if (relationshipType === SportActorInterationTypes.PROJECTION) {
             //     const effects = new TableEffects(actor1, actor2, config.renderer);
             //     this.projections.push(effects);
             // }
         });
+    }
+
+    #addCharacteristic(type, actor) {
+        if (!this.characteristicsFromActor.has(actor)) this.characteristicsFromActor.set(actor, new Map());
+        this.characteristicsFromActor.get(actor).set(type, new SportActorCharacteristic(type));
     }
 
 
@@ -386,6 +435,9 @@ class Sport {
      * @param {*} dimensions 
      */
     #addActor(actor, name, params = undefined, surfaceForEffects = false) {
+        Object.entries(ReferentsCharacteristics).forEach(([charName, charValue]) => {
+            this.#addCharacteristic(charValue, actor);
+        })
         actor.userData.label = params?.label;
         const dimensionsForExtensions = params?.dimensionsForExtensions ?? params?.dimensions;
         const dimensions = params?.dimensions;
@@ -395,7 +447,7 @@ class Sport {
         actor.name = name;
         if (!(params && params.keepMaterial)) actor.material = actor.material.clone();
         this.display(actor, true);
-        this.interactionsFromActor.set(actor, new Map());
+        this.relationshipsFromActor.set(actor, new Map());
         if (!this.isExtension(actor)) {
             this.visPreferences.set(actor, new Map());
 
@@ -423,7 +475,7 @@ class Sport {
                     // this.cameraFacingExtendedReferents.push(extension);
                     // this.setCharacteristic(extension, ReferentsCharacteristics.CAMERA_FACING, true);
 
-                    this.#addInteractions([SportActorInterationTypes.METADATA], null, extension, extension.name, actor, actor.name);
+                    this.#addRelationship([SportActorInterationTypes.METADATA], null, extension, extension.name, actor, actor.name);
                 }
                 else if (extension.name.startsWith("Proxy")) {
                     if (dimensionsForExtensions.lookDirection) {
@@ -448,15 +500,24 @@ class Sport {
      * @param {*} characteristic 
      * @param {*} value 
      */
-    setCharacteristic(actor, characteristic, value) {
-        const actorsByCharacteristic = this.actorsByCaracteristics.get(characteristic);
-        if (value && !actorsByCharacteristic.includes(actor))
-            actorsByCharacteristic.push(actor);
-        else if (!value && actorsByCharacteristic.includes(actor)) {
-            const index = actorsByCharacteristic.indexOf(actor);
-            actorsByCharacteristic.splice(index, 1);
+    setCharacteristic(actor, characteristicType, value, param = null) {
+        // const actorsByCharacteristic = this.actorsByCaracteristics.get(characteristicType);
+        // if (value && !actorsByCharacteristic.includes(actor))
+        //     actorsByCharacteristic.push(actor);
+        // else if (!value && actorsByCharacteristic.includes(actor)) {
+        //     const index = actorsByCharacteristic.indexOf(actor);
+        //     actorsByCharacteristic.splice(index, 1);
+        // }
+        // if (!this.characteristicsFromActor.has(actor)) {
+        //     console.warn("Trying to set characteristic of a non referent");
+        //     return;
+        // }
+        const characteristic = this.characteristicsFromActor.get(actor).get(characteristicType);
+        if (param === null) {
+            param = characteristicType.defaultParam;
         }
-        switch (characteristic) {
+        characteristic.params[param].value = value;
+        switch (characteristicType) {
             case ReferentsCharacteristics.ALWAYS_VISIBLE:
                 if (value) {
                     actor.material.depthTest = false;
@@ -478,6 +539,9 @@ class Sport {
                 break;
             case ReferentsCharacteristics.SCREEN_SPACE:
                 this.#setScreenSpace(actor, value);
+                break;
+            case ReferentsCharacteristics.BACK_FACE_CULLING:
+                actor.material.side = value ? BackSide : actor.userData.referenceSide;
                 break;
             default:
                 break;
@@ -523,8 +587,13 @@ class Sport {
         }
     }
 
-    hasCharacteristic(actor, characteristic) {
-        return this.actorsByCaracteristics.get(characteristic).includes(actor);
+    hasCharacteristic(actor, characteristicType, value = true, param = null) {
+        if (!this.characteristicsFromActor.has(actor)) return;
+        const characteristic = this.characteristicsFromActor.get(actor).get(characteristicType);
+        if (param === null) {
+            param = characteristic.defaultParam;
+        }
+        return characteristic.params[param].value == value;
     }
 
     isProxyExtension(actor) {
@@ -618,8 +687,12 @@ class Sport {
     }
 
     #updateFromCharacteristics() {
-
-        this.actorsByCaracteristics.get(ReferentsCharacteristics.CAMERA_FACING).forEach(actor => this.#updateCameraFacing(actor));
+        this.actors.forEach(actor => {
+            if (this.hasCharacteristic(actor, ReferentsCharacteristics.CAMERA_FACING)) {
+                this.#updateCameraFacing(actor);
+            }
+        })
+        // this.actorsByCaracteristics.get(ReferentsCharacteristics.CAMERA_FACING).forEach(actor => this.#updateCameraFacing(actor));
         // this.actorsByCaracteristics.get(ReferentsCharacteristics.SCREEN_SPACE).forEach(actor => {
         //     const p = new Vector3();
         //     actor.getWorldPosition(p);

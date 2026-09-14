@@ -274,7 +274,7 @@ export const sportTrees = {
                 // mesh: "ground"
             }
         },
-        interactions: [
+        relationships: [
             {
                 actors: ["Racket", "Ball"],
                 types: ["technique", SportActorInterationTypes.CONTACT]
@@ -335,7 +335,7 @@ export const sportTrees = {
                 }
             }
         },
-        interactions: [
+        relationships: [
             {
                 actors: ["Glove", "Player"],
                 types: ["technique", "Bounce"]
@@ -372,7 +372,7 @@ export const sportTrees = {
                 surfaceForEffects: true
             }
         },
-        interactions: [
+        relationships: [
             {
                 actors: ["Wall", "Climber"],
                 types: [SportActorInterationTypes.PROJECTION],
@@ -422,7 +422,7 @@ export const sportTrees = {
                 dimensions: { radius: 1 }
             },
         },
-        interactions: [
+        relationships: [
             {
                 actors: ["ground", "pelvis1"],
                 types: [SportActorInterationTypes.PROJECTION],

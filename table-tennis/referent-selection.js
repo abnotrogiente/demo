@@ -3,7 +3,7 @@ import { config, configureButton, configureSelector } from "./config";
 import { GPU_reduction } from "./gpu-reduction";
 import { getMeshesScoresById, topK } from "./utils";
 import { ReferentsCharacteristics, SelectorTypes } from "./constants";
-import { sport, SportActorInteraction } from "./sport";
+import { sport, SportActorRelationship } from "./sport";
 
 
 export class ReferentScoring {
@@ -303,20 +303,19 @@ export class ReferentScoring {
      * @param {Mesh} referent 
      */
     #updateVis(referent) {
-        if (!sport.interactionsFromActor.has(referent)) return;
-        sport.interactionsFromActor.get(referent).forEach((interactions, otherActor) => {
+        if (!sport.relationshipsFromActor.has(referent)) return;
+        sport.relationshipsFromActor.get(referent).forEach((relationships, otherActor) => {
             // console.log("actor name : " + referent.name + "\n");
             if (!sport.visPreferences.has(otherActor)) return;
             // console.log("other actor name : " + otherActor.name);
             sport.visPreferences.get(otherActor).forEach((preference, type) => {
-                if (!interactions.has(type)) return;
-                // console.log("INTERACTION TYPE : " + type);
+                if (!relationships.has(type)) return;
                 // console.log("PREFERENCE : " + JSON.stringify(preference.params));
                 Object.entries(preference.params).forEach(([paramName, param]) => {
                     // console.log("PARAM : " + JSON.stringify(param));
                     const value = referent.userData.display ? param.value : param.default;
                     // console.log("VALUE : " + value);
-                    interactions.get(type).params[paramName].value = value;
+                    relationships.get(type).params[paramName].value = value;
 
                 });
                 // console.log("\n\n\n");

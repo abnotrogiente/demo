@@ -191,14 +191,14 @@ export class ObjectSelector {
         this.modePanelElement = null;
     }
 
-    _closeInteractionPanel() {
+    _closeRelationshipPanel() {
         this._closeModePanel();
-        this._removePanel(this.interactionPanelElement);
-        this.interactionPanelElement = null;
+        this._removePanel(this.relationshipPanelElement);
+        this.relationshipPanelElement = null;
     }
 
     _closeSelectionPanel() {
-        this._closeInteractionPanel();
+        this._closeRelationshipPanel();
         this._removePanel(this.selectionPannelElement);
         this.selectionPannelElement = null;
         this.selectionPannelDisplayed = false;
@@ -212,7 +212,7 @@ export class ObjectSelector {
             const target = event.target;
             // If click is inside any panel, ignore
             if (this.selectionPannelElement && this.selectionPannelElement.contains(target)) return;
-            if (this.interactionPanelElement && this.interactionPanelElement.contains(target)) return;
+            if (this.relationshipPanelElement && this.relationshipPanelElement.contains(target)) return;
             if (this.modePanelElement && this.modePanelElement.contains(target)) return;
 
             // Otherwise close panels
@@ -240,10 +240,10 @@ export class ObjectSelector {
                     actorListMode: true,
                     parent,
                     closeSelectionPanel: () => this._closeSelectionPanel(),
-                    closeInteractionPanel: () => this._closeInteractionPanel(),
+                    closeRelationshipPanel: () => this._closeRelationshipPanel(),
                     closeModePanel: () => this._closeModePanel(),
-                    onInteractionPanelCreated: (panel) => {
-                        this.interactionPanelElement = panel;
+                    onRelationshipPanelCreated: (panel) => {
+                        this.relationshipPanelElement = panel;
                     },
                     onModePanelCreated: (panel) => {
                         this.modePanelElement = panel;
@@ -270,10 +270,10 @@ export class ObjectSelector {
                 mouse: this.mouse,
                 parent,
                 closeSelectionPanel: () => this._closeSelectionPanel(),
-                closeInteractionPanel: () => this._closeInteractionPanel(),
+                closeRelationshipPanel: () => this._closeRelationshipPanel(),
                 closeModePanel: () => this._closeModePanel(),
-                onInteractionPanelCreated: (panel) => {
-                    this.interactionPanelElement = panel;
+                onRelationshipPanelCreated: (panel) => {
+                    this.relationshipPanelElement = panel;
                 },
                 onModePanelCreated: (panel) => {
                     this.modePanelElement = panel;
