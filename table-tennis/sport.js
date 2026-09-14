@@ -535,7 +535,7 @@ class Sport {
                     actor.material.transparent = actor.userData.originalTransparence;
                 }
                 const surfaceForEffects = this.getSurfaceForEffects(actor);
-                if (actor != surfaceForEffects) this.setCharacteristic(surfaceForEffects, characteristic, value);
+                if (actor != surfaceForEffects) this.setCharacteristic(surfaceForEffects, characteristicType, value);
 
                 break;
             case ReferentsCharacteristics.SCREEN_SPACE:
@@ -632,7 +632,7 @@ class Sport {
         actor.attach(proxyForSurfaceEffects);
         sportSpecificAssets.nonPhysics.push(proxyForSurfaceEffects);
         actor.userData.proxyForSurfaceEffects = proxyForSurfaceEffects;
-
+        this.#initCharacteristics(proxyForSurfaceEffects);
         if (this.isProxyExtension(actor)) proxyForSurfaceEffects.userData.actorFromProxyExtension = this.getSurfaceForEffects(this.getActorFromProxyExtension(actor));
     }
 
