@@ -439,5 +439,6 @@ configureButton({
     callback: (value) => {
         if (referentScoring.currentMode != referentScoring.modes.ON_DEMAND) return;
         referentScoring.evaluate();
+        window.dispatchEvent(new Event('proposed-referents-updated'));
     }
 });

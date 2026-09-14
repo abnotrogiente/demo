@@ -260,7 +260,7 @@ export class Players {
      * @param {Bone} bone 
      */
     #updateLabel(bone) {
-        const label = bone.userData.label;
+        const label = bone.userData.boneLabel;
         if (!label) return;
         // Get world position of the bone
         const pos = new Vector3();
@@ -287,7 +287,7 @@ export class Players {
             div.textContent = bone.name;
             document.body.appendChild(div);
 
-            if (debug) bone.userData.label = div;
+            if (debug) bone.userData.boneLabel = div;
         }
         // Connect bones according to skeleton_links
         this.meta.skeleton_links.forEach(([parentIdx, childIdx]) => {

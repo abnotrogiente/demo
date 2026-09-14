@@ -149,7 +149,7 @@ function addActorsButtons(container, selectedMesh, closeRelationshipPanel, close
     if (referentScoring.currentMode == referentScoring.modes.DISABLED) {
 
         relationshipsMap.forEach((relationships, otherActor) => {
-            const otherActorName = otherActor.name;
+            const otherActorName = otherActor.userData.label || otherActor.name;
             const actorBtn = createActionButton(otherActorName);
             actorBtn.onmouseenter = () => {
                 const otherActor = sport.actorByName.get(otherActorName);
@@ -169,7 +169,8 @@ function addActorsButtons(container, selectedMesh, closeRelationshipPanel, close
                 closeModePanel();
 
                 const showActors = () => {
-                    renderInlineView(container, 'Actors', onBack, actorsPanel => {
+                    const text = referentScoring.currentMode == referentScoring.modes.DISABLED ? 'Actors' : 'Relationship types';
+                    renderInlineView(container, text, onBack, actorsPanel => {
                         addActorsButtons(actorsPanel, selectedMesh, closeRelationshipPanel, closeModePanel, onBack);
                     });
                 };
@@ -398,7 +399,7 @@ function addCategoryButton(container, label, position, onClick) {
 
 function addSelectedActorContent(container, selectedMesh, closeRelationshipPanel, closeModePanel, onRelationshipPanelCreated, onModePanelCreated, isProposedReferent = false, useRadialMenu = true) {
     if (isProposedReferent) {
-        container.appendChild(createLabel(`Selected: ${selectedMesh.name || 'object'}`, {
+        container.appendChild(createLabel(`Selected: ${selectedMesh.userData.label || selectedMesh.name || 'object'}`, {
             fontWeight: '600',
             marginBottom: '6px',
         }));
@@ -426,8 +427,10 @@ function addSelectedActorContent(container, selectedMesh, closeRelationshipPanel
 
     const addCategoryMenu = () => {
         configureCategoryView(container, useRadialMenu);
-        addCategoryButton(container, 'Actors', { left: 50, top: 16 }, () => showCategory(
-            'Actors',
+        const text = referentScoring.currentMode == referentScoring.modes.DISABLED ? 'Actors' : 'Relationship types';
+
+        addCategoryButton(container, text, { left: 50, top: 16 }, () => showCategory(
+            text,
             content => addActorsButtons(content, selectedMesh, closeRelationshipPanel, closeModePanel, addCategoryMenu),
         ));
         addCategoryButton(container, 'Extensions', { left: 82, top: 50 }, () => showCategory(
@@ -450,36 +453,53 @@ function addSelectedActorContent(container, selectedMesh, closeRelationshipPanel
 
 function addProposedReferentsList(container, onActorSelected) {
     container.appendChild(createLabel('Proposed Referents', { fontWeight: '600', marginBottom: '6px' }));
-
     const actorsList = document.createElement('div');
     applyPanelStyles(actorsList, {
         display: 'flex',
         flexDirection: 'column',
         gap: '6px',
     });
-    referentScoring.bestMeshes.forEach(referent => {
-        if (!referent) return;
-        const actorButton = createActionButton(referent.name || 'object', {
-            background: 'rgba(255,255,255,0.04)',
-        });
-
-        actorButton.onmouseenter = () => {
-            referent.material.uniforms.isHighLighted.value = true;
-        };
-        actorButton.onmouseleave = () => {
-            referent.material.uniforms.isHighLighted.value = false;
-        };
-        actorButton.onclick = () => {
-            Array.from(actorsList.children).forEach(button => {
-                if (button.tagName === 'BUTTON') button.style.background = 'rgba(255,255,255,0.04)';
-            });
-            actorButton.style.background = 'rgba(56, 161, 105, 0.18)';
-            onActorSelected(referent, actorButton, actorsList, true);
-        };
-        actorsList.appendChild(actorButton);
-    });
 
     container.appendChild(actorsList);
+    const refresh = () => {
+
+        actorsList.replaceChildren();
+        referentScoring.bestMeshes.forEach(referent => {
+            if (!referent) return;
+            const actorButton = createActionButton(referent.userData.label || referent.name || 'object', {
+                background: 'rgba(255,255,255,0.04)',
+            });
+
+            actorButton.onmouseenter = () => {
+                referent.material.uniforms.isHighLighted.value = true;
+            };
+            actorButton.onmouseleave = () => {
+                referent.material.uniforms.isHighLighted.value = false;
+            };
+            actorButton.onclick = () => {
+                Array.from(actorsList.children).forEach(button => {
+                    if (button.tagName === 'BUTTON') button.style.background = 'rgba(255,255,255,0.04)';
+                });
+                actorButton.style.background = 'rgba(56, 161, 105, 0.18)';
+                onActorSelected(referent, actorButton, actorsList, true);
+            };
+            actorsList.appendChild(actorButton);
+        });
+
+    };
+    refresh();
+
+    const onReferentsUpdated = () => refresh();
+    window.addEventListener('proposed-referents-updated', onReferentsUpdated);
+
+    const observer = new MutationObserver(() => {
+        if (!container.isConnected) {
+            window.removeEventListener('proposed-referents-updated', onReferentsUpdated);
+            observer.disconnect();
+        }
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
 }
 
 function addActorList(container, onActorSelected, physical = true) {
@@ -494,7 +514,7 @@ function addActorList(container, onActorSelected, physical = true) {
 
     sport.actors.forEach(actor => {
         if (!(physical && !sport.isExtension(actor) || !physical && sport.isExtension(actor))) return;
-        const actorButton = createActionButton(actor.name || 'object', {
+        const actorButton = createActionButton(actor.userData.label || actor.name || 'object', {
             background: 'rgba(255,255,255,0.04)',
         });
         actorButton.onclick = () => {
