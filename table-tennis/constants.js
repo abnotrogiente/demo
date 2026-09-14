@@ -1,4 +1,4 @@
-import { Mesh, PlaneGeometry, Quaternion, Vector3 } from "three";
+import { BackSide, DoubleSide, FrontSide, Mesh, PlaneGeometry, Quaternion, Vector3 } from "three";
 import { depth } from "three/tsl";
 
 export function dispose3(obj) {
@@ -40,7 +40,7 @@ export function dispose3(obj) {
 export const ReferentsCharacteristics = Object.freeze({
     CAMERA_FACING: 0,
     SCREEN_SPACE: 1,
-    BACK_FACE_CULLING: 2,
+    FACE_CULLING: 2,
     ALWAYS_VISIBLE: 3
 });
 
@@ -73,6 +73,12 @@ export const tableDimensions = {
     altitude: 0.76,
     netHeight: 0.1525
 };
+
+export const SideMode = Object.freeze({
+    FRONT: FrontSide,
+    BACK: BackSide,
+    DOUBLE: DoubleSide
+})
 
 export const BounceModes = Object.freeze({
     NONE: 0,

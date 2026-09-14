@@ -2,7 +2,7 @@ import { BackSide, BoxGeometry, DoubleSide, Matrix4, Mesh, MeshBasicMaterial, Me
 import { TableEffects } from "./tableEffects";
 import { parseCsv } from "./utils";
 import { Video } from "./video";
-import { BounceModes, defaultContactCondition, dispose3, EnableModes, GlyphModes, MetaDataModes, ReferentsCharacteristics, SelectorTypes, SportActorInterationTypes, SportName, sportSpecificAssets, sportTrees } from "./constants";
+import { BounceModes, defaultContactCondition, dispose3, EnableModes, GlyphModes, MetaDataModes, ReferentsCharacteristics, SelectorTypes, SideMode, SportActorInterationTypes, SportName, sportSpecificAssets, sportTrees } from "./constants";
 import { Physics } from "./physics";
 import { config, configureSelector } from "./config";
 import { SurfaceEffects } from "./surfaceEffects";
@@ -50,12 +50,12 @@ const dataFromCharacteristic = new Map([
         },
         defaultParam: "screenSpace"
     }],
-    [ReferentsCharacteristics.BACK_FACE_CULLING, {
+    [ReferentsCharacteristics.FACE_CULLING, {
         name: "Face Culling",
         params: {
             faceCulling: {
-                enum: EnableModes,
-                default: EnableModes.DISABLED
+                enum: SideMode,
+                default: SideMode.FRONT
             }
         },
         defaultParam: "faceCulling"
@@ -122,6 +122,7 @@ export class SportActorCharacteristic {
      * @param {Mesh} actor 
      */
     constructor(type) {
+        console.log("TYPE : " + type);
         const characteristicData = dataFromCharacteristic.get(type);
         this.name = characteristicData.name;
         this.defaultParam = characteristicData.defaultParam;
@@ -322,6 +323,18 @@ class Sport {
         });
     }
 
+    /**
+     * 
+     * @param {Mesh} actor 
+     */
+    #initCharacteristics(actor) {
+        Object.entries(ReferentsCharacteristics).forEach(([charName, charValue]) => {
+            this.#addCharacteristic(charValue, actor);
+        });
+        const side = actor.material.side;
+        this.setCharacteristic(actor, ReferentsCharacteristics.FACE_CULLING, side);
+    }
+
     #addCharacteristic(type, actor) {
         if (!this.characteristicsFromActor.has(actor)) this.characteristicsFromActor.set(actor, new Map());
         this.characteristicsFromActor.get(actor).set(type, new SportActorCharacteristic(type));
@@ -435,9 +448,7 @@ class Sport {
      * @param {*} dimensions 
      */
     #addActor(actor, name, params = undefined, surfaceForEffects = false) {
-        Object.entries(ReferentsCharacteristics).forEach(([charName, charValue]) => {
-            this.#addCharacteristic(charValue, actor);
-        })
+        this.#initCharacteristics(actor);
         actor.userData.label = params?.label;
         const dimensionsForExtensions = params?.dimensionsForExtensions ?? params?.dimensions;
         const dimensions = params?.dimensions;
@@ -501,21 +512,11 @@ class Sport {
      * @param {*} value 
      */
     setCharacteristic(actor, characteristicType, value, param = null) {
-        // const actorsByCharacteristic = this.actorsByCaracteristics.get(characteristicType);
-        // if (value && !actorsByCharacteristic.includes(actor))
-        //     actorsByCharacteristic.push(actor);
-        // else if (!value && actorsByCharacteristic.includes(actor)) {
-        //     const index = actorsByCharacteristic.indexOf(actor);
-        //     actorsByCharacteristic.splice(index, 1);
-        // }
-        // if (!this.characteristicsFromActor.has(actor)) {
-        //     console.warn("Trying to set characteristic of a non referent");
-        //     return;
-        // }
         const characteristic = this.characteristicsFromActor.get(actor).get(characteristicType);
         if (param === null) {
-            param = characteristicType.defaultParam;
+            param = characteristic.defaultParam;
         }
+        console.log("param : " + param);
         characteristic.params[param].value = value;
         switch (characteristicType) {
             case ReferentsCharacteristics.ALWAYS_VISIBLE:
@@ -540,8 +541,9 @@ class Sport {
             case ReferentsCharacteristics.SCREEN_SPACE:
                 this.#setScreenSpace(actor, value);
                 break;
-            case ReferentsCharacteristics.BACK_FACE_CULLING:
-                actor.material.side = value ? BackSide : actor.userData.referenceSide;
+            case ReferentsCharacteristics.FACE_CULLING:
+                actor.material.side = value;
+                // actor.material.side = value ? BackSide : actor.userData.referenceSide;
                 break;
             default:
                 break;
