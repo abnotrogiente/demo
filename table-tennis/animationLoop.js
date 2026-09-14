@@ -30,7 +30,7 @@ export function startAnimationLoop(renderer, composer, physics, players, cvHelpe
 
         let delta = config.clockAbsolute.getDelta();
         if (delta >= 1 / 24) {
-            console.warn("LOW UPDATE FREQUENCY : " + 1 / delta);
+            // console.warn("LOW UPDATE FREQUENCY : " + 1 / delta);
             delta = 1 / 24;
         }
         const elapsed = config.getTimeAbsolute();
