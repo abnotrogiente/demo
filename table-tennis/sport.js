@@ -2,7 +2,7 @@ import { BackSide, BoxGeometry, DoubleSide, FrontSide, Matrix4, Mesh, MeshBasicM
 import { TableEffects } from "./tableEffects";
 import { parseCsv } from "./utils";
 import { Video } from "./video";
-import { BounceModes, SelectorTypes, defaultContactCondition, dispose3, EnableModes, GlyphModes, MetaDataModes, ReferentsCharacteristics, SideMode, SportActorInterationTypes, SportName, sportSpecificAssets, sportTrees } from "./constants";
+import { BounceModes, SelectorTypes, defaultContactCondition, dispose3, EnableModes, GlyphModes, MetaDataModes, ReferentsCharacteristics, SideMode, SportActorInterationTypes, SportName, sportSpecificAssets, sportTrees, webSocketClient } from "./constants";
 import { Physics } from "./physics";
 import { config, configureSelector } from "./config";
 import { SurfaceEffects } from "./surfaceEffects";
@@ -453,6 +453,7 @@ class Sport {
      */
     #addActor(actor, name, params = undefined, surfaceForEffects = false) {
         if (params?.hitbox) actor.userData.hitbox = params.hitbox;
+        actor.userData.tracked = params?.tracked;
         this.#initCharacteristics(actor);
         actor.userData.label = params?.label;
         const dimensionsForExtensions = params?.dimensionsForExtensions ?? params?.dimensions;
@@ -683,6 +684,15 @@ class Sport {
         if (this.selector) this.selector.updateSelectionPannel();
 
         this.trackingDataFromActor.forEach((tracking_data, actorName) => {
+            if (!this.actorByName.has(actorName)) return;
+            const actor = this.actorByName.get(actorName);
+            if (actor.userData.trackingMode === "websocket") {
+                if (webSocketClient.lastMessage && webSocketClient.lastMessage.position) {
+                    const position = webSocketClient.lastMessage.position;
+                    actor.position.set(position.x / 100, position.z / 100, position.y / 100);
+                }
+                return;
+            }
             const tracking_data_index = Math.min(tracking_data.length, Math.round(tracking_data.length * (this.video_src.currentTime % this.videoDuration) / this.videoDuration));
             const traj = tracking_data[tracking_data_index % 290];
             // console.log("z : " + traj["z\r"]);

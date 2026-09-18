@@ -330,6 +330,29 @@ function addManipulationButtons(container, selectedMesh) {
 
 }
 
+function addTrackingButtons(container, selectedMesh) {
+    container.appendChild(createLabel('Tracking:', { fontWeight: '500', marginBottom: '4px' }));
+
+    const trackingList = document.createElement('div');
+    applyPanelStyles(trackingList, {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '6px',
+    });
+
+    ['websocket', 'file'].forEach(label => {
+        const btn = createActionButton(label, {
+            background: selectedMesh.userData.trackingMode === label ? 'rgba(56, 161, 105, 0.18)' : 'rgba(255,255,255,0.04)',
+        })
+        trackingList.appendChild(btn);
+        btn.onmousedown = () => {
+            selectedMesh.userData.trackingMode = label;
+        }
+    });
+
+    container.appendChild(trackingList);
+}
+
 const categoryMenuStyles = {
     position: 'fixed',
     width: '220px',
@@ -387,11 +410,13 @@ function configureDetailView(container, useRadialMenu) {
     container.replaceChildren();
 }
 
-function addCategoryButton(container, label, position, onClick) {
+function addCategoryButton(container, label, index, categoryCount, onClick) {
+    const angle = -Math.PI / 2 + (index * 2 * Math.PI) / categoryCount;
+    const radius = 34;
     const button = createActionButton(label, {
         ...categoryButtonStyles,
-        left: `${position.left}%`,
-        top: `${position.top}%`,
+        left: `${50 + radius * Math.cos(angle)}%`,
+        top: `${50 + radius * Math.sin(angle)}%`,
     });
     button.onclick = onClick;
     container.appendChild(button);
@@ -428,23 +453,35 @@ function addSelectedActorContent(container, selectedMesh, closeRelationshipPanel
     const addCategoryMenu = () => {
         configureCategoryView(container, useRadialMenu);
         const text = referentScoring.currentMode == referentScoring.modes.DISABLED ? 'Actors' : 'Relationship types';
+        const categories = [
+            {
+                label: text,
+                addContent: content => addActorsButtons(content, selectedMesh, closeRelationshipPanel, closeModePanel, addCategoryMenu),
+            },
+            {
+                label: 'Extensions',
+                addContent: content => addExtensionsButtons(content, selectedMesh),
+            },
+            {
+                label: 'Characteristics',
+                addContent: content => addCharacteristicsButton(content, selectedMesh, closeModePanel, addCategoryMenu),
+            },
+            {
+                label: 'Manipulations',
+                addContent: content => addManipulationButtons(content, selectedMesh),
+            },
+        ];
 
-        addCategoryButton(container, text, { left: 50, top: 16 }, () => showCategory(
-            text,
-            content => addActorsButtons(content, selectedMesh, closeRelationshipPanel, closeModePanel, addCategoryMenu),
-        ));
-        addCategoryButton(container, 'Extensions', { left: 82, top: 50 }, () => showCategory(
-            'Extensions',
-            content => addExtensionsButtons(content, selectedMesh),
-        ));
-        addCategoryButton(container, 'Characteristics', { left: 50, top: 82 }, () => showCategory(
-            'Characteristics',
-            content => addCharacteristicsButton(content, selectedMesh, closeModePanel, addCategoryMenu),
-        ));
-        addCategoryButton(container, 'Manipulations', { left: 18, top: 50 }, () => showCategory(
-            'Manipulations',
-            content => addManipulationButtons(content, selectedMesh),
-        ));
+        if (selectedMesh.userData.tracked) {
+            categories.push({
+                label: 'Tracking',
+                addContent: content => addTrackingButtons(content, selectedMesh),
+            });
+        }
+
+        categories.forEach(({ label, addContent }, index) => {
+            addCategoryButton(container, label, index, categories.length, () => showCategory(label, addContent));
+        });
     };
 
     addCategoryMenu();
