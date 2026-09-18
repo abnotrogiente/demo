@@ -240,6 +240,8 @@ export const sportTrees = {
                 // mesh: "player1mixamorigHips",
                 mesh: "player1Alpha_Joints",
                 label: "Fan Zhendong",
+                hitbox: { width: 1, height: 2, depth: 1, delta: new Vector3(0, 1, 0) },
+                useBoundingBox: true,
                 keepName: true,
                 keepMaterial: true,
                 dimensions: { radius: 1 },

@@ -209,6 +209,9 @@ class Sport {
         /**@type {Mesh[]} */
         this.actors = [];
 
+        /**@type {Mesh[]} */
+        this.actorsNoBoundingBox = [];
+
         console.log("actors list empited");
 
         this.video_src = config.videoObject.webcamVideo;
@@ -449,6 +452,7 @@ class Sport {
      * @param {*} dimensions 
      */
     #addActor(actor, name, params = undefined, surfaceForEffects = false) {
+        if (params?.hitbox) actor.userData.hitbox = params.hitbox;
         this.#initCharacteristics(actor);
         actor.userData.label = params?.label;
         const dimensionsForExtensions = params?.dimensionsForExtensions ?? params?.dimensions;
@@ -456,6 +460,7 @@ class Sport {
         this.actorByName.set(name, actor);
         if (dimensions) actor.userData.dimensions = dimensions;
         this.actors.push(actor);
+        if (!actor.userData.useBoundingBox) this.actorsNoBoundingBox.push(actor);
         actor.name = name;
         if (actor.name === "Ball") config.cvHelper.ball = actor;
         if (!(params && params.keepMaterial)) actor.material = actor.material.clone();

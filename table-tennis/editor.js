@@ -22,6 +22,10 @@ export class ObjectSelector {
         this.configureUI();
 
         this.mouseDownCameraPos = new Vector3();
+
+        this.v3tmp1 = new Vector3();
+        this.v3tmp2 = new Vector3();
+        this.v3tmp3 = new Vector3();
     }
 
 
@@ -119,7 +123,14 @@ export class ObjectSelector {
                 if (mesh.material.uniforms && mesh.material.uniforms.isPreSelected) mesh.material.uniforms.isPreSelected.value = false;
 
                 if (!mesh.userData.useBoundingBox) return;
-                const bbox = new Box3().setFromObject(mesh);
+                const hitbox = mesh.userData.hitbox;
+                if (hitbox && hitbox.delta) this.v3tmp2.copy(hitbox.delta);
+                else this.v3tmp2.set(0, 0, 0);
+                const bbox = hitbox ?
+                    new Box3().setFromCenterAndSize(
+                        mesh.getWorldPosition(this.v3tmp1).add(this.v3tmp2),
+                        this.v3tmp3.set(hitbox.width, hitbox.height, hitbox.depth)) :
+                    new Box3().setFromObject(mesh);
 
                 if (this.rayCaster.ray.intersectsBox(bbox)) {
                     if (mesh.material.uniforms) {
@@ -131,7 +142,7 @@ export class ObjectSelector {
                 }
             });
             if (this.preSelectedMesh === null) {
-                const intersects = this.rayCaster.intersectObjects(sport.actors, true);
+                const intersects = this.rayCaster.intersectObjects(sport.actorsNoBoundingBox, true);
                 if (intersects.length > 0) {
                     const mesh = intersects[0].object;
                     // mesh.scale.set(2, 2, 2);

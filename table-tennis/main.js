@@ -13,7 +13,7 @@ import { setupEventHandlers } from './eventHandlers.js';
 import { startAnimationLoop, createUpdateCalibrationCallback } from './animationLoop.js';
 import { sport } from './sport.js';
 import { SportName, sportTrees } from './constants.js';
-import { list_bones } from './test.js';
+
 // import { testRetargeter } from './retarget.js';
 
 
