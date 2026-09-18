@@ -1,8 +1,8 @@
-import { BackSide, BoxGeometry, DoubleSide, Matrix4, Mesh, MeshBasicMaterial, MeshPhongMaterial, MeshStandardMaterial, PlaneGeometry, Quaternion, Scene, SphereGeometry, Vector3 } from "three";
+import { BackSide, BoxGeometry, DoubleSide, FrontSide, Matrix4, Mesh, MeshBasicMaterial, MeshPhongMaterial, MeshStandardMaterial, PlaneGeometry, Quaternion, Scene, SphereGeometry, Vector3 } from "three";
 import { TableEffects } from "./tableEffects";
 import { parseCsv } from "./utils";
 import { Video } from "./video";
-import { BounceModes, defaultContactCondition, dispose3, EnableModes, GlyphModes, MetaDataModes, ReferentsCharacteristics, SelectorTypes, SideMode, SportActorInterationTypes, SportName, sportSpecificAssets, sportTrees } from "./constants";
+import { BounceModes, SelectorTypes, defaultContactCondition, dispose3, EnableModes, GlyphModes, MetaDataModes, ReferentsCharacteristics, SideMode, SportActorInterationTypes, SportName, sportSpecificAssets, sportTrees } from "./constants";
 import { Physics } from "./physics";
 import { config, configureSelector } from "./config";
 import { SurfaceEffects } from "./surfaceEffects";
@@ -122,7 +122,6 @@ export class SportActorCharacteristic {
      * @param {Mesh} actor 
      */
     constructor(type) {
-        console.log("TYPE : " + type);
         const characteristicData = dataFromCharacteristic.get(type);
         this.name = characteristicData.name;
         this.defaultParam = characteristicData.defaultParam;
@@ -331,7 +330,9 @@ class Sport {
         Object.entries(ReferentsCharacteristics).forEach(([charName, charValue]) => {
             this.#addCharacteristic(charValue, actor);
         });
-        const side = actor.material.side;
+        const side = actor.material ?
+            actor.material.side :
+            FrontSide;
         this.setCharacteristic(actor, ReferentsCharacteristics.FACE_CULLING, side);
     }
 
@@ -456,6 +457,7 @@ class Sport {
         if (dimensions) actor.userData.dimensions = dimensions;
         this.actors.push(actor);
         actor.name = name;
+        if (actor.name === "Ball") config.cvHelper.ball = actor;
         if (!(params && params.keepMaterial)) actor.material = actor.material.clone();
         this.display(actor, true);
         this.relationshipsFromActor.set(actor, new Map());
@@ -482,7 +484,7 @@ class Sport {
                 this.display(extension, false);
                 sportSpecificAssets.nonPhysics.push(extension);
 
-                if (extension.name === "Half X") {
+                if (extension.name.startsWith("Half X")) {
                     // this.cameraFacingExtendedReferents.push(extension);
                     // this.setCharacteristic(extension, ReferentsCharacteristics.CAMERA_FACING, true);
 
@@ -516,7 +518,6 @@ class Sport {
         if (param === null) {
             param = characteristic.defaultParam;
         }
-        console.log("param : " + param);
         characteristic.params[param].value = value;
         switch (characteristicType) {
             case ReferentsCharacteristics.ALWAYS_VISIBLE:
@@ -556,10 +557,11 @@ class Sport {
      * @param {*} value 
      */
     #setScreenSpace(actor, value) {
-        const dimensions = actor.userData.dimensions;
+        let dimensions = actor.userData.dimensions;
         if (!dimensions) {
             console.warn("setting a referent to screen space but no dimensions was provided for this referent : " + actor.name);
-            return;
+            dimensions = { radius: 1 };
+            // return;
         }
         if (value) {
 

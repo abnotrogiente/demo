@@ -1,8 +1,9 @@
-import { CylinderGeometry, Euler, Mesh, MeshBasicMaterial, Quaternion, Scene, Skeleton, SkinnedMesh, SphereGeometry, Vector3 } from "three";
-import { GLTFLoader } from "three/examples/jsm/Addons.js";
+import { CylinderGeometry, Euler, Material, Mesh, MeshBasicMaterial, Object3D, Quaternion, Scene, Skeleton, SkinnedMesh, SphereGeometry, Vector3 } from "three";
+import { GLTFLoader, SkeletonUtils } from "three/examples/jsm/Addons.js";
 import { Video } from "./video";
 import { FilesetResolver, PoseLandmarker } from "@mediapipe/tasks-vision";
 import { config } from "./config";
+import { applyMediaPipePose } from "./mediapipe-to-mixamo";
 
 const MEDIAPIPE_JOINTS = [
     "nose",
@@ -71,6 +72,102 @@ function rigRotation(bone, rotation, dampener = 1, lerpAmount = 0.7) {
 class Player {
     constructor(scene, id) {
 
+        this.id = id;
+
+
+
+        /**@type {SkinnedMesh} */
+        this.skinnedMesh = null;
+
+        this.visible = false;
+
+        /**@type {Object3D} */
+        this.model = null;
+
+        /**@type {Material} */
+        this.material = null;
+    }
+
+
+
+    /**
+     * 
+     * @param {Object3D} model 
+     */
+    setSkinnedMesh(model, scene) {
+
+
+        this.model = SkeletonUtils.clone(model);
+
+        this.model.traverse(obj => {
+            if (obj.isSkinnedMesh && !this.skinnedMesh) {
+                this.skinnedMesh = obj;
+            }
+            obj.name = "player" + this.id + obj.name;
+        });
+
+        this.model.getObjectByName("player" + this.id + "mixamorigHips").material = this.model.getObjectByName("player" + this.id + "Alpha_Joints").material;
+
+
+        scene.add(this.model);
+        this.model.visible = this.visible;
+        this.material = this.skinnedMesh.material;
+
+
+        console.log("MODEL NAME : " + this.skinnedMesh.name);
+
+    }
+
+
+
+
+    show(visible) {
+        this.visible = visible;
+
+        if (this.model) this.model.visible = visible;
+    }
+
+    updateDebugSkeletonFromLandmarks(landmarks, offset) {
+        const scale = 1;
+
+        MEDIAPIPE_JOINTS.forEach((name, i) => {
+            const lm = landmarks[i];
+            if (!lm) return;
+
+            const x = lm.x * scale + offset.x;
+            const y = -lm.y * scale + offset.y; // 1
+            const z = -lm.z * scale + offset.z; // -3
+
+            this.mediapipe_joints[name].position.set(x, y, z);
+            // labels[name].position.set(x, y + 0.05, z);
+        });
+
+        this.mediapipe_bones.forEach(({ mesh, a, b }) => {
+            const p1 = this.mediapipe_joints[a].position;
+            const p2 = this.mediapipe_joints[b].position;
+
+            if (JSON.stringify([a, b]) == JSON.stringify(pelvisBones)) {
+                this.pelvis.position.addVectors(p1, p2).divideScalar(2);
+            }
+
+            // console.log(JSON.stringify([a, b]) == JSON.stringify(pelvisBones)
+
+            const mid = new Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+            mesh.position.copy(mid);
+
+            const dir = new Vector3().subVectors(p2, p1);
+            const len = dir.length();
+
+            mesh.scale.set(1, len, 1);
+
+            mesh.quaternion.setFromUnitVectors(
+                new Vector3(0, 1, 0),
+                dir.clone().normalize()
+            );
+        });
+    }
+
+    setUpDebugBones() {
         this.mediapipe_joints = {}; // name -> mesh
         // const labels = {};
 
@@ -116,61 +213,9 @@ class Player {
         });
 
         this.pelvis = new Mesh(sphereGeo, cylMat);
-        this.pelvis.name = "pelvis" + id;
+        this.pelvis.name = "pelvis" + this.id;
         scene.add(this.pelvis);
-        if (id == 2) this.pelvis.visible = false; // TODO faire en fonction du nombre de joueurs
-    }
-
-    show(visible) {
-        Object.entries(this.mediapipe_joints).forEach(([name, joint]) => {
-            joint.visible = visible;
-        });
-
-        this.mediapipe_bones.forEach(({ mesh, a, b }) => {
-            mesh.visible = visible;
-        });
-
-        this.pelvis.visible = visible;
-    }
-
-    updateSkeletonFromLandmarks(landmarks, offset) {
-        const scale = 1;
-
-        MEDIAPIPE_JOINTS.forEach((name, i) => {
-            const lm = landmarks[i];
-            if (!lm) return;
-
-            const x = lm.x * scale + offset.x;
-            const y = -lm.y * scale + offset.y; // 1
-            const z = -lm.z * scale + offset.z; // -3
-
-            this.mediapipe_joints[name].position.set(x, y, z);
-            // labels[name].position.set(x, y + 0.05, z);
-        });
-
-        this.mediapipe_bones.forEach(({ mesh, a, b }) => {
-            const p1 = this.mediapipe_joints[a].position;
-            const p2 = this.mediapipe_joints[b].position;
-
-            if (JSON.stringify([a, b]) == JSON.stringify(pelvisBones)) {
-                this.pelvis.position.addVectors(p1, p2).divideScalar(2);
-            }
-
-            // console.log(JSON.stringify([a, b]) == JSON.stringify(pelvisBones)
-
-            const mid = new Vector3().addVectors(p1, p2).multiplyScalar(0.5);
-            mesh.position.copy(mid);
-
-            const dir = new Vector3().subVectors(p2, p1);
-            const len = dir.length();
-
-            mesh.scale.set(1, len, 1);
-
-            mesh.quaternion.setFromUnitVectors(
-                new Vector3(0, 1, 0),
-                dir.clone().normalize()
-            );
-        });
+        if (this.id == 2) this.pelvis.visible = false; // TODO faire en fonction du nombre de joueurs
     }
 
 
@@ -225,20 +270,42 @@ export class Players {
 
         const loader = new GLTFLoader().setPath('assets/');
 
-        const gltf = await loader.loadAsync('caracter.glb');
+        const gltf = await loader.loadAsync('bot.glb');
 
         this.scene = gltf.scene;
-
-        // scene.add(this.scene); // TODO add model and skin it (retarget mediapipe pose)
 
         this.scene.traverse((obj) => {
             if (obj.isSkinnedMesh && !this.skinnedMesh) {
                 this.skinnedMesh = obj;
                 this.skeleton = this.skinnedMesh.skeleton;
                 this.#setModelBonesAndConnections(this.skinnedMesh);
+                let txt = "";
+                this.skeleton.bones.forEach((bone) => {
+                    txt += bone.name +
+                        " parent: " + bone.parent?.name,
+                        " position: " + bone.position.toArray(),
+                        " rotation: " + bone.rotation.toArray(),
+                        " quaternion: " + bone.quaternion.toArray() + "\n"
+                    // console.log(
+                    //     bone.name,
+                    //     "parent:", bone.parent?.name,
+                    //     "position:", bone.position.toArray(),
+                    //     "rotation:", bone.rotation.toArray(),
+                    //     "quaternion:", bone.quaternion.toArray()
+                    // );
+                });
+                // console.log(txt);
                 // console.log("LOADED");
             }
         });
+
+        this.player1.setSkinnedMesh(gltf.scene, scene);
+        this.player2.setSkinnedMesh(gltf.scene, scene);
+        // this.#setModelBonesAndConnections(this.player1.skinnedMesh);
+        // this.player2.setSkinnedMesh(this.skinnedMesh, scene);
+        // this.player1.skinnedMesh = this.skinnedMesh.clone(true);
+        // scene.add(this.player1.skinnedMesh);
+        // this.player2.skinnedMesh = this.skinnedMesh.clone(true);
 
         if (!this.skinnedMesh) {
             throw new Error("No SkinnedMesh found in GLB");
@@ -288,7 +355,7 @@ export class Players {
     }
 
 
-    detectFrame() {
+    detectFrame(dt) {
         this.ctx_2D.clearRect(0, 0, this.canvas_2D.width, this.canvas_2D.height);
         if (!this.trackingEnabled) return;
         if (this.video.webcamVideo.readyState < 2) return;
@@ -300,17 +367,18 @@ export class Players {
 
             const landmarks3D1 = result.worldLandmarks[0];
             const skeletonOffset = new Vector3(0, 0, -3);
-            this.player1.updateSkeletonFromLandmarks(landmarks3D1, skeletonOffset);
+            // this.player1.updateDebugSkeletonFromLandmarks(landmarks3D1, skeletonOffset);
             const landmarks3D2 = result.worldLandmarks[1];
+            applyMediaPipePose(this.player1.skinnedMesh, landmarks3D1, result.landmarks[0], dt, "player1");
             // console.log("landmarks : " + JSON.stringify(result.worldLandmarks));
             if (landmarks3D2 !== undefined) {
                 skeletonOffset.z = 3;
-                this.player2.updateSkeletonFromLandmarks(landmarks3D2, skeletonOffset);
+                // this.player2.updateDebugSkeletonFromLandmarks(landmarks3D2, skeletonOffset);
                 this.drawLandmarks2D(result.landmarks[1]);
+                applyMediaPipePose(this.player2.skinnedMesh, landmarks3D2, result.landmarks[1], dt, "player2");
 
             }
             // this.#updateSkeletonFromLandmarks(landmarks3D);
-            //this.#applyPose(result);
 
 
         }
@@ -395,74 +463,5 @@ export class Players {
             [23, 25], [25, 27], // left leg
             [24, 26], [26, 28], // right leg
         ];
-    }
-
-    #applyPose(result) {
-        const riggedPose = Pose.solve(result.worldLandmarks[0], result.landmarks[0], {
-            runtime: "mediapipe",
-            video: HTMLVideoElement
-        });
-
-        let x, y, z;
-        const skeleton = this.player.skeleton;
-
-        // --- APPLY ROTATIONS ---
-        // console.log("riggedPose: \n" + JSON.stringify(riggedPose));
-
-        // Spine rotations (apply to hierarchy from base to top)
-        // rigRotation(this.bones.hips, riggedPose.Hips.rotation, 0.8, 0.3);
-        // rigRotation(this.bones.spine, riggedPose.Spine, 0.9, 0.3);
-        // rigRotation(this.bones.chest, riggedPose.Spine, 0.3, 0.3);
-
-        // Left arm
-        const leftArm = riggedPose.LeftUpperArm;
-        leftArm.z = -leftArm.z;
-        const leftForeArm = riggedPose.LeftLowerArm;
-        leftForeArm.z = -leftForeArm.z;
-
-        // rigRotation(this.bones.leftShoulder, leftArm, 0.8, 0.3, 'arm');
-        rigRotation(this.bones.leftUpperArm, leftArm, 0.9, 0.3, 'arm');
-        rigRotation(this.bones.leftLowerArm, leftForeArm, 1.0, 0.25, 'arm');
-
-        // Right arm
-        const rightArm = riggedPose.RightUpperArm;
-        const rightForeArm = riggedPose.RightLowerArm;
-
-        // rigRotation(this.bones.rightShoulder, rightArm, 0.8, 0.3, 'arm');
-        rigRotation(this.bones.rightUpperArm, rightArm, 0.9, 0.3, 'arm');
-        rigRotation(this.bones.rightLowerArm, rightForeArm, 1.0, 0.25, 'arm');
-
-        // Legs
-        const lul_w = riggedPose.LeftUpperLeg;
-        x = lul_w.y * 0;
-        y = -lul_w.z;
-        z = -lul_w.x + 3.14;
-        const lul = new Vector3(x, y, z);
-        rigRotation(this.bones.leftUpperLeg, lul, 0.9, 0.2, 'leg');
-        // rigRotation(this.bones.leftUpperLeg, riggedPose.LeftUpperLeg, 0.9, 0.2, 'leg');
-        // rigRotation(this.bones.leftLowerLeg, riggedPose.LeftLowerLeg, 1.0, 0.2, 'leg');
-
-        // rigRotation(this.bones.rightUpperLeg, riggedPose.RightUpperLeg, 0.9, 0.2, 'leg');
-        // rigRotation(this.bones.rightLowerLeg, riggedPose.RightLowerLeg, 1.0, 0.2, 'leg');
-
-        // Position (scaled!)
-        const scale = 1.5; // tweak this
-
-        //TODO enable hips movements in the future
-        this.bones.hips.position.lerp(
-            new Vector3(
-                riggedPose.Hips.position.x * scale,
-                riggedPose.Hips.position.z * scale + 3, // +3
-                -riggedPose.Hips.position.y * scale + 1
-            ),
-            0.3
-        );
-
-        // this.player.skinnedMesh.updateMatrixWorld(true);
-        // this.player.skeleton.calculateInverses();
-
-        // landmarks3D.forEach(point => {
-        //     console.log(point.x, point.y, point.z); // 3D coordinates
-        // });
     }
 }

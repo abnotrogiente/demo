@@ -1,5 +1,6 @@
 import { BackSide, DoubleSide, FrontSide, Mesh, PlaneGeometry, Quaternion, Vector3 } from "three";
 import { depth } from "three/tsl";
+import { WebSocketClient } from "./webSocketClient";
 
 export function dispose3(obj) {
     /**
@@ -227,13 +228,17 @@ const bounceContactCondition = ({ prevPos, pos, prevSpeed, speed, surface }) => 
 
 }
 
+export const webSocketClient = new WebSocketClient();
+
 export const sportTrees = {
     [SportName.TABLE_TENNIS]: {
         children: {
             "Player": {
                 properties: [],
                 attributes: [],
-                mesh: "pelvis1",
+                // mesh: "pelvis1",
+                // mesh: "player1mixamorigHips",
+                mesh: "player1Alpha_Joints",
                 label: "Fan Zhendong",
                 keepName: true,
                 keepMaterial: true,

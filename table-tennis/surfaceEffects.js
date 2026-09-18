@@ -485,6 +485,8 @@ export class SurfaceEffects {
         anchorObject.getWorldScale(this.texturePassQuad.scale);
         anchorObject.getWorldQuaternion(this.texturePassQuad.rotation);
         anchorObject.getWorldPosition(this.texturePassQuad.position);
+
+        this.shader.uniforms.surfaceScaling.value = this.texturePassQuad.scale;
         // if (!sport.isProxyExtension(this.surface)) this.surface.getWorldPosition(this.texturePassQuad.position);
     }
     #texturePass(dt) {
@@ -644,6 +646,7 @@ export class SurfaceEffects {
         const { value, unit } = MetaDataValueFromModeAndActor.get(informationRelationship.params.metaData.value)(this.otherActor);
         let val = value;
         if (val === undefined) return;
+
         switch (informationRelationship.params.glyph.value) {
             case GlyphModes.TEXT:
                 this.otherActor = informationRelationship.actor2;

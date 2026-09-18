@@ -7,6 +7,7 @@ import { config } from "./config";
 import { ObjectSelector } from "./editor";
 import { referentMover } from "./manipulation";
 import { referentScoring } from "./referent-selection";
+// import { testRetargeter } from "./retarget";
 import { sport } from "./sport";
 
 /**
@@ -45,7 +46,7 @@ export function startAnimationLoop(renderer, composer, physics, players, cvHelpe
         sport.update(elapsed, delta);
 
         // Update game systems
-        players.detectFrame();
+        players.detectFrame(delta);
         cvHelper.processFrame();
 
         // Update debug camera
@@ -57,6 +58,8 @@ export function startAnimationLoop(renderer, composer, physics, players, cvHelpe
         physics.stepSimulation(delta);
 
         referentMover.update();
+        // retargeter.update(delta);
+        // testRetargeter.update(delta);
 
         // Effects update
         // ballEffects.update(delta);

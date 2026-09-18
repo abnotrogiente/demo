@@ -152,11 +152,11 @@ function addActorsButtons(container, selectedMesh, closeRelationshipPanel, close
             const otherActorName = otherActor.userData.label || otherActor.name;
             const actorBtn = createActionButton(otherActorName);
             actorBtn.onmouseenter = () => {
-                const otherActor = sport.actorByName.get(otherActorName);
+                // const otherActor = sport.actorByName.get(otherActor.name);
                 otherActor.material.uniforms.isHighLighted.value = true;
             };
             actorBtn.onmouseleave = () => {
-                const otherActor = sport.actorByName.get(otherActorName);
+                // const otherActor = sport.actorByName.get(otherActor.name);
                 otherActor.material.uniforms.isHighLighted.value = false;
             };
             // actorBtn.on = () => {
