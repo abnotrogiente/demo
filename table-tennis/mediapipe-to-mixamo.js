@@ -1,51 +1,19 @@
 import {
+    Camera,
     Matrix4,
     Quaternion,
     Vector3
 } from "three";
-
-
-// ============================================================
-// CAMERA / WORLD CONFIG
-// ============================================================
-//
-// Everything below is expressed in THREE WORLD coordinates.
-//
-// CAMERA_WORLD_POSITION:
-//     Actual camera position in world space.
-//
-// CAMERA_WORLD_DIRECTION:
-//     Normalized direction the camera is looking.
-//
-// h:
-//     Height of the ground below world Y=0.
-//
-// Therefore:
-//
-//     GROUND_Y = -h
-//
-// ============================================================
-
-const CAMERA_WORLD_POSITION = new Vector3(
-    5,
-    3.5,
-    0
-);
-
-const CAMERA_WORLD_DIRECTION = new Vector3().sub(CAMERA_WORLD_POSITION);
-
-// const CAMERA_WORLD_DIRECTION = new Vector3(
-//     0.0,
-//     0.0,
-//     -1.0
-// ).normalize();
+import { config } from "./config";
 
 
 // ============================================================
 // GROUND
 // ============================================================
 //
-// The physical floor is below world Y=0.
+// Physical ground plane:
+//
+//     Y = -h
 //
 // Example:
 //
@@ -63,38 +31,14 @@ const GROUND_Y = -h;
 
 
 // ============================================================
-// CAMERA PROJECTION
-// ============================================================
-//
-// These values must match the camera/image that was supplied
-// to MediaPipe.
-//
-// For a THREE.PerspectiveCamera:
-//
-//     CAMERA_FOV_Y_DEGREES = camera.fov
-//     CAMERA_IMAGE_ASPECT  = camera.aspect
-//
-// The principal point is normally approximately the center
-// of the image.
-//
-// ============================================================
-
-const CAMERA_FOV_Y_DEGREES = 60.0;
-
-const CAMERA_IMAGE_ASPECT = 16 / 9;
-
-const CAMERA_PRINCIPAL_X = 0.5;
-const CAMERA_PRINCIPAL_Y = 0.5;
-
-
-// ============================================================
 // IMAGE CONFIG
 // ============================================================
 //
-// Set this to true if the image given to MediaPipe is already
+// Set this to true only when the image sent to MediaPipe is
 // horizontally mirrored.
 //
-// Normally leave this false.
+// This must describe the actual image fed to MediaPipe,
+// not merely how the video is displayed with CSS.
 //
 // ============================================================
 
@@ -105,19 +49,17 @@ const IMAGE_IS_MIRRORED = false;
 // MODEL FOOT CONTACT
 // ============================================================
 //
-// MediaPipe image coordinates allow us to determine the
-// WORLD position on the ground underneath the person's feet.
+// The Mixamo foot bone is normally located around the ankle /
+// foot joint and not exactly at the bottom of the shoe.
 //
-// The Mixamo "Foot" bones are usually located around the ankle
-// / foot joint rather than exactly at the sole of the shoe.
+// This value raises the desired Mixamo foot position above
+// the physical ground plane.
 //
-// This offset moves the Mixamo foot-bone midpoint above the
-// physical ground plane.
-//
-// Start with 0.
+// Start with 0 and increase if necessary.
 //
 // Example:
-//     0.08 = put the foot bone 8 cm above the ground.
+//
+//     0.08 = 8 cm above the ground
 //
 // ============================================================
 
@@ -138,106 +80,6 @@ const POSITION_SMOOTHING_SPEED = 8.0;
 
 // Enable absolute world-position tracking.
 const ENABLE_WORLD_POSITION = true;
-
-
-// ============================================================
-// CAMERA WORLD BASIS
-// ============================================================
-//
-// Three.js camera convention:
-//
-//     +X = right
-//     +Y = up
-//     -Z = forward
-//
-// We explicitly construct the camera basis from:
-//
-//     CAMERA_WORLD_DIRECTION
-//
-// while assuming world +Y is the camera up direction.
-//
-// ============================================================
-
-const WORLD_UP = new Vector3(
-    0,
-    1,
-    0
-);
-
-
-// Camera forward in world coordinates.
-
-const CAMERA_WORLD_FORWARD =
-    CAMERA_WORLD_DIRECTION.clone()
-        .normalize();
-
-
-// Camera right.
-//
-// For:
-//
-//     forward = (0,0,-1)
-//     up      = (0,1,0)
-//
-// this gives:
-//
-//     right = (1,0,0)
-//
-// ============================================================
-
-const CAMERA_WORLD_RIGHT =
-    new Vector3()
-        .crossVectors(
-            CAMERA_WORLD_FORWARD,
-            WORLD_UP
-        )
-        .normalize();
-
-
-// Camera up reconstructed from the orthogonal basis.
-
-const CAMERA_WORLD_UP =
-    new Vector3()
-        .crossVectors(
-            CAMERA_WORLD_RIGHT,
-            CAMERA_WORLD_FORWARD
-        )
-        .normalize();
-
-
-// ============================================================
-// CAMERA WORLD QUATERNION
-// ============================================================
-
-const CAMERA_WORLD_QUATERNION =
-    new Quaternion();
-
-
-// Point in front of camera.
-
-const cameraTarget =
-    new Vector3()
-        .copy(
-            CAMERA_WORLD_POSITION
-        )
-        .add(
-            CAMERA_WORLD_FORWARD
-        );
-
-
-// Build camera orientation.
-
-const cameraMatrix =
-    new Matrix4().lookAt(
-        CAMERA_WORLD_POSITION,
-        cameraTarget,
-        WORLD_UP
-    );
-
-
-CAMERA_WORLD_QUATERNION.setFromRotationMatrix(
-    cameraMatrix
-);
 
 
 // ============================================================
@@ -270,9 +112,13 @@ const _tmpV9 = new Vector3();
 const _tmpV10 = new Vector3();
 const _tmpV11 = new Vector3();
 
+const _tmpV12 = new Vector3();
+const _tmpV13 = new Vector3();
+
 const _tmpQ1 = new Quaternion();
 const _tmpQ2 = new Quaternion();
 const _tmpQ3 = new Quaternion();
+const _tmpQ4 = new Quaternion();
 
 const _tmpM1 = new Matrix4();
 
@@ -313,43 +159,94 @@ const MIXAMO = {
 
 
 // ============================================================
-// CAMERA IMAGE -> WORLD RAY
+// GET CAMERA
 // ============================================================
 //
-// MediaPipe image landmark:
+// The Three.js camera is taken directly from:
 //
-//     x = normalized horizontal coordinate
-//     y = normalized vertical coordinate
+//     config.video.camera
+//
+// The camera's:
+//
+//     position
+//     rotation
+//     projection
+//     aspect
+//     FOV
+//
+// are therefore the actual values used for the image -> world
+// calculation.
+//
+// ============================================================
+
+/**
+ * 
+ * @returns {Camera}
+ */
+function getCamera() {
+
+    const camera =
+        config?.videoObject?.camera;
+
+
+    if (!camera) {
+
+        throw new Error(
+            "applyMediaPipePose(): config.video.camera is missing"
+        );
+    }
+
+
+    return camera;
+}
+
+
+// ============================================================
+// IMAGE -> WORLD RAY
+// ============================================================
+//
+// MediaPipe image coordinates:
+//
+//     x = 0 ... 1
+//     y = 0 ... 1
 //
 //     (0,0) = top-left
 //     (1,1) = bottom-right
 //
-// We turn this point into a camera-local perspective ray and
-// then express that ray in WORLD coordinates.
+// THREE uses NDC:
+//
+//     x = -1 ... +1
+//     y = -1 ... +1
+//
+// We convert the MediaPipe image coordinate to NDC and then
+// use the ACTUAL THREE CAMERA:
+//
+//     camera.unproject()
+//
+// This means there are no manually duplicated FOV/aspect
+// constants.
 //
 // ============================================================
 
-const CAMERA_FOV_Y_RADIANS =
-    CAMERA_FOV_Y_DEGREES *
-    Math.PI /
-    180.0;
-
-
-const CAMERA_TAN_HALF_FOV_Y =
-    Math.tan(
-        CAMERA_FOV_Y_RADIANS * 0.5
-    );
-
-
+/**
+ * 
+ * @param {*} imagePoint 
+ * @param {Camera} camera 
+ * @param {*} outOrigin 
+ * @param {*} outDirection 
+ * @returns 
+ */
 function imagePointToWorldRay(
     imagePoint,
+    camera,
+    outOrigin = new Vector3(),
     outDirection = new Vector3()
 ) {
 
-    let x =
+    let imageX =
         imagePoint.x;
 
-    const y =
+    const imageY =
         imagePoint.y;
 
 
@@ -359,79 +256,112 @@ function imagePointToWorldRay(
 
     if (IMAGE_IS_MIRRORED) {
 
-        x =
-            1.0 - x;
+        imageX =
+            1.0 - imageX;
     }
 
 
     // --------------------------------------------------------
-    // Convert normalized image coordinates to centered
-    // camera coordinates.
+    // MediaPipe normalized image -> THREE NDC.
     //
-    // X:
-    //     left  = negative
-    //     right = positive
+    // MediaPipe:
     //
-    // Y:
-    //     bottom = negative
-    //     top    = positive
+    //     x = 0 left
+    //     x = 1 right
+    //
+    //     y = 0 top
+    //     y = 1 bottom
+    //
+    // THREE NDC:
+    //
+    //     x = -1 left
+    //     x = +1 right
+    //
+    //     y = -1 bottom
+    //     y = +1 top
     // --------------------------------------------------------
 
-    const normalizedX =
-        (
-            x -
-            CAMERA_PRINCIPAL_X
-        ) * 2.0;
+    const ndcX =
+        imageX * 2.0 - 1.0;
 
-
-    const normalizedY =
-        (
-            CAMERA_PRINCIPAL_Y -
-            y
-        ) * 2.0;
-
-
-    // --------------------------------------------------------
-    // Perspective projection.
-    //
-    // Camera local:
-    //
-    //     +X = right
-    //     +Y = up
-    //     -Z = forward
-    // --------------------------------------------------------
-
-    const cameraX =
-        normalizedX *
-        CAMERA_TAN_HALF_FOV_Y *
-        CAMERA_IMAGE_ASPECT;
-
-
-    const cameraY =
-        normalizedY *
-        CAMERA_TAN_HALF_FOV_Y;
+    const ndcY =
+        1.0 - imageY * 2.0;
 
 
     // --------------------------------------------------------
-    // Camera-local -> WORLD.
+    // Make sure the camera world matrix is current.
+    // --------------------------------------------------------
+
+    camera.updateMatrixWorld(true);
+
+
+    // --------------------------------------------------------
+    // Make sure projectionMatrixInverse corresponds to
+    // projectionMatrix.
+    //
+    // We do NOT call updateProjectionMatrix(), because
+    // config.video.camera may be a generic THREE.Camera.
+    // --------------------------------------------------------
+
+    if (
+        camera.projectionMatrix &&
+        camera.projectionMatrixInverse
+    ) {
+
+        camera.projectionMatrixInverse
+            .copy(
+                camera.projectionMatrix
+            )
+            .invert();
+    }
+
+
+    // --------------------------------------------------------
+    // Point on the camera's near NDC plane.
+    // --------------------------------------------------------
+
+    _tmpV12.set(
+        ndcX,
+        ndcY,
+        -1
+    );
+
+
+    // --------------------------------------------------------
+    // NDC -> WORLD.
+    // --------------------------------------------------------
+
+    const worldPoint =
+        _tmpV12.unproject(
+            camera
+        );
+
+
+    // --------------------------------------------------------
+    // Actual camera WORLD position.
+    // --------------------------------------------------------
+
+    camera.getWorldPosition(
+        outOrigin
+    );
+
+
+    // --------------------------------------------------------
+    // WORLD ray direction.
     // --------------------------------------------------------
 
     outDirection
-        .copy(
-            CAMERA_WORLD_FORWARD
-        )
-        .addScaledVector(
-            CAMERA_WORLD_RIGHT,
-            cameraX
-        )
-        .addScaledVector(
-            CAMERA_WORLD_UP,
-            cameraY
+        .subVectors(
+            worldPoint,
+            outOrigin
         )
         .normalize();
 
 
-    return outDirection;
+    return {
+        origin: outOrigin,
+        direction: outDirection
+    };
 }
 
 
@@ -443,13 +373,13 @@ function imagePointToWorldRay(
 //
 //     Y = GROUND_Y
 //
-// The camera ray:
+// Ray:
 //
-//     P(t) = cameraPosition + rayDirection * t
+//     P(t) = origin + direction * t
 //
-// We solve:
+// Solve:
 //
-//     P.y = GROUND_Y
+//     origin.y + direction.y * t = GROUND_Y
 //
 // ============================================================
 
@@ -463,11 +393,12 @@ function intersectRayWithGround(
         rayDirection.y;
 
 
-    // Ray is approximately parallel to ground.
+    // Ray is parallel to the ground.
 
     if (
-        Math.abs(denominator) <
-        0.000001
+        Math.abs(
+            denominator
+        ) < 0.000001
     ) {
 
         return null;
@@ -482,7 +413,7 @@ function intersectRayWithGround(
         denominator;
 
 
-    // Intersection is behind the camera.
+    // Ground is behind the ray.
 
     if (
         distance <= 0
@@ -510,9 +441,6 @@ function intersectRayWithGround(
 // IMAGE FOOT POINT
 // ============================================================
 //
-// We use the visible foot landmarks in the IMAGE because these
-// tell us which image ray belongs to the person's feet.
-//
 // MediaPipe:
 //
 //     29 = left heel
@@ -520,11 +448,9 @@ function intersectRayWithGround(
 //     31 = left foot index
 //     32 = right foot index
 //
-// We average heel + toe for each foot, then average the two
-// feet.
+// We use the visible foot landmarks to estimate the image
+// point corresponding to the person's physical ground position.
 //
-// This is more representative of the physical foot position
-// than using the ankle pixel alone.
 // ============================================================
 
 function isUsableImageLandmark(
@@ -538,8 +464,12 @@ function isUsableImageLandmark(
 
 
     if (
-        !Number.isFinite(landmark.x) ||
-        !Number.isFinite(landmark.y)
+        !Number.isFinite(
+            landmark.x
+        ) ||
+        !Number.isFinite(
+            landmark.y
+        )
     ) {
 
         return false;
@@ -710,11 +640,11 @@ function getImageFootCenter(
 
 
 // ============================================================
-// PERSON'S PHYSICAL GROUND POSITION
+// PERSON GROUND POSITION
 // ============================================================
 //
-// Converts the person's IMAGE foot position into a WORLD point
-// on:
+// Convert the MediaPipe image foot position into a WORLD
+// position on:
 //
 //     Y = GROUND_Y
 //
@@ -722,6 +652,7 @@ function getImageFootCenter(
 
 function getPersonGroundPosition(
     imageLandmarks,
+    camera,
     outPosition = new Vector3()
 ) {
 
@@ -738,16 +669,17 @@ function getPersonGroundPosition(
     }
 
 
-    const rayDirection =
-        imagePointToWorldRay(
-            imageFootCenter,
-            _tmpV9
-        );
+    imagePointToWorldRay(
+        imageFootCenter,
+        camera,
+        _tmpV9,
+        _tmpV10
+    );
 
 
     return intersectRayWithGround(
-        CAMERA_WORLD_POSITION,
-        rayDirection,
+        _tmpV9,
+        _tmpV10,
         outPosition
     );
 }
@@ -783,9 +715,12 @@ function getModelRoot(
 // SET WORLD POSITION
 // ============================================================
 //
-// modelRoot.position is normally already in world coordinates
-// in this setup, but this function also handles a transformed
-// parent correctly.
+// Convert a desired WORLD position into the local coordinates
+// expected by modelRoot.position.
+//
+// This makes the code work even when the model is under a
+// transformed parent.
+//
 // ============================================================
 
 function setWorldPosition(
@@ -804,14 +739,14 @@ function setWorldPosition(
 
 
     object.parent.worldToLocal(
-        _tmpV11.copy(
+        _tmpV13.copy(
             worldPosition
         )
     );
 
 
     object.position.copy(
-        _tmpV11
+        _tmpV13
     );
 }
 
@@ -833,14 +768,14 @@ function setWorldPosition(
  * deltaTime:
  *     seconds since previous frame
  *
- *
  * Example:
  *
  * applyMediaPipePose(
  *     skinnedMesh,
  *     result.worldLandmarks[0],
  *     result.landmarks[0],
- *     deltaTime
+ *     deltaTime,
+ *     ""
  * );
  */
 export function applyMediaPipePose(
@@ -848,7 +783,7 @@ export function applyMediaPipePose(
     worldLandmarks,
     imageLandmarks,
     deltaTime = 1 / 60,
-    name_prefix
+    name_prefix = ""
 ) {
 
     if (
@@ -881,6 +816,14 @@ export function applyMediaPipePose(
 
 
     // --------------------------------------------------------
+    // Camera.
+    // --------------------------------------------------------
+
+    const camera =
+        getCamera();
+
+
+    // --------------------------------------------------------
     // Clamp delta time.
     // --------------------------------------------------------
 
@@ -903,7 +846,7 @@ export function applyMediaPipePose(
 
 
     // --------------------------------------------------------
-    // Find model root.
+    // Model root.
     // --------------------------------------------------------
 
     const modelRoot =
@@ -921,16 +864,19 @@ export function applyMediaPipePose(
 
     for (
         const key
-        of Object.keys(MIXAMO)
+        of Object.keys(
+            MIXAMO
+        )
     ) {
 
         const name =
+            name_prefix +
             MIXAMO[key];
 
 
         const bone =
             skeleton.getBoneByName(
-                name_prefix + name
+                name
             );
 
 
@@ -1056,6 +1002,26 @@ export function applyMediaPipePose(
 
 
     // ========================================================
+    // CAMERA WORLD ORIENTATION
+    // ========================================================
+    //
+    // Use the ACTUAL THREE CAMERA orientation for converting
+    // MediaPipe's world-pose vectors into the application
+    // world's orientation.
+    //
+    // ========================================================
+
+    camera.updateMatrixWorld(
+        true
+    );
+
+
+    camera.getWorldQuaternion(
+        _tmpQ4
+    );
+
+
+    // ========================================================
     // MEDIAPIPE WORLD LANDMARK -> THREE WORLD
     // ========================================================
     //
@@ -1088,8 +1054,10 @@ export function applyMediaPipePose(
             );
 
 
+        // MediaPipe-relative orientation -> camera/world
+        // orientation using the actual Three.js camera.
         out.applyQuaternion(
-            CAMERA_WORLD_QUATERNION
+            _tmpQ4
         );
 
 
@@ -1421,7 +1389,7 @@ export function applyMediaPipePose(
 
 
     /*
-     * Preserve the Mixamo facing correction from the original
+     * Preserve the Mixamo-facing correction from the original
      * implementation.
      */
 
@@ -1695,43 +1663,29 @@ export function applyMediaPipePose(
     // ABSOLUTE WORLD POSITION
     // ========================================================
     //
-    // This is the important part.
+    // IMAGE LANDMARKS:
     //
-    // STEP 1:
+    //     feet in image
+    //          ↓
+    //     actual THREE camera
+    //          ↓
+    //     unprojected world ray
+    //          ↓
+    //     ground Y = -h
+    //          ↓
+    //     person's world foot position
     //
-    //     MediaPipe image foot position
+    // Then:
     //
-    //     ↓
+    //     detected foot position
+    //          -
+    //     current model root -> foot offset
+    //          =
+    //     desired model root position
     //
-    //     camera ray
-    //
-    //     ↓
-    //
-    //     ground intersection
-    //
-    // gives the physical WORLD position of the person's feet.
-    //
-    //
-    // STEP 2:
-    //
-    //     Find the avatar's current foot-bone midpoint.
-    //
-    //
-    // STEP 3:
-    //
-    //     Find the vector:
-    //
-    //     modelRoot -> avatarFoot
-    //
-    //
-    // STEP 4:
-    //
-    //     Move modelRoot so that:
-    //
-    //     avatarFoot = detectedWorldFoot
-    //
-    // This prevents the hips/root from being placed directly
-    // on the ground.
+    // This ensures the character's feet are placed on the
+    // detected physical ground location rather than placing
+    // the Mixamo root/hips directly on the floor.
     //
     // ========================================================
 
@@ -1765,12 +1719,13 @@ export function applyMediaPipePose(
 
 
         // ----------------------------------------------------
-        // Find the person's physical WORLD foot position.
+        // Detect the person's physical WORLD foot position.
         // ----------------------------------------------------
 
         const targetGroundPosition =
             getPersonGroundPosition(
                 imageLandmarks,
+                camera,
                 _tmpV6
             );
 
@@ -1778,8 +1733,7 @@ export function applyMediaPipePose(
         if (targetGroundPosition) {
 
             // --------------------------------------------
-            // Raise the target point by the amount that the
-            // Mixamo foot bone should sit above the floor.
+            // Desired position of the Mixamo foot midpoint.
             // --------------------------------------------
 
             const targetFootPosition =
@@ -1788,7 +1742,11 @@ export function applyMediaPipePose(
                         targetGroundPosition
                     )
                     .addScaledVector(
-                        WORLD_UP,
+                        new Vector3(
+                            0,
+                            1,
+                            0
+                        ),
                         MODEL_FOOT_CONTACT_HEIGHT
                     );
 
@@ -1839,13 +1797,11 @@ export function applyMediaPipePose(
 
 
             // --------------------------------------------
-            // Model-root -> avatar-foot offset.
-            //
-            // This offset is already in WORLD coordinates.
+            // Current root -> foot offset in WORLD space.
             // --------------------------------------------
 
             const rootToFoot =
-                _tmpV11
+                _tmpV12
                     .subVectors(
                         currentFootWorldPosition,
                         rootWorldPosition
@@ -1853,9 +1809,7 @@ export function applyMediaPipePose(
 
 
             // --------------------------------------------
-            // Desired model-root WORLD position.
-            //
-            // We want:
+            // Desired root world position:
             //
             //     root + rootToFoot = targetFoot
             //
@@ -1891,7 +1845,7 @@ export function applyMediaPipePose(
 
 
             // --------------------------------------------
-            // Smooth ROOT position in WORLD space.
+            // Smooth WORLD root position.
             // --------------------------------------------
 
             const positionAlpha =
@@ -1907,7 +1861,7 @@ export function applyMediaPipePose(
 
 
             // --------------------------------------------
-            // Apply smoothed WORLD position to the root.
+            // Apply WORLD position to model root.
             // --------------------------------------------
 
             setWorldPosition(

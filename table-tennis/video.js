@@ -18,6 +18,8 @@
 //     return { cv };
 // }
 
+import { Camera, Vector3 } from "three";
+
 export class Video {
     /**
      * 
@@ -26,6 +28,11 @@ export class Video {
     constructor() {
 
         this.duration = Infinity;
+
+        this.cameraPosition = new Vector3();
+        this.cameraLookatPoint = new Vector3();
+        this.cameraDirection = new Vector3();
+        this.camera = new Camera();
     }
 
     async init(useMock = false) {
@@ -34,6 +41,7 @@ export class Video {
             this.webcamVideo.removeAttribute("src");
         }
         this.useMock = useMock;
+        this.#setCameraParameters();
         const stream = await this.getCameraStream(useMock);
         this.webcamVideo = document.createElement('video');
         this.webcamVideo.srcObject = stream;
@@ -42,6 +50,28 @@ export class Video {
 
         await this.webcamVideo.play();
 
+    }
+
+    #setCameraParameters() {
+        if (this.useMock) {
+            this.cameraPosition.set(
+                5,
+                3.5,
+                0
+            );
+            this.cameraLookatPoint.set(0, 0, 0);
+        }
+        else {
+            this.cameraPosition.set(
+                -1,
+                0,
+                1.2
+            );
+            this.cameraLookatPoint.set(0, 0, 1.5
+            );
+        }
+        this.camera.position.copy(this.cameraPosition);
+        this.camera.lookAt(this.cameraLookatPoint);
     }
 
 
