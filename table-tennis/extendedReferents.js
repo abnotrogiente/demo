@@ -1,4 +1,4 @@
-import { BackSide, BoxGeometry, DoubleSide, Mesh, MeshPhongMaterial, PlaneGeometry, SphereGeometry } from "three";
+import { BackSide, BoxGeometry, DoubleSide, Mesh, MeshPhongMaterial, Object3D, PlaneGeometry, SphereGeometry } from "three";
 
 /**
  * 
@@ -48,6 +48,11 @@ export function createExtendedReferents(actor, dimensionsForExtensions, dimensio
     visPannel4.position.set(0., 0., -depth / 2);
     visPannel4.name = "Border Extension 4";
     pannels.push(visPannel4);
+
+
+    const volume = new Object3D();
+    volume.name = "Volume Extrusion";
+    pannels.push(volume);
 
 
     const visPannel5 = new Mesh(geometry2, material.clone());

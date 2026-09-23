@@ -17,13 +17,9 @@ import {
     MeshPhongMaterial
 } from 'three';
 
-import { BallEffects } from './ballEffects2';
-import { TableEffects } from './tableEffects';
 import { SportName, sportSpecificAssets, tableDimensions } from './constants';
-import { ObjectSelector } from './editor';
 import { Physics } from './physics';
 import { EffectComposer } from 'three/examples/jsm/Addons.js';
-import { sport } from './sport';
 import { config } from './config';
 
 /**

@@ -153,11 +153,11 @@ function addActorsButtons(container, selectedMesh, closeRelationshipPanel, close
             const actorBtn = createActionButton(otherActorName);
             actorBtn.onmouseenter = () => {
                 // const otherActor = sport.actorByName.get(otherActor.name);
-                otherActor.material.uniforms.isHighLighted.value = true;
+                if (otherActor.material) otherActor.material.uniforms.isHighLighted.value = true;
             };
             actorBtn.onmouseleave = () => {
                 // const otherActor = sport.actorByName.get(otherActor.name);
-                otherActor.material.uniforms.isHighLighted.value = false;
+                if (otherActor.material) otherActor.material.uniforms.isHighLighted.value = false;
             };
             // actorBtn.on = () => {
             //     otherActor.material.uniforms.isHighLighted.value = false;
@@ -224,6 +224,7 @@ function addExtensionsButtons(container, selectedMesh) {
         extensionButton.onmouseenter = () => {
             // extension.userData.shader.uniforms.isHighLighted.value = true;
             // extension.material.needsUpdate = true;
+            if (!extension.isMesh) return;
             extension.userData.memoSide = extension.material.side;
             extension.material.side = DoubleSide;
             // extension.material.needsUpdate = true;
@@ -232,6 +233,7 @@ function addExtensionsButtons(container, selectedMesh) {
             // extension.visible = true;
         };
         extensionButton.onmouseleave = () => {
+            if (!extension.isMesh) return;
             extension.material.side = extension.userData.memoSide;
             // extension.material.uniforms.isHighLighted.value = false;
             sport.display(extension, extension.userData.memoDisplay);
@@ -508,9 +510,11 @@ function addProposedReferentsList(container, onActorSelected) {
             });
 
             actorButton.onmouseenter = () => {
+                if (!referent.isMesh) return;
                 referent.material.uniforms.isHighLighted.value = true;
             };
             actorButton.onmouseleave = () => {
+                if (!referent.isMesh) return;
                 referent.material.uniforms.isHighLighted.value = false;
             };
             actorButton.onclick = () => {

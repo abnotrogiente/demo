@@ -1,24 +1,33 @@
 import { BufferAttribute, BufferGeometry, Camera, DataTexture, FloatType, InstancedBufferAttribute, LinearFilter, LineSegments, Material, MathUtils, Mesh, MeshNormalMaterial, PlaneGeometry, Points, RGBAFormat, Scene, ShaderMaterial, Vector2, Vector3, WebGLRenderer, WebGLRenderTarget } from "three";
 import { EffectComposer, Line2, LineGeometry, LineMaterial, RenderPass, ShaderPass } from "three/examples/jsm/Addons.js";
-import { SelectorTypes, tableDimensions } from "./constants";
+import { SelectorTypes, SportActorInterationTypes, tableDimensions } from "./constants";
 import { config } from "./config";
 import { configureSelector, getShaderConstantsFromEnum } from "./config";
+import { SportActorRelationship } from "./sport";
 
 
-const MAX_LENGTH = 10;
+const MAX_LENGTH = 30;
 const RED = new Vector3(1., 0., 0.);
 const BLUE = new Vector3(0., 0., 1.);
-export class BallEffects {
+export class VolumeEffects {
     /**
      * 
-     * @param {Mesh} ball 
-     * @param {Scene} scene 
-     * @param {WebGLRenderer} renderer
+     * @param {Mesh} actor1 
      */
-    constructor(composer, ball, scene, renderer) {
-        this.ball = ball;
-        this.scene = scene;
-        this.renderer = renderer;
+    constructor(actor1) {
+        this.actor1 = actor1;
+        /**@type {Mesh} */
+        this.otherActor = null;
+        this.renderer = config.renderer;
+
+        this.showTrace = false;
+
+        /**@type {Map<int, SportActorRelationship[]>} */
+        this.relationships = new Map([
+            [SportActorInterationTypes.PROJECTION, []],
+            [SportActorInterationTypes.CONTACT, []],
+            [SportActorInterationTypes.METADATA, []],
+        ]);
 
         this.pointsArray = new Float32Array(MAX_LENGTH * 3);
         this.colorsArray = new Float32Array(MAX_LENGTH * 3);
@@ -69,7 +78,7 @@ export class BallEffects {
         let line = new Line2(this.geometry, matLine);
         line.computeLineDistances();
         line.scale.set(1, 1, 1);
-        scene.add(line);
+        config.scene.add(line);
 
         this.prevPos = new Vector3();
         this.tmp1 = new Vector3();
@@ -97,21 +106,39 @@ export class BallEffects {
 
     }
 
+    /**
+     * 
+     * @param {SportActorRelationship} relationship 
+     */
+    addRelationship(relationship) {
+        this.relationships.get(relationship.type).push(relationship);
+    }
+
+    /**
+     * 
+     * @param {Mesh} actor 
+     */
+    setOtherActor(actor) {
+        this.otherActor = actor;
+        this.otherActor.userData.speed = this.prevSpeed;
+    }
+
 
 
     update(dt) {
-        if (!config.params.visualizations.hawkEye || config.paused) return;
+        this.#updateProjections();
+        if (!this.showTrace || config.paused) return;
         // this.effectsPass.uniforms.time.value = t;
         // return;
 
         // this.displayPlane.material.uniforms.ballPosition.value.x = this.ball.position.x;
         // this.displayPlane.material.uniforms.ballPosition.value.y = this.ball.position.z;
 
-        this.pointsArray[this.head * 3 + 0] = this.ball.position.x;
-        this.pointsArray[this.head * 3 + 1] = this.ball.position.y;
-        this.pointsArray[this.head * 3 + 2] = this.ball.position.z;
+        this.pointsArray[this.head * 3 + 0] = this.otherActor.position.x;
+        this.pointsArray[this.head * 3 + 1] = this.otherActor.position.y;
+        this.pointsArray[this.head * 3 + 2] = this.otherActor.position.z;
 
-        this.speed.subVectors(this.ball.position, this.prevPos).divideScalar(dt);
+        this.speed.subVectors(this.otherActor.position, this.prevPos).divideScalar(dt);
         const speed = this.speed.length();
         const maxSpeed = 35;
         const minSpeed = 0;
@@ -146,8 +173,30 @@ export class BallEffects {
         // this.#texturePass();
 
         if (speed >= .1) this.prevSpeed.copy(this.speed);
-        this.prevPos.copy(this.ball.position);
+        this.prevPos.copy(this.otherActor.position);
 
         // this.#texturePass();
+    }
+
+    #updateProjections() {
+        let projectionInstantaneousEnabled = false;
+        this.prevShowTrace = this.showTrace;
+        this.showTrace = false;
+
+        this.relationships.get(SportActorInterationTypes.PROJECTION).forEach(projectionRelationship => {
+            if (projectionRelationship.params.instantaneous.value) {
+                projectionInstantaneousEnabled = true;
+                this.otherActor = projectionRelationship.actor2;
+            }
+            if (projectionRelationship.params.trace.value) {
+                this.showTrace = true;
+                this.otherActor = projectionRelationship.actor2;
+            }
+
+        });
+        // if (this.originalActor.name == "Proxy") console.log("other actor : " + this.otherActor.name);
+        // if (this.shader) this.shader.uniforms.showShadow.value = projectionInstantaneousEnabled;
+        // this.texturePassQuad.material.uniforms.showTrace.value = this.showTrace;
+        // if (this.showTrace != this.prevShowTrace) this.#cleanTextures();
     }
 }

@@ -23,7 +23,7 @@ export class SurfaceEffects {
             [SportActorInterationTypes.PROJECTION, []],
             [SportActorInterationTypes.CONTACT, []],
             [SportActorInterationTypes.METADATA, []],
-        ])
+        ]);
 
         this.canvasTextTexture = new CanvasTextTexture({
             width: 512,

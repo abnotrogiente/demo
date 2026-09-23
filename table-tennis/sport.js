@@ -9,6 +9,7 @@ import { SurfaceEffects } from "./surfaceEffects";
 import { ObjectSelector } from "./editor";
 import { createEnglobingShape, createExtendedReferents } from "./extendedReferents";
 import { loadAsset } from "./asset-loader";
+import { VolumeEffects } from "./volumeEffects";
 
 
 const Z = new Vector3(0, 0, 1);
@@ -146,9 +147,9 @@ export class SportActorRelationship {
      * @param {*} type 
      * @param {*} actor1 
      * @param {*} actor2 
-     * @param {SurfaceEffects} surfaceEffects 
+     * @param {SurfaceEffects | VolumeEffects} effects 
      */
-    constructor(type, actor1, actor2, surfaceEffects, contactCondition) {
+    constructor(type, actor1, actor2, effects, contactCondition) {
         this.actor1 = actor1;
         this.actor2 = actor2;
 
@@ -169,7 +170,7 @@ export class SportActorRelationship {
         // this.name = relationshipData.get(type).name;
         this.type = type;
 
-        if (surfaceEffects) surfaceEffects.addRelationship(this);
+        if (effects) effects.addRelationship(this);
     }
 }
 
@@ -238,6 +239,9 @@ class Sport {
         /**@type {Map<Mesh, SurfaceEffects>} */
         this.surfaceEffectsFromActor = new Map();
 
+        /**@type {Map<Mesh, VolumeEffects>} */
+        this.volumeEffectsFromActor = new Map();
+
         /**@type {Mesh[]} */
         this.cameraFacingExtendedReferents = [];
 
@@ -302,14 +306,23 @@ class Sport {
         const contactCondition = (relationshipParams && relationshipParams.contactCondition) ? relationshipParams.contactCondition : defaultContactCondition;
         relationshipTypes.forEach(relationshipType => {
             if (actor1 && actor2) {
+                /**@type {SportActorRelationship} */
+                let relationship = null;
+                if (actor1.name.startsWith("Volume Extrusion")) {
+                    if (!this.volumeEffectsFromActor.has(actor1)) this.volumeEffectsFromActor.set(actor1, new VolumeEffects(actor1));
+                    relationship = new SportActorRelationship(relationshipType, actor1, actor2, this.volumeEffectsFromActor.get(actor1));
+                    this.volumeEffectsFromActor.get(actor1).setOtherActor(actor2);
+                }
                 // console.log("")
-                if (!this.surfaceEffectsFromActor.has(actor1)) this.surfaceEffectsFromActor.set(actor1, new SurfaceEffects(actor1));
-                const relationship = new SportActorRelationship(relationshipType, actor1, actor2, this.surfaceEffectsFromActor.get(actor1), contactCondition);
+                else {
+                    if (!this.surfaceEffectsFromActor.has(actor1)) this.surfaceEffectsFromActor.set(actor1, new SurfaceEffects(actor1));
+                    relationship = new SportActorRelationship(relationshipType, actor1, actor2, this.surfaceEffectsFromActor.get(actor1), contactCondition);
+                    this.surfaceEffectsFromActor.get(actor1).setOtherActor(actor2);
+                }
                 if (!this.relationshipsFromActor.get(actor1).has(actor2)) this.relationshipsFromActor.get(actor1).set(actor2, new Map());
                 if (!this.relationshipsFromActor.get(actor2).has(actor1)) this.relationshipsFromActor.get(actor2).set(actor1, new Map());
                 this.relationshipsFromActor.get(actor1).get(actor2).set(relationshipType, relationship);
                 this.relationshipsFromActor.get(actor2).get(actor1).set(relationshipType, relationship);
-                this.surfaceEffectsFromActor.get(actor1).setOtherActor(actor2);
 
                 if (!this.isExtension(actor1) && !this.visPreferences.get(actor1).has(relationshipType)) {
                     this.visPreferences.get(actor1).set(relationshipType, new SportActorRelationship(relationshipType, actor1, null, null));
@@ -464,7 +477,7 @@ class Sport {
         if (!actor.userData.useBoundingBox) this.actorsNoBoundingBox.push(actor);
         actor.name = name;
         if (actor.name === "Ball") config.cvHelper.ball = actor;
-        if (!(params && params.keepMaterial)) actor.material = actor.material.clone();
+        if (!(params && params.keepMaterial) && actor.material) actor.material = actor.material.clone();
         this.display(actor, true);
         this.relationshipsFromActor.set(actor, new Map());
         if (!this.isExtension(actor)) {
@@ -549,7 +562,7 @@ class Sport {
                 this.#setScreenSpace(actor, value);
                 break;
             case ReferentsCharacteristics.FACE_CULLING:
-                actor.material.side = value;
+                if (actor.material) actor.material.side = value;
                 // actor.material.side = value ? BackSide : actor.userData.referenceSide;
                 break;
             default:
@@ -674,6 +687,9 @@ class Sport {
             // if (surfaceEffects.surface.material.userData.shader && surfaceEffects.surface.name == "vis-wall1") console.log("surface effects on : " + surfaceEffects.surface.material.userData.shader.fragmentShader);
             surfaceEffects.update(t, dt);
         });
+        this.volumeEffectsFromActor.forEach((volumeEffects, actor) => {
+            volumeEffects.update(dt);
+        })
         this.actors.forEach(actor => {
             if (actor.userData.shader && actor.userData.shader.uniforms.uTime) actor.userData.shader.uniforms.uTime.value = t;
         });
@@ -689,7 +705,7 @@ class Sport {
             if (actor.userData.trackingMode === "websocket") {
                 if (webSocketClient.lastMessage && webSocketClient.lastMessage.position) {
                     const position = webSocketClient.lastMessage.position;
-                    actor.position.set(position.x / 100, position.z / 100, position.y / 100);
+                    actor.position.set(position.x, position.z + 0.065, position.y);
                 }
                 return;
             }

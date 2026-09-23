@@ -33,6 +33,7 @@ export class ObjectSelector {
         this.preSelectedMesh = null;
         this.selectedMesh = null;
         sport.actors.forEach(mesh => {
+            if (!mesh.isMesh) return;
             // Create a uniforms object on the material to store custom uniforms
             if (!mesh.material.uniforms) {
                 mesh.material.uniforms = {};
@@ -112,7 +113,7 @@ export class ObjectSelector {
             this.mouse.y = - (y / canvas.scrollHeight) * 2 + 1;
 
             sport.actors.forEach(mesh => {
-                if (mesh.material.uniforms && mesh.material.uniforms.isPreSelected) mesh.material.uniforms.isPreSelected.value = false;
+                if (mesh.material && mesh.material.uniforms && mesh.material.uniforms.isPreSelected) mesh.material.uniforms.isPreSelected.value = false;
             })
 
 
@@ -120,7 +121,8 @@ export class ObjectSelector {
             let selected = false;
             this.preSelectedMesh = null;
             sport.actors.forEach(mesh => {
-                if (mesh.material.uniforms && mesh.material.uniforms.isPreSelected) mesh.material.uniforms.isPreSelected.value = false;
+                if (!mesh.isMesh) return;
+                if (mesh.material && mesh.material.uniforms && mesh.material.uniforms.isPreSelected) mesh.material.uniforms.isPreSelected.value = false;
 
                 if (!mesh.userData.useBoundingBox) return;
                 const hitbox = mesh.userData.hitbox;
@@ -133,7 +135,7 @@ export class ObjectSelector {
                     new Box3().setFromObject(mesh);
 
                 if (this.rayCaster.ray.intersectsBox(bbox)) {
-                    if (mesh.material.uniforms) {
+                    if (mesh.material && mesh.material.uniforms) {
                         // console.log("SELECT : " + mesh.name);
 
                         mesh.material.uniforms.isPreSelected.value = true;
