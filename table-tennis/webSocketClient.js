@@ -16,7 +16,13 @@ export class WebSocketClient {
         }
         );
 
+        /**@type {Map<string, function>} */
+        this.eventsCallbacksFromMessageType = new Map();
 
+    }
+
+    addEventCallback(type, callback) {
+        this.eventsCallbacksFromMessageType.set(type, callback);
     }
 
     receivedOfflineData() {
@@ -40,6 +46,7 @@ export class WebSocketClient {
         this.webSocket.addEventListener("message", (e) => {
             console.log(`RECEIVED: ${e.data}: ${counter}`);
             this.lastMessage = JSON.parse(e.data);
+            this.#processMessage();
             // Object.entries(this.lastMessage).forEach(([k, v]) => {
             //     console.log("k : " + k);
             //     console.log("v : " + v);
@@ -53,6 +60,16 @@ export class WebSocketClient {
         this.webSocket.addEventListener("error", (e) => {
             console.log(`ERROR`);
         });
+    }
+
+    #processMessage() {
+        if (!this.lastMessage) return;
+
+
+        if (this.lastMessage.type &&
+            this.eventsCallbacksFromMessageType.has(this.lastMessage.type)) {
+            this.eventsCallbacksFromMessageType.get(this.lastMessage.type)(this.lastMessage);
+        }
     }
 
 

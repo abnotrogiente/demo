@@ -133,6 +133,7 @@ export class Config {
                 }
                 console.log("STARTING REPLAY");
                 this.replayTimer.start();
+                this.isReplaying = true;
                 this.trackingIndex = 0;
             }
         })
@@ -153,12 +154,12 @@ export class Config {
             this.trackingIndex = 0;
             return;
         }
-        console.log("data: " + trackingData[this.trackingIndex]);
+        // console.log("data: " + trackingData[this.trackingIndex]);
         const posData = trackingData[this.trackingIndex].position;
         position.set(posData.x, -posData.y + 0.013, posData.z)
         if (elapsed <= .01) return;
-        console.log("OFFLINE TRACKED POSITION : " + JSON.stringify(position));
-        console.log("TIME : " + elapsed + "\n\n");
+        // console.log("OFFLINE TRACKED POSITION : " + JSON.stringify(position));
+        // console.log("TIME : " + elapsed + "\n\n");
 
     }
 

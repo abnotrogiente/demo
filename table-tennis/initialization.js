@@ -13,7 +13,7 @@ import { config } from './config';
 export async function initializeSystems(scene, renderer, camera, physics, cameraDebug, tracked_ball) {
     // Initialize Video
     const video = new Video();
-    await video.init(true);
+    await video.init(false);
 
     // Initialize Players
     const players = new Players(video, scene);

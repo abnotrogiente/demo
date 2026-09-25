@@ -64,10 +64,10 @@ export class Video {
         else {
             this.cameraPosition.set(
                 -1,
-                0,
-                1.2
+                0.7,
+                0.6
             );
-            this.cameraLookatPoint.set(0, 0, 1.5
+            this.cameraLookatPoint.set(0, 0.4, 1.3
             );
         }
         this.camera.position.copy(this.cameraPosition);

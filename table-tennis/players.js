@@ -1,9 +1,10 @@
-import { CylinderGeometry, Euler, Material, Mesh, MeshBasicMaterial, Object3D, Quaternion, Scene, Skeleton, SkinnedMesh, SphereGeometry, Vector3 } from "three";
+import { CylinderGeometry, DetachedBindMode, Euler, Material, Mesh, MeshBasicMaterial, Object3D, Quaternion, Scene, Skeleton, SkinnedMesh, SphereGeometry, Vector3 } from "three";
 import { GLTFLoader, SkeletonUtils } from "three/examples/jsm/Addons.js";
 import { Video } from "./video";
 import { FilesetResolver, PoseLandmarker } from "@mediapipe/tasks-vision";
 import { config } from "./config";
 import { applyMediaPipePose } from "./mediapipe-to-mixamo";
+import { webSocketClient } from "./constants";
 
 const MEDIAPIPE_JOINTS = [
     "nose",
@@ -99,6 +100,7 @@ class Player {
 
         this.model = SkeletonUtils.clone(model);
 
+
         this.model.traverse(obj => {
             if (obj.isSkinnedMesh && !this.skinnedMesh) {
                 this.skinnedMesh = obj;
@@ -108,6 +110,22 @@ class Player {
 
         this.model.getObjectByName("player" + this.id + "mixamorigHips").material = this.model.getObjectByName("player" + this.id + "Alpha_Joints").material;
 
+        //==================================
+        // // const clone = SkeletonUtils.clone(model);
+        // const clone = this.skinnedMesh.clone(false);
+
+        // const parent = new Object3D();
+        // scene.add(parent);
+        // parent.position.set(2, 1, 2);
+
+        // parent.add(clone);
+        // clone.bindMode = DetachedBindMode;
+        // clone.bind(this.skinnedMesh.skeleton, this.skinnedMesh.bindMatrix);
+        // clone.traverse(child => {
+        //     child.name = child.name + "clone";
+        //     // if (child.isSkinnedMesh) child.bind(this.skinnedMesh.skeleton, this.skinnedMesh.bindMatrix);
+        // });
+        //======================================
 
         scene.add(this.model);
         this.model.visible = this.visible;
@@ -246,6 +264,14 @@ export class Players {
 
         this.trackingEnabled = true;
 
+        this.isRecording = false;
+        this.recordedFrames = [];
+        this.recordStartTime = 0;
+        this.lastPlaybackTime = null;
+
+
+        webSocketClient.addEventCallback("recording_started", this.beginRecording.bind(this));
+        webSocketClient.addEventCallback("recording_finished", this.endRecording.bind(this));
     }
 
     /**
@@ -357,6 +383,10 @@ export class Players {
 
     detectFrame(dt) {
         this.ctx_2D.clearRect(0, 0, this.canvas_2D.width, this.canvas_2D.height);
+        if (config.isReplaying) {
+            this.playRecording(config.replayTimer.getElapsedTime());
+            return;
+        }
         if (!this.trackingEnabled) return;
         if (this.video.webcamVideo.readyState < 2) return;
         const now = performance.now();
@@ -380,7 +410,57 @@ export class Players {
             }
             // this.#updateSkeletonFromLandmarks(landmarks3D);
 
+            if (this.isRecording) {
+                this.recordedFrames.push({
+                    time: (now - this.recordStartTime) / 1000,
+                    landmarks3D1,
+                    imageLandmarks1: result.landmarks[0],
+                    landmarks3D2,
+                    imageLandmarks2: landmarks3D2 !== undefined ? result.landmarks[1] : undefined
+                });
+            }
 
+        }
+    }
+
+    beginRecording() {
+        console.log("BEGIN RECORDING");
+        this.isRecording = true;
+        this.recordedFrames = [];
+        this.recordStartTime = performance.now();
+    }
+
+    endRecording() {
+        console.log("END RECORDING");
+        this.isRecording = false;
+    }
+
+    /**
+     * Applies the recorded pose closest to (and not after) the given time.
+     * @param {number} time - playback position in seconds, elapsed since beginRecording()
+     */
+    playRecording(time) {
+        if (this.recordedFrames.length === 0) return;
+
+        let frame = this.recordedFrames[0];
+        for (let i = this.recordedFrames.length - 1; i >= 0; i--) {
+            if (this.recordedFrames[i].time <= time) {
+                frame = this.recordedFrames[i];
+                break;
+            }
+        }
+
+        const dt = this.lastPlaybackTime !== null && time > this.lastPlaybackTime
+            ? time - this.lastPlaybackTime
+            : 1 / 60;
+        this.lastPlaybackTime = time;
+
+        if (frame.imageLandmarks1) {
+            applyMediaPipePose(this.player1.skinnedMesh, frame.landmarks3D1, frame.imageLandmarks1, dt, "player1");
+        }
+
+        if (frame.landmarks3D2 !== undefined && frame.imageLandmarks2) {
+            applyMediaPipePose(this.player2.skinnedMesh, frame.landmarks3D2, frame.imageLandmarks2, dt, "player2");
         }
     }
 
