@@ -121,7 +121,7 @@ export class ObjectSelector {
             let selected = false;
             this.preSelectedMesh = null;
             sport.actors.forEach(mesh => {
-                if (!mesh.isMesh) return;
+                if (!mesh.material) return;
                 if (mesh.material && mesh.material.uniforms && mesh.material.uniforms.isPreSelected) mesh.material.uniforms.isPreSelected.value = false;
 
                 if (!mesh.userData.useBoundingBox) return;

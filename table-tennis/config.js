@@ -1,5 +1,5 @@
 import { AnimationMixer, Camera, Clock, Mesh, MeshStandardMaterial, Scene, SphereGeometry, Vector3, WebGLRenderer } from "three";
-import { SelectorTypes, SportName } from "./constants";
+import { SelectorTypes, SportName, TrackingModes, webSocketClient } from "./constants";
 import { Physics } from "./physics";
 import { Video } from "./video";
 import { OrbitControls } from "three/examples/jsm/Addons.js";
@@ -104,6 +104,62 @@ export class Config {
         this.mixer = null;
 
         this.renderScore = false;
+
+        this.trackingMode = TrackingModes.OFFLINE_WEBSOCKET;
+
+        this.replayTimer = new Clock();
+        // this.replayTimer.stop();
+
+        configureSelector({
+            selectorName: "Tracking Mode",
+            variableParent: this,
+            variableName: "trackingMode",
+            variableEnum: TrackingModes,
+            selectorType: SelectorTypes.SELECT
+
+        });
+        this.trackingIndex = 0;
+
+        configureButton({
+            buttonName: "Start Replay",
+            callback: () => {
+                if (!this.trackingMode === TrackingModes.OFFLINE_WEBSOCKET) {
+                    console.warn("Not in websocket offline tracking mode");
+                    return;
+                }
+                if (!webSocketClient.receivedOfflineData()) {
+                    console.warn("No websocket data received to replay");
+                    return;
+                }
+                console.log("STARTING REPLAY");
+                this.replayTimer.start();
+                this.trackingIndex = 0;
+            }
+        })
+    }
+
+    /**
+     * 
+     * @param {Vector3} position 
+     */
+    getNextTrackingPosition(position) {
+        //TODO ajouter un nom d'acteur en argument plus tard
+        const trackingData = webSocketClient.lastMessage.positions;
+        const elapsed = this.replayTimer.getElapsedTime();
+        while (trackingData[this.trackingIndex] && trackingData[this.trackingIndex].timestamp < elapsed) this.trackingIndex++;
+        if (!trackingData[this.trackingIndex]) {
+            this.replayTimer.stop();
+            this.replayTimer.start();
+            this.trackingIndex = 0;
+            return;
+        }
+        console.log("data: " + trackingData[this.trackingIndex]);
+        const posData = trackingData[this.trackingIndex].position;
+        position.set(posData.x, -posData.y + 0.013, posData.z)
+        if (elapsed <= .01) return;
+        console.log("OFFLINE TRACKED POSITION : " + JSON.stringify(position));
+        console.log("TIME : " + elapsed + "\n\n");
+
     }
 
     getTimeAbsolute() {

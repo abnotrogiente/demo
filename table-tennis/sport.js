@@ -2,7 +2,7 @@ import { BackSide, BoxGeometry, DoubleSide, FrontSide, Matrix4, Mesh, MeshBasicM
 import { TableEffects } from "./tableEffects";
 import { parseCsv } from "./utils";
 import { Video } from "./video";
-import { BounceModes, SelectorTypes, defaultContactCondition, dispose3, EnableModes, GlyphModes, MetaDataModes, ReferentsCharacteristics, SideMode, SportActorInterationTypes, SportName, sportSpecificAssets, sportTrees, webSocketClient } from "./constants";
+import { BounceModes, SelectorTypes, defaultContactCondition, dispose3, EnableModes, GlyphModes, MetaDataModes, ReferentsCharacteristics, SideMode, SportActorInterationTypes, SportName, sportSpecificAssets, sportTrees, webSocketClient, TrackingModes } from "./constants";
 import { Physics } from "./physics";
 import { config, configureSelector } from "./config";
 import { SurfaceEffects } from "./surfaceEffects";
@@ -252,8 +252,6 @@ class Sport {
             for (const [name, child] of Object.entries(children)) {
                 if (child.mesh) {
                     const actor = config.scene.getObjectByName(child.mesh);
-                    if (child.cloneMaterial) actor.material = actor.material.clone();
-                    if (child.useBoundingBox) actor.userData.useBoundingBox = true;
                     this.#addActor(actor, child.keepName ? child.mesh : name, child, child.surfaceForEffects);
                 }
                 if (child.tracked) {
@@ -465,6 +463,9 @@ class Sport {
      * @param {*} dimensions 
      */
     #addActor(actor, name, params = undefined, surfaceForEffects = false) {
+        actor.userData.params = params;
+        if (params?.cloneMaterial) actor.material = actor.material.clone();
+        if (params?.useBoundingBox) actor.userData.useBoundingBox = true;
         if (params?.hitbox) actor.userData.hitbox = params.hitbox;
         actor.userData.tracked = params?.tracked;
         this.#initCharacteristics(actor);
@@ -485,7 +486,7 @@ class Sport {
 
         }
         // return;
-        if (dimensions) {
+        if (dimensions && !this.isExtension(actor)) {
 
 
             if (surfaceForEffects) this.#addSurfaceForEffects(actor, dimensions);
@@ -499,7 +500,7 @@ class Sport {
                 actor.getWorldPosition(p);
                 extension.position.add(p);
                 actor.attach(extension);
-                this.#addActor(extension, extension.name);
+                this.#addActor(extension, extension.name, extension.userData.params);
                 this.display(extension, false);
                 sportSpecificAssets.nonPhysics.push(extension);
 
@@ -677,6 +678,9 @@ class Sport {
     display(actor, val) {
         actor.userData.display = val;
         actor.layers.set(val ? 0 : 1);
+        actor.traverse(child => {
+            child.layers.set(val ? 0 : 1);
+        })
 
         if (actor.userData.proxyForSurfaceEffects) this.display(actor.userData.proxyForSurfaceEffects, val);
     }
@@ -702,11 +706,12 @@ class Sport {
         this.trackingDataFromActor.forEach((tracking_data, actorName) => {
             if (!this.actorByName.has(actorName)) return;
             const actor = this.actorByName.get(actorName);
-            if (actor.userData.trackingMode === "websocket") {
-                if (webSocketClient.lastMessage && webSocketClient.lastMessage.position) {
-                    const position = webSocketClient.lastMessage.position;
-                    actor.position.set(position.x, position.z + 0.065, position.y);
-                }
+            if (config.trackingMode == TrackingModes.REAL_TIME) {
+                this.#updateWebsocketRealtime(actor);
+                return;
+            }
+            else if (config.trackingMode == TrackingModes.OFFLINE_WEBSOCKET) {
+                this.#updateWebsocketOffline(actor);
                 return;
             }
             const tracking_data_index = Math.min(tracking_data.length, Math.round(tracking_data.length * (this.video_src.currentTime % this.videoDuration) / this.videoDuration));
@@ -720,6 +725,30 @@ class Sport {
         const climber = config.scene.getObjectByName("Climber");
         if (climber) console.log("climber pos :  " + JSON.stringify(climber.position));
     }
+
+    /**
+     * 
+     * @param {Mesh} actor 
+     */
+    #updateWebsocketRealtime(actor) {
+        if (webSocketClient.lastMessage && webSocketClient.lastMessage.position) {
+            const position = webSocketClient.lastMessage.position;
+            actor.position.set(position.x, -position.y + 0.065, position.z);
+        }
+    }
+
+    /**
+     * 
+     * @param {Mesh} actor 
+     */
+    #updateWebsocketOffline(actor) {
+        if (!webSocketClient.receivedOfflineData()) {
+            return;
+        }
+        config.getNextTrackingPosition(actor.position);
+    }
+
+
 
     #updateFromCharacteristics() {
         this.actors.forEach(actor => {

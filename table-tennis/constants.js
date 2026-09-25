@@ -1,4 +1,4 @@
-import { BackSide, DoubleSide, FrontSide, Mesh, PlaneGeometry, Quaternion, Vector3 } from "three";
+import { BackSide, DoubleSide, FrontSide, Mesh, PlaneGeometry, Quaternion, RED_GREEN_RGTC2_Format, Vector3 } from "three";
 import { depth } from "three/tsl";
 import { WebSocketClient } from "./webSocketClient";
 
@@ -75,11 +75,17 @@ export const tableDimensions = {
     netHeight: 0.1525
 };
 
+export const TrackingModes = Object.freeze({
+    REAL_TIME: 0,
+    OFFLINE_WEBSOCKET: 1,
+    OFFLINE_FILE: 2
+});
+
 export const SideMode = Object.freeze({
     FRONT: FrontSide,
     BACK: BackSide,
     DOUBLE: DoubleSide
-})
+});
 
 export const BounceModes = Object.freeze({
     NONE: 0,
