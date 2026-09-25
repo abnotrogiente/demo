@@ -1,4 +1,6 @@
-import { BackSide, BoxGeometry, DoubleSide, Mesh, MeshPhongMaterial, Object3D, PlaneGeometry, SphereGeometry } from "three";
+import { BackSide, BoxGeometry, DetachedBindMode, DoubleSide, Mesh, MeshPhongMaterial, Object3D, PlaneGeometry, SkinnedMesh, SphereGeometry } from "three";
+import { SkeletonUtils } from "three/examples/jsm/Addons.js";
+import { config } from "./config";
 
 /**
  * 
@@ -90,10 +92,47 @@ export function createExtendedReferents(actor, dimensionsForExtensions, dimensio
     inflated.name = "Inflated Back Face Cull";
     pannels.push(inflated);
 
-    const proxy = new Mesh(actor.geometry.clone(), actor.material.clone());
-    proxy.position.set(2, 0, 2.5);
-    proxy.scale.copy(actor.scale);
-    actor.getWorldQuaternion(proxy.rotation);
+
+    let proxy = null;
+    if (actor.isSkinnedMesh) {
+        let root = actor;
+        while (root.parent && root.parent.parent) root = root.parent;
+        // proxy = new Object3D();
+        proxy = new Mesh();
+        proxy.position.set(1, 1, 1);
+        // config.scene.add(proxy);
+        // proxy = actor.parent.clone(false);
+        // const clone = SkeletonUtils.clone(actor.parent);
+        // parent.add(proxy);
+        // proxy.bindMode = DetachedBindMode;
+        // proxy.bind(actor.skeleton, actor.bindMatrix);
+        // actor.visible = false;
+        proxy.userData.materials = []
+        actor.parent.traverse(child => {
+            if (child.isSkinnedMesh) {
+                const clone = child.clone(true);
+                clone.bindMode = DetachedBindMode;
+                clone.bind(child.skeleton, child.bindMatrix);
+                proxy.add(clone);
+                proxy.userData.materials.push(clone.material);
+                clone.material = clone.material.clone();
+                if (child.name == actor.name) proxy.material = clone.material;
+                clone.name = clone.name + "clone";
+            }
+            // child.name = child.name + "clone";
+        });
+        proxy.userData.params = actor.userData.params;
+        // proxy.material = 
+        // parent.add(proxy);
+    }
+    else {
+        console.log("actor name : " + actor.name);
+        proxy = new Mesh(actor.geometry.clone(), actor.material.clone());
+
+        proxy.position.set(2, 0, 2.5);
+        proxy.scale.copy(actor.scale);
+        actor.getWorldQuaternion(proxy.rotation);
+    }
     proxy.name = "Proxy " + actor.name;
     pannels.push(proxy);
     proxy.userData.dimensions = dimensionsForExtensions;
