@@ -18,6 +18,8 @@
 //     return { cv };
 // }
 
+const DEFAULT_USE_MOCK = false;
+
 import { Camera, Vector3 } from "three";
 
 export class Video {
@@ -35,7 +37,7 @@ export class Video {
         this.camera = new Camera();
     }
 
-    async init(useMock = false) {
+    async init(useMock = DEFAULT_USE_MOCK) {
         if (this.webcamVideo) {
             this.webcamVideo.pause();
             this.webcamVideo.removeAttribute("src");
