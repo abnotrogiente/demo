@@ -108,6 +108,7 @@ export class Config {
         this.trackingMode = TrackingModes.OFFLINE_WEBSOCKET;
 
         this.replayTimer = new Clock();
+        this.replayTimer.stop();
         // this.replayTimer.stop();
 
         configureSelector({
@@ -156,7 +157,7 @@ export class Config {
         }
         // console.log("data: " + trackingData[this.trackingIndex]);
         const posData = trackingData[this.trackingIndex].position;
-        position.set(posData.x, -posData.y + 0.013, posData.z)
+        position.set(posData.x, -posData.y - 0.045, posData.z)
         if (elapsed <= .01) return;
         // console.log("OFFLINE TRACKED POSITION : " + JSON.stringify(position));
         // console.log("TIME : " + elapsed + "\n\n");
