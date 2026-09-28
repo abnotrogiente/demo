@@ -63,11 +63,11 @@ export class Video {
         }
         else {
             this.cameraPosition.set(
-                -1,
-                0.7,
-                0.6
+                -1.5,
+                1,
+                1
             );
-            this.cameraLookatPoint.set(0, 0.4, 1.3
+            this.cameraLookatPoint.set(0, -0.8, 3.5
             );
         }
         this.camera.position.copy(this.cameraPosition);
