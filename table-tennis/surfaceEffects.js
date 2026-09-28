@@ -398,7 +398,7 @@ export class SurfaceEffects {
                     bool isInLine = false;
                     
                     // Only check line intersection if line has meaningful length
-                    if (lineLengthSq > 0.0001) {
+                    if (lineLengthSq > 0.0001 && lineLengthSq <= 0.3*0.3/*TODO prendre en compte le temps */) {
                         vec3 lineDir = normalize(line);
                         float coordinateOnLine = dot(diffToPrev, lineDir); // P1X . d
                         float lengthProjOnLineSq = coordinateOnLine*coordinateOnLine; // (P1X . d)²
