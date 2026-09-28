@@ -1,4 +1,4 @@
-import { BackSide, BoxGeometry, DoubleSide, FrontSide, Matrix4, Mesh, MeshBasicMaterial, MeshPhongMaterial, MeshStandardMaterial, PlaneGeometry, Quaternion, Scene, SphereGeometry, Vector3 } from "three";
+import { BackSide, BoxGeometry, DoubleSide, FrontSide, Matrix4, Mesh, MeshBasicMaterial, MeshPhongMaterial, MeshStandardMaterial, PlaneGeometry, Quaternion, Scene, SkinnedMesh, SphereGeometry, Vector3 } from "three";
 import { TableEffects } from "./tableEffects";
 import { parseCsv } from "./utils";
 import { Video } from "./video";
@@ -496,21 +496,18 @@ class Sport {
             this.extensionsFromActor.set(actor, extensions);
             extensions.forEach(extension => {
                 extension.userData.isExtension = true;
+
                 const p = new Vector3();
                 actor.getWorldPosition(p);
                 extension.position.add(p);
-                actor.attach(extension);
                 this.#addActor(extension, extension.name, extension.userData.params);
-                this.display(extension, false);
-                sportSpecificAssets.nonPhysics.push(extension);
-
                 if (extension.name.startsWith("Half X")) {
                     // this.cameraFacingExtendedReferents.push(extension);
                     // this.setCharacteristic(extension, ReferentsCharacteristics.CAMERA_FACING, true);
 
                     this.#addRelationship([SportActorInterationTypes.METADATA], null, extension, extension.name, actor, actor.name);
                 }
-                else if (extension.name.startsWith("Proxy")) {
+                if (extension.name.startsWith("Proxy")) {
                     if (dimensionsForExtensions.lookDirection) {
                         extension.userData.lookDirection = dimensionsForExtensions.lookDirection;
                     }
@@ -519,8 +516,17 @@ class Sport {
                     actor.userData.proxy = extension;
                     // this.setCharacteristic(extension, ReferentsCharacteristics.SCREEN_SPACE, true);
                     // this.setCharacteristic(extension, ReferentsCharacteristics.CAMERA_FACING, true);
+
                     // this.setCharacteristic(extension, ReferentsCharacteristics.ALWAYS_VISIBLE, true);
+                    config.scene.attach(extension);
                 }
+                else {
+
+                    actor.attach(extension);
+
+                }
+                this.display(extension, false);
+                sportSpecificAssets.nonPhysics.push(extension);
             });
 
         }
@@ -593,6 +599,7 @@ class Sport {
             config.camera.add(actor);
 
             actor.position.set(1., 0.4, -1);
+            actor.quaternion.set(0, 0, 0, 1);
             actor.position.multiplyScalar(length * 1.5);
             console.log("length : " + length);
             const p = new Vector3();
@@ -685,6 +692,27 @@ class Sport {
         if (actor.userData.proxyForSurfaceEffects) this.display(actor.userData.proxyForSurfaceEffects, val);
     }
 
+    #updateProxies() {
+        this.actors.forEach(actor => {
+            if (actor.name.startsWith("Proxy")) {
+                actor.traverse(child => {
+                    if (child.isSkinnedMesh) {
+                        /**@type {SkinnedMesh} */
+                        const sourceSkinnedMesh = child.userData.sourceSkinnedMesh;
+                        const sourceBones = sourceSkinnedMesh.skeleton.bones;
+                        const bones = child.skeleton.bones;
+                        for (let i = 0; i < bones.length; i++) {
+                            bones[i].quaternion.copy(sourceBones[i].quaternion)
+                        }
+                        // child.position.set(0, 0, 0);
+                        // child.traverse(granchild => granchild.position.set(0, 0, 0));
+                        // child.parent.position.set(0, 0, 0);
+                    }
+                })
+            }
+        })
+    }
+
     update(t, dt) {
         // this.projections.forEach(projection => projection.update(t, dt));
         this.surfaceEffectsFromActor.forEach((surfaceEffects, actor) => {
@@ -697,6 +725,7 @@ class Sport {
         this.actors.forEach(actor => {
             if (actor.userData.shader && actor.userData.shader.uniforms.uTime) actor.userData.shader.uniforms.uTime.value = t;
         });
+        this.#updateProxies();
         // this.cameraFacingExtendedReferents.forEach(extension => {
         //     extension.lookAt(config.camera.position);
         // })

@@ -1,4 +1,4 @@
-import { BackSide, BoxGeometry, DetachedBindMode, DoubleSide, Mesh, MeshPhongMaterial, Object3D, PlaneGeometry, SkinnedMesh, SphereGeometry } from "three";
+import { BackSide, BoxGeometry, DetachedBindMode, DoubleSide, Mesh, MeshPhongMaterial, Object3D, PlaneGeometry, SkinnedMesh, SphereGeometry, Vector3 } from "three";
 import { SkeletonUtils } from "three/examples/jsm/Addons.js";
 import { config } from "./config";
 
@@ -100,6 +100,20 @@ export function createExtendedReferents(actor, dimensionsForExtensions, dimensio
         // proxy = new Object3D();
         proxy = new Mesh();
         proxy.position.set(1, 1, 1);
+        proxy.userData.params = actor.userData.params;
+
+
+        const cloneRoot = SkeletonUtils.clone(actor.parent);
+        cloneRoot.traverse(child => {
+            if (child.isSkinnedMesh) {
+                const source = actor.parent.getObjectByName(child.name);
+                child.material = child.material.clone();
+                if (child.name === actor.name) proxy.material = child.material;
+                child.userData.sourceSkinnedMesh = source;
+            }
+            child.name = child.name + "clone";
+        });
+        proxy.add(cloneRoot);
         // config.scene.add(proxy);
         // proxy = actor.parent.clone(false);
         // const clone = SkeletonUtils.clone(actor.parent);
@@ -107,21 +121,25 @@ export function createExtendedReferents(actor, dimensionsForExtensions, dimensio
         // proxy.bindMode = DetachedBindMode;
         // proxy.bind(actor.skeleton, actor.bindMatrix);
         // actor.visible = false;
-        proxy.userData.materials = []
-        actor.parent.traverse(child => {
-            if (child.isSkinnedMesh) {
-                const clone = child.clone(true);
-                clone.bindMode = DetachedBindMode;
-                clone.bind(child.skeleton, child.bindMatrix);
-                proxy.add(clone);
-                proxy.userData.materials.push(clone.material);
-                clone.material = clone.material.clone();
-                if (child.name == actor.name) proxy.material = clone.material;
-                clone.name = clone.name + "clone";
-            }
-            // child.name = child.name + "clone";
-        });
-        proxy.userData.params = actor.userData.params;
+
+        //===================================
+        // actor.parent.traverse(child => {
+        //     if (child.isSkinnedMesh) {
+        //         const clone = child.clone(true);
+        //         // clone.position = new Vector3();
+        //         clone.bindMode = DetachedBindMode;
+        //         // clone.bind(child.skeleton, child.bindMatrix);
+        //         proxy.add(clone);
+        //         proxy.userData.materials.push(clone.material);
+        //         clone.material = clone.material.clone();
+        //         if (child.name == actor.name) proxy.material = clone.material;
+        //         clone.name = clone.name + "clone";
+        //     }
+        //     // child.name = child.name + "clone";
+        // });
+        //===================================
+
+
         // proxy.material = 
         // parent.add(proxy);
     }
