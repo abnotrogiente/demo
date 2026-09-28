@@ -71,7 +71,7 @@ const MODEL_FOOT_CONTACT_HEIGHT = 0.0;
 // ============================================================
 
 // Bone rotation smoothing.
-const ROTATION_SMOOTHING_SPEED = 25.0; // 12.0
+const ROTATION_SMOOTHING_SPEED = 18.0; // 12.0
 
 
 // World-position smoothing.
