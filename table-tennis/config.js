@@ -3,6 +3,7 @@ import { SelectorTypes, SportName, TrackingModes, webSocketClient } from "./cons
 import { Physics } from "./physics";
 import { Video } from "./video";
 import { OrbitControls } from "three/examples/jsm/Addons.js";
+import { trackingCameras } from "./cameras";
 
 const uiWindowContent = document.getElementById("window-content");
 
@@ -157,7 +158,10 @@ export class Config {
         }
         // console.log("data: " + trackingData[this.trackingIndex]);
         const posData = trackingData[this.trackingIndex].position;
-        position.set(posData.x, -posData.y - 0.045, posData.z)
+        position.set(posData.x, posData.y + 0.045, posData.z);
+
+        const detectionData = trackingData[this.trackingIndex].points_2d;
+        trackingCameras.setDetections(detectionData, position);
         if (elapsed <= .01) return;
         // console.log("OFFLINE TRACKED POSITION : " + JSON.stringify(position));
         // console.log("TIME : " + elapsed + "\n\n");

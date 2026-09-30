@@ -12,7 +12,7 @@ import { parseCsv, updateCalibration } from './utils.js';
 import { setupEventHandlers } from './eventHandlers.js';
 import { startAnimationLoop, createUpdateCalibrationCallback } from './animationLoop.js';
 import { sport } from './sport.js';
-import { SportName, sportTrees } from './constants.js';
+import { SportName, sportTrees, webSocketClient } from './constants.js';
 
 // import { testRetargeter } from './retarget.js';
 
@@ -56,6 +56,7 @@ async function main() {
     } = await initializeSystems(scene, renderer, camera, physics, cameraDebug, new Mesh());
 
     config.init(scene, camera, renderer, video, physics, controls);
+    webSocketClient.connect();
     config.cvHelper = cvHelper;
     sport.set(sportTrees[config.params.sport]);
     // await retargeter.initialize();

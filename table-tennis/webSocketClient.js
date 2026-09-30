@@ -3,7 +3,12 @@ let pingInterval = 1;
 let counter = 0;
 
 export class WebSocketClient {
+
     constructor() {
+        /**@type {Map<string, function>} */
+        this.eventsCallbacksFromMessageType = new Map();
+    }
+    connect() {
         this.webSocket = new WebSocket(address);
 
         this.#initialiseWS();
@@ -16,8 +21,7 @@ export class WebSocketClient {
         }
         );
 
-        /**@type {Map<string, function>} */
-        this.eventsCallbacksFromMessageType = new Map();
+
 
     }
 
