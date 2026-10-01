@@ -48,14 +48,13 @@ export class WebSocketClient {
         });
 
         this.webSocket.addEventListener("message", (e) => {
-            console.log(`RECEIVED: ${e.data}: ${counter}`);
+            // console.log(`RECEIVED: ${e.data}: ${counter}`);
             this.lastMessage = JSON.parse(e.data);
             this.#processMessage();
             // Object.entries(this.lastMessage).forEach(([k, v]) => {
             //     console.log("k : " + k);
             //     console.log("v : " + v);
             // });
-            console.log("LAST MESSAGE : " + this.lastMessage);
             // if (this.lastMessage) console.log("POSITION : " + JSON.stringify(this.lastMessage.position.x + 100));
 
             counter++;

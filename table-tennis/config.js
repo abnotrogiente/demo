@@ -147,25 +147,38 @@ export class Config {
      */
     getNextTrackingPosition(position) {
         //TODO ajouter un nom d'acteur en argument plus tard
-        const trackingData = webSocketClient.lastMessage.positions;
-        const elapsed = this.replayTimer.getElapsedTime();
-        while (trackingData[this.trackingIndex] && trackingData[this.trackingIndex].timestamp < elapsed) this.trackingIndex++;
-        if (!trackingData[this.trackingIndex]) {
-            this.replayTimer.stop();
-            this.replayTimer.start();
-            this.trackingIndex = 0;
-            return;
-        }
+
         // console.log("data: " + trackingData[this.trackingIndex]);
-        const posData = trackingData[this.trackingIndex].position;
+        const trackingData = this.#getNextTrackingData();
+        if (!trackingData || !trackingData.position) return;
+        const posData = trackingData.position;
         position.set(posData.x, posData.y + 0.045, posData.z);
 
-        const detectionData = trackingData[this.trackingIndex].points_2d;
+        const detectionData = trackingData.points_2d;
         trackingCameras.setDetections(detectionData, position);
-        if (elapsed <= .01) return;
+        // if (elapsed <= .01) return;
         // console.log("OFFLINE TRACKED POSITION : " + JSON.stringify(position));
         // console.log("TIME : " + elapsed + "\n\n");
 
+    }
+
+    #getNextTrackingData() {
+        if (this.trackingMode == TrackingModes.REAL_TIME) {
+            return webSocketClient.lastMessage;
+        }
+        if (this.trackingMode == TrackingModes.OFFLINE_WEBSOCKET) {
+            if (!webSocketClient.receivedOfflineData()) return;
+            const trackingData = webSocketClient.lastMessage.positions;
+            const elapsed = this.replayTimer.getElapsedTime();
+            while (trackingData[this.trackingIndex] && trackingData[this.trackingIndex].timestamp < elapsed) this.trackingIndex++;
+            if (!trackingData[this.trackingIndex]) {
+                this.replayTimer.stop();
+                this.replayTimer.start();
+                this.trackingIndex = 0;
+                return;
+            }
+            return trackingData[this.trackingIndex];
+        }
     }
 
     getTimeAbsolute() {

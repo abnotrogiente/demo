@@ -735,14 +735,11 @@ class Sport {
         this.trackingDataFromActor.forEach((tracking_data, actorName) => {
             if (!this.actorByName.has(actorName)) return;
             const actor = this.actorByName.get(actorName);
-            if (config.trackingMode == TrackingModes.REAL_TIME) {
-                this.#updateWebsocketRealtime(actor);
+            if (config.trackingMode !== TrackingModes.OFFLINE_FILE) {
+                config.getNextTrackingPosition(actor.position);
                 return;
             }
-            else if (config.trackingMode == TrackingModes.OFFLINE_WEBSOCKET) {
-                this.#updateWebsocketOffline(actor);
-                return;
-            }
+
             const tracking_data_index = Math.min(tracking_data.length, Math.round(tracking_data.length * (this.video_src.currentTime % this.videoDuration) / this.videoDuration));
             const traj = tracking_data[tracking_data_index % 290];
             // console.log("z : " + traj["z\r"]);
@@ -753,28 +750,6 @@ class Sport {
 
         const climber = config.scene.getObjectByName("Climber");
         if (climber) console.log("climber pos :  " + JSON.stringify(climber.position));
-    }
-
-    /**
-     * 
-     * @param {Mesh} actor 
-     */
-    #updateWebsocketRealtime(actor) {
-        if (webSocketClient.lastMessage && webSocketClient.lastMessage.position) {
-            const position = webSocketClient.lastMessage.position;
-            actor.position.set(position.x, -position.y + 0.065, position.z);
-        }
-    }
-
-    /**
-     * 
-     * @param {Mesh} actor 
-     */
-    #updateWebsocketOffline(actor) {
-        if (!webSocketClient.receivedOfflineData()) {
-            return;
-        }
-        config.getNextTrackingPosition(actor.position);
     }
 
 
