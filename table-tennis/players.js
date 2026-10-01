@@ -299,7 +299,7 @@ export class Players {
 
         const loader = new GLTFLoader().setPath('assets/characters/');
 
-        const gltf = await loader.loadAsync('X Bot.glb');
+        const gltf = await loader.loadAsync('Y Bot.glb');
 
         this.scene = gltf.scene;
 
