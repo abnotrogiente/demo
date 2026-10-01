@@ -244,7 +244,7 @@ export const sportTrees = {
                 attributes: [],
                 // mesh: "pelvis1",
                 // mesh: "player1mixamorigHips",
-                mesh: "player1Alpha_Joints",
+                mesh: "player1skinned mesh",
                 label: "Fan Zhendong",
                 hitbox: { width: 1, height: 2, depth: 1, delta: new Vector3(0, 1, 0) },
                 useBoundingBox: true,

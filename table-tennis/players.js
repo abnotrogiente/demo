@@ -104,11 +104,14 @@ class Player {
         this.model.traverse(obj => {
             if (obj.isSkinnedMesh && !this.skinnedMesh) {
                 this.skinnedMesh = obj;
+                console.log("SKINNED MESH : " + this.skinnedMesh.name);
+                this.skinnedMesh.name = "skinned mesh";
             }
             obj.name = "player" + this.id + obj.name;
+            console.log("OBJ NAME : " + obj.name);
         });
 
-        this.model.getObjectByName("player" + this.id + "mixamorigHips").material = this.model.getObjectByName("player" + this.id + "Alpha_Joints").material;
+        this.model.getObjectByName("player" + this.id + "mixamorigHips").material = this.skinnedMesh.material;
 
         //==================================
         // // const clone = SkeletonUtils.clone(model);
@@ -294,9 +297,9 @@ export class Players {
         /////////////////////////////////////////////////////////////
 
 
-        const loader = new GLTFLoader().setPath('assets/');
+        const loader = new GLTFLoader().setPath('assets/characters/');
 
-        const gltf = await loader.loadAsync('bot.glb');
+        const gltf = await loader.loadAsync('X Bot.glb');
 
         this.scene = gltf.scene;
 
