@@ -19,6 +19,12 @@ import { setShortcuts } from './shortcuts.js';
 
 
 async function main() {
+
+    const urlParams = new URLSearchParams(window.location.search);
+
+    const characterName = urlParams.get('name');
+
+    console.log("character name : " + characterName);
     // Initialize Scene and Renderer
     const {
         scene,
@@ -54,7 +60,7 @@ async function main() {
         players,
         cvHelper,
         surfaceScore
-    } = await initializeSystems(scene, renderer, camera, physics, cameraDebug, new Mesh());
+    } = await initializeSystems(scene, renderer, camera, physics, cameraDebug, new Mesh(), characterName);
 
     config.init(scene, camera, renderer, video, physics, controls);
     webSocketClient.connect();

@@ -64,13 +64,6 @@ export class Video {
             this.cameraLookatPoint.set(0, 0, 0);
         }
         else {
-            // this.cameraPosition.set(
-            //     -1.5,
-            //     1,
-            //     1
-            // );
-            // this.cameraLookatPoint.set(0, -0.8, 3.5
-            // );
             this.cameraPosition.set(
                 2.40,
                 1.60,

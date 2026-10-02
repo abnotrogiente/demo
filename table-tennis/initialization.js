@@ -10,13 +10,13 @@ import { initUI } from './uiWindow';
 import { SurfaceScore } from './surfaceScore';
 import { config } from './config';
 
-export async function initializeSystems(scene, renderer, camera, physics, cameraDebug, tracked_ball) {
+export async function initializeSystems(scene, renderer, camera, physics, cameraDebug, tracked_ball, characterName) {
     // Initialize Video
     const video = new Video();
     await video.init();
 
     // Initialize Players
-    const players = new Players(video, scene);
+    const players = new Players(video, scene, characterName);
     await players.init(scene);
 
     // Initialize Computer Vision Helper

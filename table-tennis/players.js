@@ -247,8 +247,10 @@ export class Players {
      * @param {Video} video 
      * @param {Scene} scene 
      */
-    constructor(video, scene) {
+    constructor(video, scene, characterName) {
         this.video = video;
+
+        this.characterName = characterName;
 
         /**@type {SkinnedMesh} */
         this.skinnedMesh = null;
@@ -296,7 +298,7 @@ export class Players {
 
         const loader = new GLTFLoader().setPath('assets/characters/');
 
-        const gltf = await loader.loadAsync('Y Bot.glb');
+        const gltf = await loader.loadAsync(this.characterName + '.glb');
 
         this.scene = gltf.scene;
 

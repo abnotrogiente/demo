@@ -1636,20 +1636,76 @@ export function applyMediaPipePose(
     // HEAD
     // ========================================================
 
-    const headDirection =
-        getDirection(
-            shoulderCenter,
-            nose,
-            _tmpV6
+    // Full head orientation from ears + nose, using the same basis
+    // convention as the torso.
+    const headRight =
+        _tmpV6.subVectors(
+            landmark(8),
+            landmark(7)
+        );
+
+    const headFront =
+        _tmpV7
+            .addVectors(
+                landmark(7),
+                landmark(8)
+            )
+            .multiplyScalar(0.5)
+            .subVectors(
+                nose,
+                _tmpV7
+            );
+
+
+    if (
+        headRight.lengthSq() > 0.000001 &&
+        headFront.lengthSq() > 0.000001
+    ) {
+
+        headRight.normalize();
+
+        headFront.normalize();
+
+
+        const headUp =
+            _tmpV8
+                .crossVectors(
+                    headRight,
+                    headFront
+                )
+                .normalize();
+
+
+        const headForward =
+            _tmpV9
+                .crossVectors(
+                    headRight,
+                    headUp
+                )
+                .negate()
+                .normalize();
+
+
+        headRight
+            .crossVectors(
+                headUp,
+                headForward
+            )
+            .normalize();
+
+
+        _tmpM1.makeBasis(
+            headRight,
+            headUp,
+            headForward
         );
 
 
-    if (headDirection) {
-
-        rotateBoneToDirection(
+        setWorldQuaternion(
             bones.head,
-            "head",
-            headDirection
+            _tmpQ1.setFromRotationMatrix(
+                _tmpM1
+            )
         );
     }
 
