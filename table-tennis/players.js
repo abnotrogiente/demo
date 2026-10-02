@@ -104,11 +104,9 @@ class Player {
         this.model.traverse(obj => {
             if (obj.isSkinnedMesh && !this.skinnedMesh) {
                 this.skinnedMesh = obj;
-                console.log("SKINNED MESH : " + this.skinnedMesh.name);
                 this.skinnedMesh.name = "skinned mesh";
             }
             obj.name = "player" + this.id + obj.name;
-            console.log("OBJ NAME : " + obj.name);
         });
 
         this.model.getObjectByName("player" + this.id + "mixamorigHips").material = this.skinnedMesh.material;
@@ -135,7 +133,6 @@ class Player {
         this.material = this.skinnedMesh.material;
 
 
-        console.log("MODEL NAME : " + this.skinnedMesh.name);
 
     }
 

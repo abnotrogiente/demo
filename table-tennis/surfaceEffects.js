@@ -8,6 +8,8 @@ import { sport, SportActorRelationship } from "./sport";
 import { CanvasTextTexture } from "./canvasTextTexture";
 
 
+const MAX_NUM_MARKERS = 10;
+
 export class SurfaceEffects {
     /**
      * 
@@ -64,6 +66,12 @@ export class SurfaceEffects {
             shader.uniforms.showShadow = { value: false };
             shader.uniforms.metaDataTexture = { value: this.canvasTextTexture.texture };
             shader.uniforms.surfaceScaling = { value: this.surface.scale };
+
+
+            const markerPosesArray = [];
+            for (let i = 0; i < MAX_NUM_MARKERS; i++) markerPosesArray.push(new Vector3());
+            shader.uniforms.markerPoses = { value: markerPosesArray };
+            shader.uniforms.numMarkers = { value: 0 };
             // shader.uniforms.opacity = { value: 1. };
             shader.vertexShader = shader.vertexShader.replace(
                 "#include <common>",
@@ -121,6 +129,10 @@ export class SurfaceEffects {
                 uniform int bounceMode;
                 uniform vec3 otherActorPosition;
                 uniform bool showShadow;
+
+                #define MAX_NUM_MARKERS `+ MAX_NUM_MARKERS +/*glsl */`
+                uniform int numMarkers;
+                uniform vec3 markerPoses[MAX_NUM_MARKERS];
                 // uniform float opacity;
 
 
@@ -205,6 +217,24 @@ export class SurfaceEffects {
 
                     return mat3(1.0) + K + K*K * (1.0 / (1.0 + c));
                 }
+
+                bool isInMarker(vec3 pos) {
+                    float d = 0.03;
+                    float r = 0.09;
+                    float R = 0.11;
+
+                    bool res = false;
+                    for (int i = 0; i < MAX_NUM_MARKERS; i++) {
+                        if (i >= numMarkers) break;
+                        vec3 markerPos = markerPoses[i];
+                        vec3 diff = markerPos - pos;
+                        float distSq = dot(diff, diff);
+                        bool m = distSq <= d*d ||
+                            distSq >= r*r && distSq <= R*R;
+                        res = res || m;
+                    }
+                    return res;
+                }
                 
                 `
             );
@@ -248,6 +278,7 @@ export class SurfaceEffects {
                 /*glsl */ `
                 #include <opaque_fragment>
 
+                if (isInMarker(vWorldPos)) gl_FragColor = vec4(1., 0., 0., 1.);
 
                 if (bounceMode != NONE || true) {
                 
@@ -284,6 +315,7 @@ export class SurfaceEffects {
                 vec4 metaDataColor = texture(metaDataTexture, vUv*surfaceScaling.xy + vec2(0, -1.) * surfaceScaling.xy + vec2(0., 1.));
                 if(metaDataColor.a > 0.1) gl_FragColor = metaDataColor;
                 // gl_FragColor = vec4(1., 0., 0., 1.);
+
 
                     `
             );

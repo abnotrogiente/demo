@@ -2,7 +2,6 @@ import { BufferGeometry, Camera, CameraHelper, Color, FloatType, Line, LineBasic
 import { webSocketClient } from "./constants";
 import { CameraFrustumMesh } from "./cameraFrustumMesh";
 import { config } from "./config";
-import { LineGeometry } from "three/examples/jsm/Addons.js";
 
 
 export class TrackingCameras {
@@ -19,6 +18,7 @@ export class TrackingCameras {
         /**@type {WebGLRenderTarget[]} */
         this.renderTargets = [];
 
+        this.shown = false;
         webSocketClient.addEventCallback("calibration", (message) => {
             const projections = message.projections;
 
@@ -35,28 +35,41 @@ export class TrackingCameras {
                 });
                 const helper = new CameraHelper(camera);
                 camera.userData.helper = helper;
+                camera.userData.frustum = frustum;
 
-                const position = helper.geometry.getAttribute('position');
+                this.#hideCameraHelperUpLine(helper);
 
-                // Hide c -> t
-                position.setXYZ(38, 0, 0, 0);
-                position.setXYZ(39, 0, 0, 0);
-                position.needsUpdate = true;
-
-                // targetLine.visible = false;
-                // helper.update();
                 config.scene.add(helper)
                 camera.add(frustum);
-                // cameras[i].position.divideScalar(1000)
-                console.log("CAM POS : " + JSON.stringify(this.cameras[i].position));
-                // cameras[i].projectionMatrix.set(
-                //     p[0][0], p[0][1], p[0][2], p[0][3],
-                //     p[1][0], p[1][1], p[1][2], p[1][3],
-                //     p[2][0], p[2][1], p[2][2], p[2][3],
-                // );
+
             }
             this.#createCameraScreens(1);
-        })
+            this.show(this.shown);
+        });
+    }
+
+    show(val) {
+        for (let i = 0; i < this.cameras.length; i++) {
+            this.cameras[i].userData.helper.visible = val;
+            this.cameras[i].userData.frustum.visible = val;
+            this.screens[i].visible = val;
+            this.detectionLines[i].visible = val;
+
+        }
+        this.shown = val;
+    }
+
+    /**
+     * 
+     * @param {CameraHelper} helper 
+     */
+    #hideCameraHelperUpLine(helper) {
+        const position = helper.geometry.getAttribute('position');
+
+        // Hide c -> t
+        position.setXYZ(38, 0, 0, 0);
+        position.setXYZ(39, 0, 0, 0);
+        position.needsUpdate = true;
     }
 
     setDetections(detections, position) {

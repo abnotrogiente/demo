@@ -12,7 +12,8 @@ import { parseCsv, updateCalibration } from './utils.js';
 import { setupEventHandlers } from './eventHandlers.js';
 import { startAnimationLoop, createUpdateCalibrationCallback } from './animationLoop.js';
 import { sport } from './sport.js';
-import { SportName, sportTrees, webSocketClient } from './constants.js';
+import { sportTrees, webSocketClient } from './constants.js';
+import { setShortcuts } from './shortcuts.js';
 
 // import { testRetargeter } from './retarget.js';
 
@@ -90,6 +91,8 @@ async function main() {
         // updateCalibrationFn
     );
 }
+
+setShortcuts();
 
 // list_bones();
 

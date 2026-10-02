@@ -60,7 +60,7 @@ export function createExtendedReferents(actor, dimensionsForExtensions, dimensio
     const visPannel5 = new Mesh(geometry2, material.clone());
     visPannel5.material.side = DoubleSide;
     visPannel5.position.set(0., 0., 0);
-    visPannel5.name = "Half X";
+    visPannel5.name = "Half X " + actor.name;
     pannels.push(visPannel5);
 
     // const labelPlane = new Mesh(geometry2, material.clone());
@@ -83,7 +83,7 @@ export function createExtendedReferents(actor, dimensionsForExtensions, dimensio
     const enclosing2 = new Mesh(createEnglobingShape(dimensionsForExtensions, 1.), material.clone());
     enclosing2.position.set(0, 0, 0);
     enclosing2.material.side = BackSide;
-    enclosing2.name = "Enclosing Back Face Cull";
+    enclosing2.name = "Enclosing Back Face Cull " + actor.name;
     pannels.push(enclosing2);
 
     const inflated = new Mesh(createEnglobingShape(dimensions, 1.), material.clone());
@@ -152,6 +152,7 @@ export function createExtendedReferents(actor, dimensionsForExtensions, dimensio
         actor.getWorldQuaternion(proxy.rotation);
     }
     proxy.name = "Proxy " + actor.name;
+    console.log("PROXY NAME : " + proxy.name);
     pannels.push(proxy);
     proxy.userData.dimensions = dimensionsForExtensions;
 
