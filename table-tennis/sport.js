@@ -501,7 +501,7 @@ class Sport {
                 actor.getWorldPosition(p);
                 extension.position.add(p);
                 this.#addActor(extension, extension.name, extension.userData.params);
-                if (extension.name.startsWith("Half X")) {
+                if (extension.name.startsWith("Half X") || extension.name.startsWith("Half Z")) {
                     // this.cameraFacingExtendedReferents.push(extension);
                     // this.setCharacteristic(extension, ReferentsCharacteristics.CAMERA_FACING, true);
 

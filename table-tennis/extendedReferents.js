@@ -72,7 +72,7 @@ export function createExtendedReferents(actor, dimensionsForExtensions, dimensio
     const visPannel6 = new Mesh(geometry1, material.clone());
     visPannel6.material.side = DoubleSide;
     visPannel6.position.set(0., 0., 0);
-    visPannel6.name = "Half Z";
+    visPannel6.name = "Half Z " + actor.name;
     pannels.push(visPannel6);
 
     const enclosing = new Mesh(createEnglobingShape(dimensionsForExtensions, 1.), material.clone());

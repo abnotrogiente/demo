@@ -1,7 +1,7 @@
 import { Vector3 } from "three";
 import { trackingCameras } from "./cameras";
 import { config } from "./config";
-import { BounceModes, ReferentsCharacteristics, SportActorInterationTypes } from "./constants";
+import { BounceModes, MetaDataModes, ReferentsCharacteristics, SportActorInterationTypes } from "./constants";
 import { addKeyPressCallback } from "./key-config";
 import { sport } from "./sport";
 
@@ -120,7 +120,29 @@ export function setShortcuts() {
         effectShader.uniforms.numMarkers.value = prevNumMarkers == 0 ? 2 : 0;
         const poses = effectShader.uniforms.markerPoses.value;
         poses[0].set(0., 0., 0.5);
-        poses[1].set(0., 0., -0.5)
+        poses[1].set(0., 0., -0.5);
+
+
+        const XPannel = config.scene.getObjectByName("Half X Plane");
+        const effectShader2 = sport.surfaceEffectsFromActor.get(XPannel).shader;
+        const prevNumMarkers2 = effectShader2.uniforms.numMarkers.value;
+        effectShader2.uniforms.numMarkers.value = prevNumMarkers == 0 ? 1 : 0;
+        const poses2 = effectShader2.uniforms.markerPoses.value;
+        poses2[0].set(0, 0.4, 0.);
+
+    });
+
+    //SCORE
+    addKeyPressCallback("s", () => {
+        const pannel = config.scene.getObjectByName("Half X Ball");
+        const ball = config.scene.getObjectByName("Ball");
+
+        const metadataRelationship = sport.relationshipsFromActor.get(ball).get(pannel).get(SportActorInterationTypes.METADATA);
+        metadataRelationship.params.metaData.value = MetaDataModes.SCORE;
+        sport.display(pannel, !sport.isDisplayed(pannel));
+        sport.setCharacteristic(pannel, ReferentsCharacteristics.ALWAYS_VISIBLE, true);
+        sport.setCharacteristic(pannel, ReferentsCharacteristics.SCREEN_SPACE, true);
+        pannel.position.y *= -1.8;
 
     });
 }

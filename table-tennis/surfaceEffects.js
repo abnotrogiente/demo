@@ -34,9 +34,10 @@ export class SurfaceEffects {
             color: "#f00"
         });
 
-        /**@type {(args: {prevPos: Vector3, pos: Vector3, prevSpeed: Vector3, speed: Vector3, surface: Mesh}) => bool} */
+        /**@type {(args: {prevPos: Vector3, pos: Vector3, prevSpeed: Vector3, speed: Vector3, surface: Mesh, actor: Mesh}) => bool} */
         this.contactCondition = null;
 
+        this.originalActor = actor;
         this.surface = sport.getSurfaceForEffects(actor);
         this.otherActorPos = new Vector3();
         this.prevPos = new Vector3();
@@ -131,6 +132,9 @@ export class SurfaceEffects {
                 uniform bool showShadow;
 
                 #define MAX_NUM_MARKERS `+ MAX_NUM_MARKERS +/*glsl */`
+
+                const vec4 RED = vec4(1., 0., 0., 1.);
+                const vec4 GREEN = vec4(0., 1., 0., 1.);
                 uniform int numMarkers;
                 uniform vec3 markerPoses[MAX_NUM_MARKERS];
                 // uniform float opacity;
@@ -235,6 +239,19 @@ export class SurfaceEffects {
                     }
                     return res;
                 }
+
+                float getBounceScore(vec3 pos) {
+                    if (numMarkers == 0) return 0.;
+                    float dsqMin = 9999999.;
+                    for (int i = 0; i < MAX_NUM_MARKERS; i++) {
+                        if (i >= numMarkers) break;
+                        vec3 markerPos = markerPoses[i];
+                        vec3 diff = markerPos - pos;
+                        float distSq = dot(diff, diff);
+                        dsqMin = min(dsqMin, distSq);
+                    }
+                    return 1./(1.+ 10.*dsqMin);
+                }
                 
                 `
             );
@@ -287,7 +304,9 @@ export class SurfaceEffects {
 
                     
                     if (col.a > 0.) {
-                        gl_FragColor.rgb = col.a*col.rgb + (1.-col.a)*gl_FragColor.rgb;
+                        float score = getBounceScore(vWorldPos);
+                        // gl_FragColor.rgb = col.a*col.rgb + (1.-col.a)*gl_FragColor.rgb;
+                        gl_FragColor.rgb = col.a*mix(RED, GREEN, score).rgb + (1.-col.a)*gl_FragColor.rgb;
                         // gl_FragColor = vec4(0., 1., 1., 1.);
                     }
                     // if (col.a > 0.) gl_FragColor.rgb = vec3(vUv, 0.);
@@ -416,6 +435,8 @@ export class SurfaceEffects {
                     // normalizedVNormal = vec3(1., 0., 0.);
                     return X - dot(fragToX, normalizedVNormal)*normalizedVNormal;
                 }
+
+                
                 void main() {
                     // gl_FragColor = vec4(vUv, 0., 1.);
                     // return;
@@ -550,7 +571,8 @@ export class SurfaceEffects {
             pos: this.otherActorPos,
             speed: this.speed,
             prevSpeed: this.prevSpeed,
-            surface: this.surface
+            surface: this.surface,
+            mesh: this.originalActor
         });
 
         // if (this.texturePassQuad.material.uniforms.bounced.value && (this.bounceMode != BounceModes.NONE)) console.log("BOUNCED : " + this.otherActor.name);
@@ -573,7 +595,6 @@ export class SurfaceEffects {
 
     #cleanTextures() {
         if (!config.renderer) return;
-
         const previousClearColor = new Color();
         config.renderer.getClearColor(previousClearColor);
         const previousClearAlpha = config.renderer.getClearAlpha();
@@ -676,6 +697,9 @@ export class SurfaceEffects {
      */
     #updateMetaDataRelationship(informationRelationship) {
         const { value, unit } = MetaDataValueFromModeAndActor.get(informationRelationship.params.metaData.value)(this.otherActor);
+        if (informationRelationship.params.metaData.value == MetaDataModes.SCORE) {
+            console.log("SCORE METADATA : " + value + ", actor name : " + this.otherActor.name + ", userdata score : " + this.otherActor.userData.score);
+        }
         let val = value;
         if (val === undefined) return;
 

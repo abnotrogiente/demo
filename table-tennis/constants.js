@@ -109,7 +109,8 @@ export const MetaDataModes = Object.freeze({
     POSITION: 1,
     SPEED: 2,
     ACCELERATION: 3,
-    NAME: 4
+    NAME: 4,
+    SCORE: 5
 });
 
 const tmpVec = new Vector3();
@@ -117,7 +118,8 @@ export const MetaDataValueFromModeAndActor = new Map([
     [MetaDataModes.NONE, (actor) => { return { value: undefined, unit: "" } }],
     [MetaDataModes.POSITION, (actor) => { return { value: actor.position, unit: "m" } }],
     [MetaDataModes.SPEED, (actor) => { return { value: tmpVec.copy(actor.userData.speed).multiplyScalar(3.6), unit: "km/h" } }],
-    [MetaDataModes.NAME, (actor) => { return { value: actor.userData.label, unit: "" } }]
+    [MetaDataModes.NAME, (actor) => { return { value: actor.userData.label, unit: "" } }],
+    [MetaDataModes.SCORE, (actor) => { return { value: score, unit: "" } }]
 ]);
 
 export const GlyphModes = Object.freeze({
@@ -208,15 +210,34 @@ export const sportToAssets = {
     ]
 }
 
-export const defaultContactCondition = ({ prevPos, pos, prevSpeed, speed, surface }) => {
+export const defaultContactCondition = ({ prevPos, pos, prevSpeed, speed, surface, mesh }) => {
     return prevSpeed.y < 0 && speed.y > 0;
 }
 
+export let score = 0;
+
+const target1 = new Vector3(0., 0., 0.5);
+const target2 = new Vector3(0., 0., -0.5);
+const customContactCondition = ({ prevPos, pos, prevSpeed, speed, surface, mesh }) => {
+    const contact = prevSpeed.y < 0 && speed.y > 0;
+
+    target1.y = pos.y;
+    target2.y = pos.y;
+
+    const d1 = tmpVec.subVectors(target1, pos).length();
+    const d2 = tmpVec.subVectors(target2, pos).length();
+    const d = Math.min(d1, d2)
+    if (contact) score += 1 / (1 + d * d);
+    console.log("SCORE : " + score + " actor name : " + mesh.name);
+    return contact;
+}
+
+
 /**
  * 
- * @param {{prevPos: Vector3, pos: Vector3, prevSpeed: Vector3, speed: Vector3,surface: Mesh}} param0 
+ * @param {{prevPos: Vector3, pos: Vector3, prevSpeed: Vector3, speed: Vector3,surface: Mesh, actor: Mesh}} param0 
  */
-const bounceContactCondition = ({ prevPos, pos, prevSpeed, speed, surface }) => {
+const bounceContactCondition = ({ prevPos, pos, prevSpeed, speed, surface, mesh }) => {
     /**@param {PlaneGeometry} */
     const geometry = surface.geometry;
 
@@ -304,7 +325,10 @@ export const sportTrees = {
             },
             {
                 actors: ["Plane", "Ball"],
-                types: [SportActorInterationTypes.CONTACT, SportActorInterationTypes.PROJECTION]
+                types: [SportActorInterationTypes.CONTACT, SportActorInterationTypes.PROJECTION],
+                params: {
+                    contactCondition: customContactCondition
+                }
             },
             // {
             //     actors: ["ground", "Player"],
