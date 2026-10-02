@@ -20,6 +20,21 @@ export function setShortcuts() {
         sport.setCharacteristic(tableProxy, ReferentsCharacteristics.SCREEN_SPACE, true);
     });
 
+    //HUMAN SHOW PROXY
+    addKeyPressCallback("h", () => {
+        const humanProxy = config.scene.getObjectByName("Proxy player1skinned mesh");
+        sport.display(humanProxy, !sport.isDisplayed(humanProxy));
+
+        // sport.setCharacteristic(humanProxy, ReferentsCharacteristics.ALWAYS_VISIBLE, true);
+        sport.setCharacteristic(humanProxy, ReferentsCharacteristics.SCREEN_SPACE, true);
+        humanProxy.position.x *= -1;
+        humanProxy.position.y *= -2;
+        if (humanProxy.userData.setForDemo) return;
+        humanProxy.scale.multiplyScalar(0.4);
+        humanProxy.userData.setForDemo = true;
+        // humanProxy.position.z = -10
+    });
+
     //TABLE BOUNCE COLOR
     addKeyPressCallback("b", () => {
         const table = config.scene.getObjectByName("Plane");
@@ -50,6 +65,14 @@ export function setShortcuts() {
         projectionRelationship.params.trace.value = !projectionRelationship.params.trace.value;
     });
 
+    //BALL TRACE
+    addKeyPressCallback("T", () => {
+        const volume = config.scene.getObjectByName("Volume Extrusion Plane");
+        const ball = config.scene.getObjectByName("Ball");
+        const projectionRelationship = sport.relationshipsFromActor.get(ball).get(volume).get(SportActorInterationTypes.PROJECTION);
+        projectionRelationship.params.trace.value = !projectionRelationship.params.trace.value;
+    });
+
     //TABLE ENCLOSING
     addKeyPressCallback("e", () => {
         const enclosing = config.scene.getObjectByName("Enclosing Back Face Cull Plane");
@@ -64,7 +87,7 @@ export function setShortcuts() {
     addKeyPressCallback("x", () => {
         const half = config.scene.getObjectByName("Half X Plane");
         const ball = config.scene.getObjectByName("Ball");
-        sport.display(half, sport.isDisplayed(half));
+        sport.display(half, !sport.isDisplayed(half));
         const contactRelationship = sport.relationshipsFromActor.get(half).get(ball).get(SportActorInterationTypes.CONTACT);
         contactRelationship.params.bounce.value = BounceModes.COLOR;
     });

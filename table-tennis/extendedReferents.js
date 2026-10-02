@@ -53,7 +53,7 @@ export function createExtendedReferents(actor, dimensionsForExtensions, dimensio
 
 
     const volume = new Object3D();
-    volume.name = "Volume Extrusion";
+    volume.name = "Volume Extrusion " + actor.name;
     pannels.push(volume);
 
 
