@@ -1,7 +1,7 @@
 import { Vector3 } from "three";
 import { trackingCameras } from "./cameras";
 import { config } from "./config";
-import { BounceModes, MetaDataModes, ReferentsCharacteristics, SportActorInterationTypes } from "./constants";
+import { BounceModes, MetaDataModes, ReferentsCharacteristics, score, SportActorInterationTypes } from "./constants";
 import { addKeyPressCallback } from "./key-config";
 import { sport } from "./sport";
 
@@ -130,6 +130,13 @@ export function setShortcuts() {
         const poses2 = effectShader2.uniforms.markerPoses.value;
         poses2[0].set(0, 0.4, 0.);
 
+        const proxy = config.scene.getObjectByName("Proxy Plane");
+        const effectShader3 = sport.surfaceEffectsFromActor.get(proxy).shader;
+        effectShader3.uniforms.numMarkers.value = prevNumMarkers == 0 ? 2 : 0;
+        const poses3 = effectShader3.uniforms.markerPoses.value;
+        poses3[0].set(0., 0., 0.5);
+        poses3[1].set(0., 0., -0.5);
+
     });
 
     //SCORE
@@ -143,7 +150,7 @@ export function setShortcuts() {
         sport.setCharacteristic(pannel, ReferentsCharacteristics.ALWAYS_VISIBLE, true);
         sport.setCharacteristic(pannel, ReferentsCharacteristics.SCREEN_SPACE, true);
         pannel.position.y *= -1.8;
-        config.score = 0;
+        score = 0;
 
     });
 }
