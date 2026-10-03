@@ -227,7 +227,19 @@ const customContactCondition = ({ prevPos, pos, prevSpeed, speed, surface, mesh 
     const d1 = tmpVec.subVectors(target1, pos).length();
     const d2 = tmpVec.subVectors(target2, pos).length();
     const d = Math.min(d1, d2)
-    if (contact) score += 1 / (1 + d * d);
+    if (contact) score += 1 / (1 + 15 * d * d);
+    // console.log("SCORE : " + score + " actor name : " + mesh.name);
+    return contact;
+}
+
+const target3 = new Vector3(0, 0.4, 0);
+const customContactCondition2 = ({ prevPos, pos, prevSpeed, speed, surface, mesh }) => {
+    const contact = bounceContactCondition({ prevPos: prevPos, pos: pos, surface: surface });
+
+    target3.z = pos.z;
+
+    const d = tmpVec.subVectors(target3, pos).length();
+    if (contact) score += 1 / (1 + 15 * d * d);
     console.log("SCORE : " + score + " actor name : " + mesh.name);
     return contact;
 }

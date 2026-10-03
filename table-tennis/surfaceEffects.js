@@ -250,7 +250,7 @@ export class SurfaceEffects {
                         float distSq = dot(diff, diff);
                         dsqMin = min(dsqMin, distSq);
                     }
-                    return 1./(1.+ 10.*dsqMin);
+                    return 1./(1.+ 15.*dsqMin);
                 }
                 
                 `
@@ -295,7 +295,6 @@ export class SurfaceEffects {
                 /*glsl */ `
                 #include <opaque_fragment>
 
-                if (isInMarker(vWorldPos)) gl_FragColor = vec4(1., 0., 0., 1.);
 
                 if (bounceMode != NONE || true) {
                 
@@ -306,7 +305,11 @@ export class SurfaceEffects {
                     if (col.a > 0.) {
                         float score = getBounceScore(vWorldPos);
                         // gl_FragColor.rgb = col.a*col.rgb + (1.-col.a)*gl_FragColor.rgb;
-                        gl_FragColor.rgb = col.a*mix(RED, GREEN, score).rgb + (1.-col.a)*gl_FragColor.rgb;
+                        if (col.a >= 10.) {
+                            col.a = 1.;
+                            col.rgb = mix(RED, GREEN, score).rgb;
+                        }
+                        gl_FragColor.rgb = col.a*col.rgb + (1.-col.a)*gl_FragColor.rgb;
                         // gl_FragColor = vec4(0., 1., 1., 1.);
                     }
                     // if (col.a > 0.) gl_FragColor.rgb = vec3(vUv, 0.);
@@ -333,6 +336,8 @@ export class SurfaceEffects {
 
                 vec4 metaDataColor = texture(metaDataTexture, vUv*surfaceScaling.xy + vec2(0, -1.) * surfaceScaling.xy + vec2(0., 1.));
                 if(metaDataColor.a > 0.1) gl_FragColor = metaDataColor;
+                if (isInMarker(vWorldPos)) gl_FragColor = vec4(1., 0., 0., 1.);
+
                 // gl_FragColor = vec4(1., 0., 0., 1.);
 
 
@@ -462,7 +467,7 @@ export class SurfaceEffects {
                     }
                     
                     gl_FragColor = texture(previousTexture, vUv);
-                    if (bounceMode != HEATMAP) gl_FragColor.a *= .96;
+                    if (bounceMode != HEATMAP && gl_FragColor.a <= 10.) gl_FragColor.a *= .96;
                     // isInLine = length(vPos - vec3(0.75, 0.5, 0.5)) <= 1.5;
                     if (isInLine && showTrace) {
                         gl_FragColor = vec4(0., 1., 1., 1.);
@@ -477,7 +482,8 @@ export class SurfaceEffects {
                             return;
                         }
                         if (bounceMode == COLOR) {
-                            if (diffSq <= contactRadius) gl_FragColor = vec4(1., 0., 1., 2.);
+                            if (diffSq <= contactRadius/14.) gl_FragColor = vec4(1., 0., 1., 11.);
+                            if (diffSq <= contactRadius && gl_FragColor.a <= 10.) gl_FragColor = vec4(1., 0., 1., 2.);
                             return;
                         }
                         
