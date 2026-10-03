@@ -380,6 +380,7 @@ export class Players {
         this.canvas_2D.style.top = "0";
         this.canvas_2D.style.left = "0";
         this.canvas_2D.style.zIndex = 9999;
+        this.canvas_2D.style.pointerEvents = "none";
     }
 
 
@@ -472,6 +473,7 @@ export class Players {
         // return;
         // draw lines
         if (!config.params.showVideo) return;
+        this.#fitOverlayToStream();
         this.ctx_2D.strokeStyle = "lime";
         this.ctx_2D.lineWidth = 2;
 
@@ -502,6 +504,22 @@ export class Players {
             this.ctx_2D.fillStyle = "red";
             this.ctx_2D.fill();
         }
+    }
+
+    // Place the overlay exactly over the displayed (letterboxed) stream canvas.
+    #fitOverlayToStream() {
+        const target = document.getElementById("cv-canvas");
+        if (!target || !target.width || !target.height) return;
+        const r = target.getBoundingClientRect();
+        const scale = Math.min(r.width / target.width, r.height / target.height);
+        const w = target.width * scale;
+        const h = target.height * scale;
+        const s = this.canvas_2D.style;
+        s.position = "fixed";
+        s.left = (r.left + (r.width - w) / 2) + "px";
+        s.top = (r.top + (r.height - h) / 2) + "px";
+        s.width = w + "px";
+        s.height = h + "px";
     }
 
     /**

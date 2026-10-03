@@ -96,6 +96,7 @@ export class CV_Helper {
         const cap = new this.cv.VideoCapture(video_src);
         if (!this.cvCanvas) {
             this.cvCanvas = document.createElement("canvas");
+            this.cvCanvas.id = "cv-canvas";
             document.body.appendChild(this.cvCanvas);
             this.ctxt = this.cvCanvas.getContext("2d");
         }
@@ -110,6 +111,31 @@ export class CV_Helper {
         this.cvCanvas.height = this.height / 2;
 
         this.cvCanvas.style.zIndex = 9998;
+
+        if (!this.cvCanvas.dataset.clickable) {
+            this.cvCanvas.dataset.clickable = "1";
+            this.cvCanvas.style.cursor = "pointer";
+            let saved = null;
+            this.cvCanvas.addEventListener("click", () => {
+                const s = this.cvCanvas.style;
+                if (saved) {
+                    s.cssText = saved;
+                    saved = null;
+                } else {
+                    saved = s.cssText;
+                    s.position = "fixed";
+                    s.top = "0";
+                    s.left = "0";
+                    s.right = "auto";
+                    s.bottom = "auto";
+                    s.width = "100vw";
+                    s.height = "100vh";
+                    s.objectFit = "contain";
+                    s.background = "#000";
+
+                }
+            });
+        }
 
         const videoCanvas = document.createElement("canvas");
         videoCanvas.width = this.cvCanvas.width;
