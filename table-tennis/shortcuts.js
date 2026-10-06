@@ -106,10 +106,10 @@ export function setShortcuts() {
         const tableProxy = config.scene.getObjectByName("Proxy Plane");
         const ball = config.scene.getObjectByName("Ball");
         const bounceRelationship = sport.relationshipsFromActor.get(tableProxy).get(ball).get(SportActorInterationTypes.CONTACT);
-        if (bounceRelationship.params.bounce.value == BounceModes.COLOR) {
+        if (bounceRelationship.params.bounce.value == BounceModes.COLOR_TEMP) {
             bounceRelationship.params.bounce.value = BounceModes.NONE
         }
-        else bounceRelationship.params.bounce.value = BounceModes.COLOR;
+        else bounceRelationship.params.bounce.value = BounceModes.COLOR_TEMP;
     });
 
     //TABLE MARKER
@@ -134,7 +134,8 @@ export function setShortcuts() {
         const effectShader3 = sport.surfaceEffectsFromActor.get(proxy).shader;
         effectShader3.uniforms.numMarkers.value = prevNumMarkers == 0 ? 2 : 0;
         const poses3 = effectShader3.uniforms.markerPoses.value;
-        poses3[0].set(0., 0., 0.5);
+        // poses3[0].set(6, 2.4, -6);
+        poses3[0].set(6, 0.77, -3.38);
         poses3[1].set(0., 0., -0.5);
 
     });

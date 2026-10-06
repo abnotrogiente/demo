@@ -90,8 +90,9 @@ export const SideMode = Object.freeze({
 export const BounceModes = Object.freeze({
     NONE: 0,
     COLOR: 1,
-    RIPPLE: 2,
-    HEATMAP: 3
+    COLOR_TEMP: 2,
+    RIPPLE: 3,
+    HEATMAP: 4
 });
 
 export const ProjectionModes = Object.freeze({

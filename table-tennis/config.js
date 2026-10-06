@@ -106,7 +106,7 @@ export class Config {
 
         this.renderScore = false;
 
-        this.trackingMode = TrackingModes.REAL_TIME;
+        this.trackingMode = TrackingModes.OFFLINE_FILE;
 
         this.replayTimer = new Clock();
         this.replayTimer.stop();

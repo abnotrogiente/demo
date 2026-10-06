@@ -22,7 +22,8 @@ async function main() {
 
     const urlParams = new URLSearchParams(window.location.search);
 
-    const characterName = urlParams.get('name');
+    let characterName = urlParams.get('name');
+    if (!characterName) characterName = "Y Bot"
 
     console.log("character name : " + characterName);
     // Initialize Scene and Renderer

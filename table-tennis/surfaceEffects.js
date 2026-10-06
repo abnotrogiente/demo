@@ -456,7 +456,7 @@ export class SurfaceEffects {
                     bool isInLine = false;
                     
                     // Only check line intersection if line has meaningful length
-                    if (lineLengthSq > 0.0001 && lineLengthSq <= 0.3*0.3/*TODO prendre en compte le temps */) {
+                    if (lineLengthSq > 0.0001 && lineLengthSq <= 1.*1./*TODO prendre en compte le temps */) {
                         vec3 lineDir = normalize(line);
                         float coordinateOnLine = dot(diffToPrev, lineDir); // P1X . d
                         float lengthProjOnLineSq = coordinateOnLine*coordinateOnLine; // (P1X . d)²
@@ -481,8 +481,8 @@ export class SurfaceEffects {
                             }
                             return;
                         }
-                        if (bounceMode == COLOR) {
-                            if (diffSq <= contactRadius/14.) gl_FragColor = vec4(1., 0., 1., 11.);
+                        if (bounceMode == COLOR || bounceMode == COLOR_TEMP) {
+                            if (diffSq <= contactRadius/14. && bounceMode == COLOR) gl_FragColor = vec4(1., 0., 1., 11.);
                             if (diffSq <= contactRadius && gl_FragColor.a <= 10.) gl_FragColor = vec4(1., 0., 1., 2.);
                             return;
                         }

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Choose your character</title>
+  <meta name="description" content="Choose a character by picture, then continue with the selected character name.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <main class="page-shell picker-page">
+    <section class="hero" aria-labelledby="page-title">
+      <p class="eyebrow">Character selection</p>
+      <h1 id="page-title">Choose your character</h1>
+      <p class="subtitle">Pick a picture, then validate your choice to continue.</p>
+    </section>
+
+    <section class="picker-card" aria-label="Character picker">
+      <div class="picker-toolbar">
+        <p id="selection-status" class="selection-status" aria-live="polite">No character selected</p>
+        <button id="validate-button" class="primary-button" type="button" disabled>Validate choice</button>
+      </div>
+
+      <div id="characters-grid" class="characters-grid" role="list" aria-label="Available characters"></div>
+
+      <div id="empty-state" class="empty-state hidden" role="status">
+        <h2>No characters found</h2>
+        <p>Put your PNG files in <code>./assets/characters</code>, then open this page through
+          <code>python serve.py</code>.
+        </p>
+      </div>
+
+      <div id="error-state" class="error-state hidden" role="alert">
+        <h2>Character list unavailable</h2>
+        <p id="error-message"></p>
+      </div>
+    </section>
+  </main>
+
+  <script src="character-picker.js" defer></script>
+</body>
+
+</html>

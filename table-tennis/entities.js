@@ -14,7 +14,8 @@ import {
     Scene,
     Camera,
     WebGLRenderer,
-    MeshPhongMaterial
+    MeshPhongMaterial,
+    Color
 } from 'three';
 
 import { SportName, sportSpecificAssets, tableDimensions } from './constants';
@@ -51,6 +52,7 @@ export async function createEntities(scene, camera, physics, renderer, composer)
     const room = new Mesh(roomGeometry, roomMaterial);
     room.position.y = 5 - tableDimensions.altitude;
     if (!config.renderScore) scene.add(room);
+    // scene.background = new Color(Color.NAMES.lightgrey);
 
     const groundThickness = 1.
     const groundGeometry = new BoxGeometry(20, groundThickness, 20);

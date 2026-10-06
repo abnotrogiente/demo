@@ -6,7 +6,7 @@ import { configureSelector, getShaderConstantsFromEnum } from "./config";
 import { SportActorRelationship } from "./sport";
 
 
-const MAX_LENGTH = 30;
+const MAX_LENGTH = 20;
 const RED = new Vector3(1., 0., 0.);
 const BLUE = new Vector3(0., 0., 1.);
 export class VolumeEffects {
@@ -79,6 +79,7 @@ export class VolumeEffects {
         line.computeLineDistances();
         line.scale.set(1, 1, 1);
         config.scene.add(line);
+        this.line = line;
 
         this.prevPos = new Vector3();
         this.tmp1 = new Vector3();
@@ -192,8 +193,9 @@ export class VolumeEffects {
                 this.showTrace = true;
                 this.otherActor = projectionRelationship.actor2;
             }
-
+            this.line.visible = this.showTrace;
         });
+
         // if (this.originalActor.name == "Proxy") console.log("other actor : " + this.otherActor.name);
         // if (this.shader) this.shader.uniforms.showShadow.value = projectionInstantaneousEnabled;
         // this.texturePassQuad.material.uniforms.showTrace.value = this.showTrace;
