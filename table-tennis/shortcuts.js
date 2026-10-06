@@ -151,7 +151,7 @@ export function setShortcuts() {
         sport.setCharacteristic(pannel, ReferentsCharacteristics.ALWAYS_VISIBLE, true);
         sport.setCharacteristic(pannel, ReferentsCharacteristics.SCREEN_SPACE, true);
         pannel.position.y *= -1.8;
-        score = 0;
+        // score = 0;
 
     });
 }
