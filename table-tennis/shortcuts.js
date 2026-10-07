@@ -1,15 +1,23 @@
-import { Vector3 } from "three";
+import { Quaternion, Vector3 } from "three";
 import { trackingCameras } from "./cameras";
 import { config } from "./config";
 import { BounceModes, MetaDataModes, ReferentsCharacteristics, score, SportActorInterationTypes } from "./constants";
 import { addKeyPressCallback } from "./key-config";
-import { sport } from "./sport";
+import { sport, SportActorCharacteristic } from "./sport";
 
 export function setShortcuts() {
 
     //SHOW TRACKING CAMERAS
     addKeyPressCallback("c", () => {
         trackingCameras.show(!trackingCameras.shown)
+    });
+
+    //Move debug camera
+    addKeyPressCallback("C", () => {
+        const cameraDebug = config.scene.getObjectByName("debug camera");
+        cameraDebug.position.z *= -1;
+        cameraDebug.lookAt(new Vector3());
+        // trackingCameras.show(!trackingCameras.shown)
     });
 
     //TABLE SHOW PROXY
@@ -74,13 +82,29 @@ export function setShortcuts() {
     });
 
     //TABLE ENCLOSING
-    addKeyPressCallback("e", () => {
+    addKeyPressCallback("E", () => {
         const enclosing = config.scene.getObjectByName("Enclosing Back Face Cull Plane");
         const ball = config.scene.getObjectByName("Ball");
         sport.display(enclosing, !sport.isDisplayed(enclosing));
         const projectionRelationship = sport.relationshipsFromActor.get(enclosing).get(ball).get(SportActorInterationTypes.PROJECTION);
         projectionRelationship.params.instantaneous.value = true;
         projectionRelationship.params.trace.value = true;
+    });
+
+    //TABLE ENCLOSING
+    addKeyPressCallback("e", () => {
+        const plane = config.scene.getObjectByName("Plane");
+        const border1 = plane.getObjectByName("Border Extension 1");
+        const border2 = plane.getObjectByName("Border Extension 2");
+        const ball = config.scene.getObjectByName("Ball");
+
+        for (let border of [border1, border2]) {
+            sport.display(border, !sport.isDisplayed(border));
+            const projectionRelationship = sport.relationshipsFromActor.get(border).get(ball).get(SportActorInterationTypes.PROJECTION);
+            // projectionRelationship.params.instantaneous.value = true;
+            projectionRelationship.params.trace.value = true;
+
+        }
     });
 
     //TABLE HALF CONTACT
@@ -153,5 +177,28 @@ export function setShortcuts() {
         pannel.position.y *= -1.8;
         // score = 0;
 
+    });
+
+    //Player Label
+    addKeyPressCallback("l", () => {
+        const player = config.scene.getObjectByName("player1skinned mesh");
+        const pannel = config.scene.getObjectByName("Half X player1skinned mesh");
+        sport.display(pannel, !sport.isDisplayed(pannel));
+        const informationRelationship = sport.relationshipsFromActor.get(player).get(pannel).get(SportActorInterationTypes.METADATA);
+        informationRelationship.params.metaData.value = MetaDataModes.SPEED;
+
+        if (!pannel.userData.set) {
+            const worldRot = new Quaternion();
+            pannel.getWorldQuaternion(worldRot);
+            const up = pannel.worldToLocal(new Vector3(0, 0, -250)).sub(pannel.worldToLocal(new Vector3()));
+            // const up = new Vector3(0, 1000, 0).applyQuaternion(worldRot);
+            pannel.position.add(up);
+            pannel.scale.y *= 0.2;
+
+            sport.setCharacteristic(pannel, ReferentsCharacteristics.CAMERA_FACING, true);
+            pannel.userData.set = true;
+        }
+
+        // pannel.position.y += 1.5;
     });
 }
