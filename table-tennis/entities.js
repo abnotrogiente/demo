@@ -48,18 +48,19 @@ export async function createEntities(scene, camera, physics, renderer, composer)
 
     // // Create Room
     const roomGeometry = new BoxGeometry(20, 10, 20);
-    const roomMaterial = new MeshStandardMaterial({ side: BackSide, color: 0xddffff });
+    const roomMaterial = new MeshStandardMaterial({ side: BackSide, color: Color.NAMES.beige });
     const room = new Mesh(roomGeometry, roomMaterial);
     room.position.y = 5 - tableDimensions.altitude;
     if (!config.renderScore) scene.add(room);
-    // scene.background = new Color(Color.NAMES.lightgrey);
+    scene.background = new Color(Color.NAMES.lightgray);
 
     const groundThickness = 1.
     const groundGeometry = new BoxGeometry(20, groundThickness, 20);
-    const groundMaterial = new MeshPhongMaterial({ color: 0xffaa66 });
+    const groundMaterial = new MeshPhongMaterial({ color: Color.NAMES.darkgreen });
     const ground = new Mesh(groundGeometry, groundMaterial);
     ground.position.y = -groundThickness / 2 + 0.01 - tableDimensions.altitude;
     ground.name = "ground";
+    ground.receiveShadow = true;
     if (!config.renderScore) scene.add(ground);
 
 

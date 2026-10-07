@@ -30,8 +30,9 @@ export async function initializeScene() {
     scene.add(camera);
 
     // Debug camera
-    const cameraDebug = new PerspectiveCamera(60, aspect, 0.1, 1);
-    cameraDebug.position.set(2, 1.5, 2.5);
+    const cameraDebug = new PerspectiveCamera(60, aspect, 0.1, 0.6);
+    cameraDebug.name = "debug camera";
+    cameraDebug.position.set(1.5, 2.5, -3.);
     cameraDebug.lookAt(new Vector3(0, 0, 0));
     const helper = new CameraHelper(cameraDebug);
     const frustum = new CameraFrustumMesh(cameraDebug, {
@@ -45,6 +46,7 @@ export async function initializeScene() {
     // Renderer
     const renderer = new WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
     document.body.appendChild(renderer.domElement);
 
     // Post-processing
@@ -56,7 +58,16 @@ export async function initializeScene() {
     scene.add(light);
 
     const directionalLight = new DirectionalLight(0xffffff, 1.0);
+    directionalLight.position.set(1, 3, 2);
+    directionalLight.lookAt(new Vector3());
+    directionalLight.castShadow = true;
     scene.add(directionalLight);
+
+    // Optional: Improve shadow resolution and coverage
+    // directionalLight.shadow.mapSize.width = 2048;
+    // directionalLight.shadow.mapSize.height = 2048;
+    // directionalLight.shadow.camera.near = 0.5;
+    // directionalLight.shadow.camera.far = 50;
 
     // Controls
     const controls = new OrbitControls(camera, renderer.domElement);

@@ -303,6 +303,9 @@ export class Players {
         this.scene = gltf.scene;
 
         this.scene.traverse((obj) => {
+            if (obj.isMesh) {
+                obj.castShadow = true;
+            }
             if (obj.isSkinnedMesh && !this.skinnedMesh) {
                 this.skinnedMesh = obj;
                 this.skeleton = this.skinnedMesh.skeleton;
