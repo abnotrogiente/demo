@@ -201,4 +201,11 @@ export function setShortcuts() {
 
         // pannel.position.y += 1.5;
     });
+
+    // Wireframe
+    addKeyPressCallback("w", () => {
+        const table = config.scene.getObjectByName("Plane");
+        table.material.wireframe = !table.material.wireframe;
+        console.log('WIREFRAME');
+    });
 }
