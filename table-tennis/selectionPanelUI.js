@@ -164,6 +164,7 @@ function addActorsButtons(container, selectedMesh, closeRelationshipPanel, close
 
             // }
             actorBtn.onclick = (event) => {
+                if (otherActor.material) otherActor.material.uniforms.isHighLighted.value = false;
                 event.stopPropagation();
                 closeRelationshipPanel();
                 closeModePanel();
