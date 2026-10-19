@@ -57,8 +57,8 @@ export class Video {
     #setCameraParameters() {
         if (this.useMock) {
             this.cameraPosition.set(
-                5,
-                3.5,
+                4,
+                3.,
                 0
             );
             this.cameraLookatPoint.set(0, 0, 0);
