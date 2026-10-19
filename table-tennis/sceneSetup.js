@@ -16,6 +16,7 @@ import {
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { EffectComposer, RenderPass } from 'three/examples/jsm/Addons.js';
 import { CameraFrustumMesh } from './cameraFrustumMesh';
+import { cameraCalibrationGenerator } from './camera-pose-generation';
 
 export async function initializeScene() {
     // Scene
@@ -42,6 +43,7 @@ export async function initializeScene() {
     // scene.add(helper);
     // cameraDebug.add(frustum);
     // scene.add(cameraDebug);
+    cameraCalibrationGenerator.init(cameraDebug);
 
     // Renderer
     const renderer = new WebGLRenderer({ antialias: true });

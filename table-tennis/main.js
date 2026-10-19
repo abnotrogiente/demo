@@ -63,7 +63,7 @@ async function main() {
         surfaceScore
     } = await initializeSystems(scene, renderer, camera, physics, cameraDebug, new Mesh(), characterName);
 
-    config.init(scene, camera, renderer, video, physics, controls);
+    config.init(scene, camera, renderer, video, physics, controls, players);
     webSocketClient.connect();
     config.cvHelper = cvHelper;
     sport.set(sportTrees[config.params.sport]);
@@ -71,20 +71,18 @@ async function main() {
     // await testRetargeter.init();
 
     // Load calibration data
-    // const calibrations = await parseCsv("./assets/cam_cal_filtered.csv");
+    const calibrations = await parseCsv("./assets/cam_cal_filtered.csv");
     // const ball_positions = await parseCsv("./assets/ball_traj_3D.csv");
 
     // Setup event handlers
     setupEventHandlers(camera, renderer, video);
 
     // Create calibration update callback
-    // const updateCalibrationFn = createUpdateCalibrationCallback(
-    //     ball_positions,
-    //     calibrations,
-    //     tracked_ball,
-    //     cameraDebug,
-    //     helper
-    // );
+    const updateCalibrationFn = createUpdateCalibrationCallback(
+        calibrations,
+        cameraDebug,
+        helper
+    );
 
     // Start animation loop
     startAnimationLoop(

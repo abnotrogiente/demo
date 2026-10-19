@@ -4,6 +4,7 @@ import { Physics } from "./physics";
 import { Video } from "./video";
 import { OrbitControls } from "three/examples/jsm/Addons.js";
 import { trackingCameras } from "./cameras";
+import { Players } from "./players";
 
 const uiWindowContent = document.getElementById("window-content");
 
@@ -193,14 +194,16 @@ export class Config {
      * @param {Video} video 
      * @param {Physics} physics 
      * @param {OrbitControls} controls 
+     * @param {Players} players 
      */
-    init(scene, camera, renderer, video, physics, controls) {
+    init(scene, camera, renderer, video, physics, controls, players) {
         this.scene = scene;
         this.camera = camera;
         this.renderer = renderer;
         this.videoObject = video;
         this.physics = physics;
         this.controls = controls;
+        this.players = players;
     }
 
 

@@ -1,10 +1,11 @@
-import { CylinderGeometry, DetachedBindMode, Euler, Material, Mesh, MeshBasicMaterial, Object3D, Quaternion, Scene, Skeleton, SkinnedMesh, SphereGeometry, Vector3 } from "three";
+import { CylinderGeometry, DetachedBindMode, Euler, Material, Mesh, MeshBasicMaterial, Object3D, Quaternion, Scene, Skeleton, SkinnedMesh, SphereGeometry, Vector2, Vector3 } from "three";
 import { GLTFLoader, SkeletonUtils } from "three/examples/jsm/Addons.js";
 import { Video } from "./video";
 import { FilesetResolver, PoseLandmarker } from "@mediapipe/tasks-vision";
 import { config } from "./config";
 import { applyMediaPipePose } from "./mediapipe-to-mixamo";
 import { webSocketClient } from "./constants";
+import { minCostAssignment } from "./utils";
 
 const MEDIAPIPE_JOINTS = [
     "nose",
@@ -74,7 +75,11 @@ class Player {
     constructor(scene, id) {
 
         this.id = id;
+        this.scene = scene;
 
+        this.landmarksIndex = null;
+        /**@type {Vector3[]} */
+        this.landmarks3D = [];
 
 
         /**@type {SkinnedMesh} */
@@ -109,7 +114,9 @@ class Player {
             obj.name = "player" + this.id + obj.name;
         });
 
-        this.model.getObjectByName("player" + this.id + "mixamorigHips").material = this.skinnedMesh.material;
+        this.hips = this.model.getObjectByName("player" + this.id + "mixamorigHips");
+        if (!this.hips) this.hips = this.model.getObjectByName("player" + this.id + "mixamorig5Hips");
+        this.hips.material = this.skinnedMesh.material;
 
         //==================================
         // // const clone = SkeletonUtils.clone(model);
@@ -145,16 +152,30 @@ class Player {
         if (this.model) this.model.visible = visible;
     }
 
+    /**
+     * @param {Array} landmarks raw MediaPipe world landmarks (with offset), or final world positions (without offset)
+     * @param {Vector3} [offset] if omitted, landmarks are used as final world positions
+     */
     updateDebugSkeletonFromLandmarks(landmarks, offset) {
+        if (!landmarks) return;
+        if (!this.mediapipe_joints) this.setUpDebugBones();
+
         const scale = 1;
 
         MEDIAPIPE_JOINTS.forEach((name, i) => {
             const lm = landmarks[i];
             if (!lm) return;
 
-            const x = lm.x * scale + offset.x;
-            const y = -lm.y * scale + offset.y; // 1
-            const z = -lm.z * scale + offset.z; // -3
+            let x, y, z;
+            if (offset) {
+                x = lm.x * scale + offset.x;
+                y = -lm.y * scale + offset.y;
+                z = -lm.z * scale + offset.z;
+            } else {
+                x = lm.x;
+                y = lm.y;
+                z = lm.z;
+            }
 
             this.mediapipe_joints[name].position.set(x, y, z);
             // labels[name].position.set(x, y + 0.05, z);
@@ -186,6 +207,7 @@ class Player {
     }
 
     setUpDebugBones() {
+        const scene = this.scene;
         this.mediapipe_joints = {}; // name -> mesh
         // const labels = {};
 
@@ -398,20 +420,28 @@ export class Players {
         const now = performance.now();
         const result = this.poseLandmarker.detectForVideo(this.video.webcamVideo, now);
 
-        if (result.landmarks.length > 0) {
-            this.drawLandmarks2D(result.landmarks[0]);
+        this.#associateLandmarks(result);
 
-            const landmarks3D1 = result.worldLandmarks[0];
+        const index1 = this.player1.landmarksIndex;
+        const index2 = this.player2.landmarksIndex;
+
+        if (result.landmarks.length > 0) {
+            const landmarks2D1 = result.landmarks[index1];
+            if (landmarks2D1) this.drawLandmarks2D(landmarks2D1);
+
+            const landmarks3D1 = result.worldLandmarks[index1];
             const skeletonOffset = new Vector3(0, 0, -3);
-            // this.player1.updateDebugSkeletonFromLandmarks(landmarks3D1, skeletonOffset);
-            const landmarks3D2 = result.worldLandmarks[1];
-            applyMediaPipePose(this.player1.skinnedMesh, landmarks3D1, result.landmarks[0], dt, "player1");
+            this.player1.landmarks3D = applyMediaPipePose(this.player1.skinnedMesh, landmarks3D1, result.landmarks[index1], dt, "player1");
+            // this.player1.updateDebugSkeletonFromLandmarks(this.player1.landmarks3D);
             // console.log("landmarks : " + JSON.stringify(result.worldLandmarks));
+            const landmarks3D2 = result.worldLandmarks[index2];
             if (landmarks3D2 !== undefined) {
                 skeletonOffset.z = 3;
                 // this.player2.updateDebugSkeletonFromLandmarks(landmarks3D2, skeletonOffset);
-                this.drawLandmarks2D(result.landmarks[1]);
-                applyMediaPipePose(this.player2.skinnedMesh, landmarks3D2, result.landmarks[1], dt, "player2");
+                const landmarks2D2 = result.landmarks[index2];
+                if (landmarks2D2) this.drawLandmarks2D(landmarks2D2);
+                this.player2.landmarks3D = applyMediaPipePose(this.player2.skinnedMesh, landmarks3D2, result.landmarks[index2], dt, "player2");
+                // this.player2.updateDebugSkeletonFromLandmarks(this.player2.landmarks3D);
 
             }
             // this.#updateSkeletonFromLandmarks(landmarks3D);
@@ -427,6 +457,104 @@ export class Players {
             }
 
         }
+    }
+
+    #associateLandmarks(result, maxDistance = Infinity) {
+        const detections = result.landmarks ?? [];
+
+        // Reset the assignments for this frame.
+        for (const player of this.players) {
+            player.landmarksIndex = null;
+        }
+
+        if (detections.length === 0) return;
+
+        // Calculate the center of every detected person.
+        const centers = detections.map(landmarks =>
+            this.#getLandmarksCenter(landmarks)
+        );
+
+        // First frame: assign detections in order.
+        const noPreviousCenters = this.players.some(
+            player => !player.lastCenter
+        );
+
+        if (noPreviousCenters) {
+            const count = Math.min(this.players.length, detections.length);
+
+            for (let i = 0; i < count; i++) {
+                const player = this.players[i];
+
+                player.landmarksIndex = i;
+
+                if (centers[i]) {
+                    player.lastCenter = centers[i].clone();
+                }
+            }
+
+            return;
+        }
+
+        // Only associate players that already have a previous position.
+        const playerIndices = this.players
+            .map((player, index) => index)
+            .filter(index => this.players[index].lastCenter);
+
+        if (playerIndices.length === 0) return;
+
+        // Cost matrix: distance from each existing player to each detection.
+        const INVALID_COST = 1e6;
+
+        const costs = playerIndices.map(playerIndex => {
+            const player = this.players[playerIndex];
+
+            return centers.map(center => {
+                if (!center) return INVALID_COST;
+
+                const distance = player.lastCenter.distanceTo(center);
+
+                return distance <= maxDistance
+                    ? distance
+                    : INVALID_COST;
+            });
+        });
+
+        // Find the globally best one-to-one assignment.
+        const assignment = minCostAssignment(costs);
+
+        for (let row = 0; row < playerIndices.length; row++) {
+            // console.log("ROW : " + row);
+            const player = this.players[playerIndices[row]];
+            const detectionIndex = assignment[row];
+
+            if (detectionIndex === -1) continue;
+
+            const center = centers[detectionIndex];
+
+            if (!center) continue;
+
+            const distance = player.lastCenter.distanceTo(center);
+
+            // Leave the player unmatched if the detection is too far away.
+            if (distance > maxDistance) continue;
+
+            // Store the index into result.landmarks.
+            player.landmarksIndex = detectionIndex;
+
+            // Update the position for matching on the next frame.
+            player.lastCenter.copy(center);
+        }
+    }
+
+
+    #getLandmarksCenter(landmarks2D) {
+        const leftHip = landmarks2D[23];
+        const rightHip = landmarks2D[24];
+
+        return new Vector2(
+            (leftHip.x + rightHip.x) / 2,
+            (leftHip.y + rightHip.y) / 2
+        );
     }
 
     beginRecording() {
@@ -462,11 +590,13 @@ export class Players {
         this.lastPlaybackTime = time;
 
         if (frame.imageLandmarks1) {
-            applyMediaPipePose(this.player1.skinnedMesh, frame.landmarks3D1, frame.imageLandmarks1, dt, "player1");
+            const finalLandmarks1 = applyMediaPipePose(this.player1.skinnedMesh, frame.landmarks3D1, frame.imageLandmarks1, dt, "player1");
+            this.player1.updateDebugSkeletonFromLandmarks(finalLandmarks1);
         }
 
         if (frame.landmarks3D2 !== undefined && frame.imageLandmarks2) {
-            applyMediaPipePose(this.player2.skinnedMesh, frame.landmarks3D2, frame.imageLandmarks2, dt, "player2");
+            const finalLandmarks2 = applyMediaPipePose(this.player2.skinnedMesh, frame.landmarks3D2, frame.imageLandmarks2, dt, "player2");
+            this.player2.updateDebugSkeletonFromLandmarks(finalLandmarks2);
         }
     }
 

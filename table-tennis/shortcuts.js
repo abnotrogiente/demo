@@ -4,6 +4,7 @@ import { config } from "./config";
 import { BounceModes, MetaDataModes, ReferentsCharacteristics, score, SportActorInterationTypes } from "./constants";
 import { addKeyPressCallback } from "./key-config";
 import { sport, SportActorCharacteristic } from "./sport";
+import { cameraCalibrationGenerator } from "./camera-pose-generation";
 
 export function setShortcuts() {
 
@@ -208,4 +209,25 @@ export function setShortcuts() {
         table.material.wireframe = !table.material.wireframe;
         console.log('WIREFRAME');
     });
+
+    // generate cam pose
+    addKeyPressCallback("g", () => {
+        cameraCalibrationGenerator.generate();
+    });
+
+    // generate cam pose
+    addKeyPressCallback("f", () => {
+        cameraCalibrationGenerator.getCalibCsv();
+    });
+
+    // change cam pose camera
+    addKeyPressCallback("G", () => {
+        const cameraDebug = config.scene.getObjectByName("debug camera");
+
+        cameraCalibrationGenerator.init(cameraCalibrationGenerator.camera === config.camera ?
+            cameraDebug :
+            config.camera
+        );
+    });
+
 }

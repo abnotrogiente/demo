@@ -1937,4 +1937,35 @@ export function applyMediaPipePose(
     mesh.updateMatrixWorld(
         true
     );
+
+
+    // ========================================================
+    // FINAL WORLD POSITION OF MEDIAPIPE LANDMARKS
+    // ========================================================
+    //
+    // landmark(i) is hip-centered and already rotated into the
+    // world orientation, so adding the final world position of
+    // the model's hips places every landmark in the scene.
+    // Same order as the MediaPipe landmarks.
+    //
+    // ========================================================
+
+    const hipsWorldPosition =
+        bones.hips.getWorldPosition(
+            new Vector3()
+        );
+
+
+    const finalWorldLandmarks =
+        worldLandmarks.map(
+            (_, index) =>
+                landmark(
+                    index
+                ).add(
+                    hipsWorldPosition
+                )
+        );
+
+
+    return finalWorldLandmarks;
 }

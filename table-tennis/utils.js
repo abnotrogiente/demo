@@ -178,3 +178,105 @@ export function getMeshesScoresById(arr, { delta = 4, offsetScore = 0, offsetId 
 
 
 }
+
+export function minCostAssignment(cost) {
+    const rows = cost.length;
+    const cols = cost[0]?.length ?? 0;
+
+    if (rows === 0 || cols === 0) {
+        return Array(rows).fill(-1);
+    }
+
+    // The Hungarian algorithm requires rows <= columns.
+    const transposed = rows > cols;
+
+    const matrix = transposed
+        ? Array.from({ length: cols }, (_, i) =>
+            Array.from({ length: rows }, (_, j) => cost[j][i])
+        )
+        : cost;
+
+    const n = matrix.length;
+    const m = matrix[0].length;
+
+    const u = Array(n + 1).fill(0);
+    const v = Array(m + 1).fill(0);
+    const p = Array(m + 1).fill(0);
+    const way = Array(m + 1).fill(0);
+
+    for (let i = 1; i <= n; i++) {
+        p[0] = i;
+
+        let j0 = 0;
+        const minv = Array(m + 1).fill(Infinity);
+        const used = Array(m + 1).fill(false);
+
+        do {
+            used[j0] = true;
+
+            const i0 = p[j0];
+            let delta = Infinity;
+            let j1 = 0;
+
+            for (let j = 1; j <= m; j++) {
+                if (used[j]) continue;
+
+                const cur =
+                    matrix[i0 - 1][j - 1] -
+                    u[i0] -
+                    v[j];
+
+                if (cur < minv[j]) {
+                    minv[j] = cur;
+                    way[j] = j0;
+                }
+
+                if (minv[j] < delta) {
+                    delta = minv[j];
+                    j1 = j;
+                }
+            }
+
+            for (let j = 0; j <= m; j++) {
+                if (used[j]) {
+                    u[p[j]] += delta;
+                    v[j] -= delta;
+                } else {
+                    minv[j] -= delta;
+                }
+            }
+
+            j0 = j1;
+        } while (p[j0] !== 0);
+
+        do {
+            const j1 = way[j0];
+            p[j0] = p[j1];
+            j0 = j1;
+        } while (j0 !== 0);
+    }
+
+    // Maps each row to its assigned column.
+    const rowToCol = Array(n).fill(-1);
+
+    for (let j = 1; j <= m; j++) {
+        if (p[j] !== 0) {
+            rowToCol[p[j] - 1] = j - 1;
+        }
+    }
+
+    if (!transposed) return rowToCol;
+
+    // Convert back to player -> detection assignments.
+    const assignment = Array(rows).fill(-1);
+
+    for (let detectionIndex = 0; detectionIndex < rowToCol.length; detectionIndex++) {
+        const playerIndex = rowToCol[detectionIndex];
+
+        if (playerIndex !== -1) {
+            assignment[playerIndex] = detectionIndex;
+        }
+    }
+
+    return assignment;
+}
