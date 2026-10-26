@@ -1,9 +1,13 @@
 import { MathUtils, Matrix3, PerspectiveCamera, Spherical, Vector2, Vector3, Vector4, WebGLRenderer } from "three";
 import { config } from "./config";
+import JSZip from "jszip";
 
+//THETA: HORIZONTAL ANGLE
 const theta_min = 0;
-const theta_max = 2 * Math.PI;
+const theta_max = Math.PI;
 
+
+//PHI: VERTICAL ANGLE
 const phi_min = Math.PI / 6;
 const phi_max = 0.8 * Math.PI / 2;
 
@@ -53,6 +57,14 @@ class CameraCalibrationGenerator {
         }
         this.calibCsv += "\n";
         this.indexCalib = 0;
+        this.imagesToSave = [];
+    }
+
+    saveImage(dataURL, name) {
+        this.imagesToSave.push({
+            dataURL,
+            filename: name
+        });
     }
 
     /**
@@ -85,7 +97,7 @@ class CameraCalibrationGenerator {
 
         this.#generateMove();
 
-        this.camera.updateProjectionMatrix();
+        // this.camera.updateProjectionMatrix();
 
 
         // Choose the desired output resolution
@@ -111,33 +123,56 @@ class CameraCalibrationGenerator {
         this.renderer.render(config.scene, this.camera);
         // Capture immediately after rendering
         const dataURL = this.renderer.domElement.toDataURL("image/jpeg", 0.95);
-
-        const link = document.createElement("a");
-        link.href = dataURL;
-        link.download = "view" + this.indexCalib + ".jpg";
-        this.indexCalib++;
-        link.click();
+        const image_name = `view${this.indexCalib++}.jpg`;
+        this.saveImage(dataURL, image_name);
 
 
         // const encodedUri = encodeURI(this.#getCalibCsv());
         const P = threeCameraToOpenCV(this.camera, width, height);
 
-        console.log(P.join(','));
-        this.calibCsv += link.download + ",";
+        // console.log(P.join(','));
+        this.calibCsv += image_name + ",";
         // this.calibCsv += P.join(',') + ",\n";
         this.calibCsv += P.join(',') + "," + this.#getLandmarks2DFromCamera() + ",\n";
         // const csvString = this.#getCalibCsv();
 
 
+    }
 
+    async downloadAllImages() {
+        const zip = new JSZip();
+
+        for (const { dataURL, filename } of this.imagesToSave) {
+            const response = await fetch(dataURL);
+            const blob = await response.blob();
+
+            zip.file(filename, blob);
+        }
+
+        const zipBlob = await zip.generateAsync({ type: "blob" });
+        const url = URL.createObjectURL(zipBlob);
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "views.zip";
+        link.click();
+
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+        this.imagesToSave = [];
     }
 
     #getLandmarks2DFromCamera() {
         let res = ""
         for (let player of config.players.players) {
             for (let landmark3D of player.landmarks3D) {
-                console.log("landmark : " + JSON.stringify(landmark3D));
                 const landmark2D = landmark3D.clone().project(this.camera);
+                if ((Math.abs(landmark2D.x) > 3) || (Math.abs(landmark2D.y) > 3)) {
+                    console.log("lm2d x : " + landmark2D.x);
+                    console.log("lm2d y : " + landmark2D.y);
+                    console.log("landmark : " + JSON.stringify(landmark3D));
+
+                }
                 res += "" + landmark2D.x + "," + landmark2D.y + ",";
             }
         }
@@ -182,8 +217,10 @@ function threeCameraToOpenCV(camera, width, height) {
     // --- Intrinsics ---
     const fovY = MathUtils.degToRad(camera.fov);
 
-    const fy = (height / 2) / Math.tan(fovY / 2);
-    const fx = fy * camera.aspect;
+    const tanHalfFovY = Math.tan(fovY / 2);
+
+    const fy = (height / 2) / tanHalfFovY;
+    const fx = width / (2 * camera.aspect * tanHalfFovY);
 
     const cx = width / 2;
     const cy = height / 2;

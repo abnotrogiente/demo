@@ -431,7 +431,8 @@ export class Players {
 
             const landmarks3D1 = result.worldLandmarks[index1];
             const skeletonOffset = new Vector3(0, 0, -3);
-            this.player1.landmarks3D = applyMediaPipePose(this.player1.skinnedMesh, landmarks3D1, result.landmarks[index1], dt, "player1");
+            const landmarks3DWorld1 = applyMediaPipePose(this.player1.skinnedMesh, landmarks3D1, result.landmarks[index1], dt, "player1");
+            if (landmarks3DWorld1) this.player1.landmarks3D = landmarks3DWorld1;
             // this.player1.updateDebugSkeletonFromLandmarks(this.player1.landmarks3D);
             // console.log("landmarks : " + JSON.stringify(result.worldLandmarks));
             const landmarks3D2 = result.worldLandmarks[index2];
@@ -440,7 +441,8 @@ export class Players {
                 // this.player2.updateDebugSkeletonFromLandmarks(landmarks3D2, skeletonOffset);
                 const landmarks2D2 = result.landmarks[index2];
                 if (landmarks2D2) this.drawLandmarks2D(landmarks2D2);
-                this.player2.landmarks3D = applyMediaPipePose(this.player2.skinnedMesh, landmarks3D2, result.landmarks[index2], dt, "player2");
+                const landmarks3DWorld2 = applyMediaPipePose(this.player2.skinnedMesh, landmarks3D2, result.landmarks[index2], dt, "player2");
+                if (landmarks3DWorld2) this.player2.landmarks3D = landmarks3DWorld2;
                 // this.player2.updateDebugSkeletonFromLandmarks(this.player2.landmarks3D);
 
             }
