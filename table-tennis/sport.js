@@ -204,6 +204,12 @@ class Sport {
 
         this.cleanMess();
 
+        if (sportDescription.video) await config.videoObject.init({ useMock: true, source: sportDescription.video })
+        else await config.videoObject.init({ useMock: false });
+
+        config.players.setVideo(config.videoObject);
+        await config.cvHelper.init(config.videoObject);
+
         /**@type {Map<Mesh, Map<int, SportActorRelationship>} */
         this.visPreferences = new Map();
 

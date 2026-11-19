@@ -273,6 +273,7 @@ export const webSocketClient = new WebSocketClient();
 
 export const sportTrees = {
     [SportName.TABLE_TENNIS]: {
+        video: './assets/rally.mp4',
         children: {
             "Player": {
                 properties: [],
@@ -365,6 +366,7 @@ export const sportTrees = {
     },
 
     [SportName.BOXING]: {
+        video: './assets/videos/round1.mp4',
         children: {
             "Player": {
                 properties: [],

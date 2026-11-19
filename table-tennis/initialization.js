@@ -13,7 +13,7 @@ import { config } from './config';
 export async function initializeSystems(scene, renderer, camera, physics, cameraDebug, tracked_ball, characterName) {
     // Initialize Video
     const video = new Video();
-    await video.init();
+    // await video.init({});
 
     // Initialize Players
     const players = new Players(video, scene, characterName);
@@ -21,7 +21,7 @@ export async function initializeSystems(scene, renderer, camera, physics, camera
 
     // Initialize Computer Vision Helper
     const cvHelper = new CV_Helper();
-    await cvHelper.init(video, tracked_ball);
+    // await cvHelper.init(video, tracked_ball);
     // scene.add(cvHelper.rayHelper);
     cvHelper.camera = cameraDebug;
 

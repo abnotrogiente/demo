@@ -311,7 +311,7 @@ export class Players {
         this.numPose = 1;
         await this.setNumPoseDetected(this.numPose);
 
-        this.setVideo(this.video);
+        // this.setVideo(this.video);
 
         ///////////////////////////////////////////////////////////////
         //LOAD MODEL/////////////////////////////////////////////////
@@ -410,6 +410,7 @@ export class Players {
 
 
     detectFrame(dt) {
+        if (!this.video.webcamVideo) return;
         this.ctx_2D.clearRect(0, 0, this.canvas_2D.width, this.canvas_2D.height);
         if (config.isReplaying) {
             this.playRecording(config.replayTimer.getElapsedTime());

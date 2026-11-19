@@ -5,6 +5,7 @@ import { Video } from "./video";
 import { OrbitControls } from "three/examples/jsm/Addons.js";
 import { trackingCameras } from "./cameras";
 import { Players } from "./players";
+import { CV_Helper } from "./cv2";
 
 const uiWindowContent = document.getElementById("window-content");
 
@@ -63,7 +64,7 @@ export function configureSelector({ selectorName = "selector", variableParent = 
         switch (selectorType) {
             case SelectorTypes.SELECT:
             case SelectorTypes.NUMBER:
-                variableParent[variableName] = selector.value;
+                variableParent[variableName] = parseInt(selector.value);
                 break;
             case SelectorTypes.CHECKBOX:
                 variableParent[variableName] = selector.checked;
@@ -121,6 +122,18 @@ export class Config {
             selectorType: SelectorTypes.SELECT
 
         });
+
+        this.numPoseEstimation = 0;
+        configureSelector({
+            selectorName: "Num Pose Estimation",
+            variableParent: this,
+            variableName: "numPoseEstimation",
+            selectorType: SelectorTypes.NUMBER,
+            min: 0,
+            callback: (value) => {
+                this.players.setNumPoseDetected(this.numPoseEstimation);
+            }
+        })
         this.trackingIndex = 0;
 
         configureButton({
@@ -197,8 +210,9 @@ export class Config {
      * @param {Physics} physics 
      * @param {OrbitControls} controls 
      * @param {Players} players 
+     * @param {CV_Helper} cvHelper 
      */
-    init(scene, camera, renderer, video, physics, controls, players) {
+    init(scene, camera, renderer, video, physics, controls, players, cvHelper) {
         this.scene = scene;
         this.camera = camera;
         this.renderer = renderer;
@@ -206,6 +220,7 @@ export class Config {
         this.physics = physics;
         this.controls = controls;
         this.players = players;
+        this.cvHelper = cvHelper;
     }
 
 

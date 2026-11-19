@@ -68,7 +68,7 @@ export function initUI(video, players, cvHelper, physics) {
     videoSelect.addEventListener("change", async () => {
         const value = videoSelect.value;
         const useMock = value === "Video";
-        await video.init(useMock);
+        await video.init({ useMock: true });
         players.setVideo(video);
         await cvHelper.init(video);
     });

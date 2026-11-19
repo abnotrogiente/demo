@@ -63,10 +63,10 @@ async function main() {
         surfaceScore
     } = await initializeSystems(scene, renderer, camera, physics, cameraDebug, new Mesh(), characterName);
 
-    config.init(scene, camera, renderer, video, physics, controls, players);
+    config.init(scene, camera, renderer, video, physics, controls, players, cvHelper);
     webSocketClient.connect();
-    config.cvHelper = cvHelper;
-    sport.set(sportTrees[config.params.sport]);
+    // config.cvHelper = cvHelper;
+    await sport.set(sportTrees[config.params.sport]);
     // await retargeter.initialize();
     // await testRetargeter.init();
 

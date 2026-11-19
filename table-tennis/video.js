@@ -22,6 +22,8 @@ const DEFAULT_USE_MOCK = true;
 
 import { Camera, Vector3 } from "three";
 
+const POINTS = ["0", "1", "2", "3", "10", "12", "13", "14", "15", "16", "17", "18", "19"]
+
 export class Video {
     /**
      * 
@@ -37,14 +39,14 @@ export class Video {
         this.camera = new Camera();
     }
 
-    async init(useMock = DEFAULT_USE_MOCK) {
+    async init({ useMock = DEFAULT_USE_MOCK, source = undefined }) {
         if (this.webcamVideo) {
             this.webcamVideo.pause();
             this.webcamVideo.removeAttribute("src");
         }
         this.useMock = useMock;
         this.#setCameraParameters();
-        const stream = await this.getCameraStream(useMock);
+        const stream = await this.getCameraStream(useMock, source);
         this.webcamVideo = document.createElement('video');
         this.webcamVideo.srcObject = stream;
         this.webcamVideo.playsInline = true;
@@ -77,10 +79,10 @@ export class Video {
     }
 
 
-    async getCameraStream(useMock = false) {
+    async getCameraStream(useMock = false, source) {
         if (useMock) {
             const video = document.createElement('video');
-            video.src = './assets/rally.mp4';
+            video.src = source;
             this.mock = video;
             // video.src = '../swimming/swimming-race.mp4';
             video.loop = true;
