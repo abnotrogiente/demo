@@ -357,11 +357,13 @@ class Sport {
 
 
     cleanMess() {
+        if (this.actors) for (let actor of this.actors) actor.userData = {};
         sportSpecificAssets.nonPhysics.forEach(asset => {
             if (this.hasCharacteristic(asset, ReferentsCharacteristics.SCREEN_SPACE)) {
                 this.setCharacteristic(asset, ReferentsCharacteristics.SCREEN_SPACE, false);
             }
-            config.scene.remove(asset);
+            if (asset.parent) asset.parent.remove(asset);
+            console.log("removing : " + asset.name);
             dispose3(asset);
         });
         sportSpecificAssets.nonPhysics.splice(0, sportSpecificAssets.nonPhysics.length);
@@ -661,6 +663,7 @@ class Sport {
         actor.attach(proxyForSurfaceEffects);
         sportSpecificAssets.nonPhysics.push(proxyForSurfaceEffects);
         actor.userData.proxyForSurfaceEffects = proxyForSurfaceEffects;
+        sportSpecificAssets.nonPhysics.push(proxyForSurfaceEffects);
         this.#initCharacteristics(proxyForSurfaceEffects);
         if (this.isProxyExtension(actor)) proxyForSurfaceEffects.userData.actorFromProxyExtension = this.getSurfaceForEffects(this.getActorFromProxyExtension(actor));
     }
