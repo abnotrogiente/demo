@@ -68,6 +68,8 @@ export function startAnimationLoop(renderer, composer, physics, players, cvHelpe
 
 
         if (config.mixer) config.mixer.update(delta);
+        // console.log(delta)
+        for (let explosion of config.explosions) explosion.update(delta);
         referentScoring.update();
         // Render
         if (!config.renderScore) composer.render();

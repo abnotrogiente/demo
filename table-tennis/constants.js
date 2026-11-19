@@ -92,7 +92,8 @@ export const BounceModes = Object.freeze({
     COLOR: 1,
     COLOR_TEMP: 2,
     RIPPLE: 3,
-    HEATMAP: 4
+    EXPLOSION: 4,
+    HEATMAP: 5
 });
 
 export const ProjectionModes = Object.freeze({
@@ -429,6 +430,14 @@ export const sportTrees = {
                 dimensions: { width: 4, height: 8, depth: 0.1 },
                 dimensionsForExtensions: { width: 4, height: 25, depth: 2, lookDirection: new Vector3(0, -1, 0) },
                 surfaceForEffects: true
+            },
+            "ground": {
+                properties: [],
+                attributes: [],
+                mesh: "ground",
+                dimensions: { width: 20, height: 1.01, depth: 20 },
+                dimensionsForExtensions: { width: 4, height: 25, depth: 2, lookDirection: new Vector3(0, -1, 0) },
+                surfaceForEffects: true
             }
         },
         relationships: [
@@ -447,6 +456,10 @@ export const sportTrees = {
                 actors: ["Wall", "Right Hand"],
                 types: [SportActorInterationTypes.CONTACT],
                 params: {},
+            },
+            {
+                actors: ["ground", "Climber"],
+                types: [SportActorInterationTypes.CONTACT, SportActorInterationTypes.PROJECTION]
             },
         ],
         assets: sportToAssets[SportName.CLIMBING]

@@ -139,7 +139,9 @@ export class Config {
                 this.isReplaying = true;
                 this.trackingIndex = 0;
             }
-        })
+        });
+
+        this.explosions = [];
     }
 
     /**

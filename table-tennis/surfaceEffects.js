@@ -6,6 +6,7 @@ import { tableDimensions } from "./constants";
 import { config } from "./config";
 import { sport, SportActorRelationship } from "./sport";
 import { CanvasTextTexture } from "./canvasTextTexture";
+import { startExplosion } from "./explosion";
 
 
 const MAX_NUM_MARKERS = 10;
@@ -572,20 +573,27 @@ export class SurfaceEffects {
         this.texturePassQuad.material.uniforms.lineDirection.value.copy(this.tmpvec3);
 
         // this.texturePassQuad.material.uniforms.bounced.value = this.prevSpeed.y < 0 && this.speed.y > 0;
-        if (this.contactCondition) this.texturePassQuad.material.uniforms.bounced.value = this.contactCondition({
-            prevPos: this.prevPos,
-            pos: this.otherActorPos,
-            speed: this.speed,
-            prevSpeed: this.prevSpeed,
-            surface: this.surface,
-            mesh: this.originalActor
-        });
+        if (this.contactCondition) {
+            const bounced = this.contactCondition({
+                prevPos: this.prevPos,
+                pos: this.otherActorPos,
+                speed: this.speed,
+                prevSpeed: this.prevSpeed,
+                surface: this.surface,
+                mesh: this.originalActor
+            });
+            this.texturePassQuad.material.uniforms.bounced.value = bounced;
+            if (this.bounceMode == BounceModes.EXPLOSION) {
+                this.texturePassQuad.material.uniforms.bounced.value = false;
+                if (bounced) startExplosion(this.otherActorPos, 0.2, { particleSize: 0.2, duration: 0.8 });
+            }
+        }
 
         // if (this.texturePassQuad.material.uniforms.bounced.value && (this.bounceMode != BounceModes.NONE)) console.log("BOUNCED : " + this.otherActor.name);
 
         this.texturePassQuad.material.uniforms.previousTexture.value = this.previousRenderingTarget.texture;
         config.renderer.setRenderTarget(this.currentRenderingTarget);
-        if (this.bounceMode != BounceModes.NONE ||
+        if (![BounceModes.NONE, BounceModes.EXPLOSION].includes(this.bounceMode) ||
             this.showTrace
         ) {
             config.renderer.render(this.texturePassScene, config.camera);
