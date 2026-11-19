@@ -21,7 +21,7 @@ export function setupEventHandlers(camera, renderer, video) {
                     video.webcamVideo.play();
                 }
             }
-            console.log("PAUSING:", config.paused);
+            // console.log("PAUSING:", config.paused);
         }
     };
 

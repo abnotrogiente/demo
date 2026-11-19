@@ -213,12 +213,12 @@ export function setShortcuts() {
     // generate cam pose
     addKeyPressCallback("g", () => {
         for (let i = 0; i < 8; i++) {
-            cameraCalibrationGenerator.generate();
+            cameraCalibrationGenerator.generate(false);
         }
         console.log("num images : " + cameraCalibrationGenerator.indexCalib);
     });
 
-    // generate cam pose
+    // download cam poses
     addKeyPressCallback("f", () => {
         cameraCalibrationGenerator.getCalibCsv();
         cameraCalibrationGenerator.downloadAllImages();

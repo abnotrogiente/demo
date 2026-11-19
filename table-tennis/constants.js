@@ -324,7 +324,10 @@ export const sportTrees = {
             "ground": {
                 properties: [],
                 attributes: [],
-                // mesh: "ground"
+                mesh: "ground",
+                dimensions: { width: 20, height: 1.01, depth: 20 },
+                dimensionsForExtensions: { width: 4, height: 25, depth: 2, lookDirection: new Vector3(0, -1, 0) },
+                surfaceForEffects: true
             }
         },
         relationships: [
@@ -343,10 +346,10 @@ export const sportTrees = {
                     contactCondition: customContactCondition
                 }
             },
-            // {
-            //     actors: ["ground", "Player"],
-            //     types: [SportActorInterationTypes.CONTACT, SportActorInterationTypes.PROJECTION]
-            // },
+            {
+                actors: ["ground", "player1skinned mesh"],
+                types: [SportActorInterationTypes.CONTACT, SportActorInterationTypes.PROJECTION]
+            },
             {
                 extensions: true,
                 actors: ["Plane", "Ball"],
