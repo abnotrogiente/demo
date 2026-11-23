@@ -310,6 +310,7 @@ export class ReferentScoring {
             // console.log("other actor name : " + otherActor.name);
             sport.visPreferences.get(otherActor).forEach((preference, type) => {
                 if (!relationships.has(type)) return;
+                if (sport.visualizations?.isManuallyControlled(relationships.get(type))) return;
                 // console.log("PREFERENCE : " + JSON.stringify(preference.params));
                 Object.entries(preference.params).forEach(([paramName, param]) => {
                     // console.log("PARAM : " + JSON.stringify(param));

@@ -463,12 +463,12 @@ export class SurfaceEffects {
                         float lengthProjOnLineSq = coordinateOnLine*coordinateOnLine; // (P1X . d)²
                         bool isAfterPrevotherActor = coordinateOnLine >= 0.; // P1X . d >= 0
                         bool isBeforeotherActor = lengthProjOnLineSq <= lineLengthSq; // (P1X . d)² <= ||P1P2||²
-                        bool isInRadius = distToPrevSq - lengthProjOnLineSq <= lineStroke*lineStroke; // ||P1X||² - (P1X . d)² <= r²
+                        bool isInRadius = distToPrevSq - lengthProjOnLineSq <= lineStroke*lineStroke*4.; // ||P1X||² - (P1X . d)² <= r²
                         isInLine = isAfterPrevotherActor && isBeforeotherActor && isInRadius;
                     }
                     
-                    gl_FragColor = texture(previousTexture, vUv);
-                    if (bounceMode != HEATMAP && gl_FragColor.a <= 10.) gl_FragColor.a *= .96;
+                    gl_FragColor = texture(previousTexture, vUv); //vec2(0.0, 0.002) to have moving effect
+                    if (bounceMode != HEATMAP && gl_FragColor.a <= 10.) gl_FragColor.a *= 0.97;
                     // isInLine = length(vPos - vec3(0.75, 0.5, 0.5)) <= 1.5;
                     if (isInLine && showTrace) {
                         gl_FragColor = vec4(0., 1., 1., 1.);
@@ -674,13 +674,16 @@ export class SurfaceEffects {
     }
 
     #updateInformations() {
-        this.relationships.get(SportActorInterationTypes.METADATA).forEach(informationRelationship => {
-            this.#updateMetaDataRelationship(informationRelationship);
-        });
+        const active = this.relationships.get(SportActorInterationTypes.METADATA)
+            .filter(relationship => relationship.params.metaData.value !== MetaDataModes.NONE);
+        if (!active.length) {
+            if (this.canvasTextTexture.text) this.canvasTextTexture.setText("");
+            return;
+        }
+        active.forEach(relationship => this.#updateMetaDataRelationship(relationship));
     }
 
     update(t, dt) {
-        if (config.paused) return;
         // if (this.projectionRelationship) {
         //     if (this.shader) this.shader.uniforms.showShadow.value = this.projectionRelationship.params.instantaneous.value;
         //     const prevTraceValue = this.texturePassQuad.material.uniforms.showTrace.value;
@@ -700,6 +703,7 @@ export class SurfaceEffects {
         this.#updateProjections();
         this.#updateContacts();
         this.#updateInformations();
+        if (config.paused) return;
         this.#texturePass(dt);
         if (this.shader) this.shader.uniforms.uTime.value = t;
         // else console.log("shader does not exist");
@@ -710,6 +714,7 @@ export class SurfaceEffects {
      * @param {SportActorRelationship} informationRelationship 
      */
     #updateMetaDataRelationship(informationRelationship) {
+        this.otherActor = informationRelationship.actor2;
         const { value, unit } = MetaDataValueFromModeAndActor.get(informationRelationship.params.metaData.value)(this.otherActor);
         if (informationRelationship.params.metaData.value == MetaDataModes.SCORE) {
             console.log("SCORE METADATA : " + value + ", actor name : " + this.otherActor.name + ", userdata score : " + this.otherActor.userData.score);

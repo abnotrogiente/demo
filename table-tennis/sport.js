@@ -10,6 +10,7 @@ import { ObjectSelector } from "./editor";
 import { createEnglobingShape, createExtendedReferents } from "./extendedReferents";
 import { loadAsset } from "./asset-loader";
 import { VolumeEffects } from "./volumeEffects";
+import { VisualizationRegistry } from "./visualizationRegistry";
 
 
 const Z = new Vector3(0, 0, 1);
@@ -177,16 +178,7 @@ export class SportActorRelationship {
 class Sport {
 
     constructor() {
-
         this.directReferentSelection = true;
-        configureSelector({
-            selectorName: "Direct Referent Selection",
-            variableParent: this,
-            variableName: "directReferentSelection",
-            selectorType: SelectorTypes.CHECKBOX
-        });
-
-
     }
 
     /**
@@ -202,6 +194,8 @@ class Sport {
 
     async set(sportDescription) {
 
+        this.selector?.dispose();
+        this.selector = null;
         this.cleanMess();
 
         if (sportDescription.video) await config.videoObject.init({ useMock: true, source: sportDescription.video })
@@ -298,6 +292,7 @@ class Sport {
 
         });
 
+        this.visualizations = new VisualizationRegistry(this.relationshipsFromActor);
         this.selector = new ObjectSelector();
         this.selector.updateObjectShaders();
 
@@ -739,7 +734,6 @@ class Sport {
         //     extension.lookAt(config.camera.position);
         // })
         this.#updateFromCharacteristics();
-        if (this.selector) this.selector.updateSelectionPannel();
 
         this.trackingDataFromActor.forEach((tracking_data, actorName) => {
             if (!this.actorByName.has(actorName)) return;

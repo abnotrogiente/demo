@@ -1,8 +1,7 @@
 import { Box3, Camera, Mesh, Raycaster, Scene, ShaderMaterial, Vector2, Vector3, WebGLRenderer } from "three";
-import { config, configureSelector } from "./config";
+import { config } from "./config";
 import { sport } from "./sport";
-import { EnableModes, SelectorTypes } from "./constants";
-import { createSelectionPanel, fitSelectionPanelToViewport as fitPanelToViewport } from "./selectionPanelUI";
+import { createAuthoringToolbar } from "./selectionPanelUI";
 import { referentMover } from "./manipulation";
 
 export class ObjectSelector {
@@ -16,10 +15,6 @@ export class ObjectSelector {
 
         this.preSelectedMesh = null;
         this.selectedMesh = null;
-
-        this.selectActorsMode = true;
-
-        this.configureUI();
 
         this.mouseDownCameraPos = new Vector3();
 
@@ -38,6 +33,7 @@ export class ObjectSelector {
             if (!mesh.material.uniforms) {
                 mesh.material.uniforms = {};
             }
+            mesh.material.uniforms.isHighLighted ??= { value: false };
 
             let prevOnBeforeCompile = null;
             if (mesh.material.onBeforeCompile) prevOnBeforeCompile = mesh.material.onBeforeCompile;
@@ -52,7 +48,7 @@ export class ObjectSelector {
 
                     shader.uniforms.isPreSelected = { value: false };
                     shader.uniforms.isSelected = { value: false };
-                    shader.uniforms.isHighLighted = { value: false };
+                    shader.uniforms.isHighLighted = mesh.material.uniforms.isHighLighted;
                     if (!shader.fragmentShader.includes("uTime")) {
                         shader.fragmentShader = shader.fragmentShader.replace(
                             "#include <common>",
@@ -104,27 +100,20 @@ export class ObjectSelector {
         config.renderer.compile(config.scene, config.camera)
 
         const onMouseMove = (event) => {
-            if (!this.selectActorsMode || this.selectedMesh) return;
-            const canvas = event.target;
+            if (!this.selectionRequest) return;
+            const canvas = config.renderer.domElement;
             const box = canvas.getBoundingClientRect();
             const x = event.clientX - box.left;
             const y = event.clientY - box.top;
-            this.mouse.x = (x / canvas.scrollWidth) * 2 - 1;
-            this.mouse.y = - (y / canvas.scrollHeight) * 2 + 1;
-
-            sport.actors.forEach(mesh => {
-                if (mesh.material && mesh.material.uniforms && mesh.material.uniforms.isPreSelected) mesh.material.uniforms.isPreSelected.value = false;
-            })
-
-
+            this.mouse.x = (x / box.width) * 2 - 1;
+            this.mouse.y = -(y / box.height) * 2 + 1;
+            this.setHighlight(this.preSelectedMesh, 'isPreSelected', false);
             this.rayCaster.setFromCamera(this.mouse, config.camera);
-            let selected = false;
             this.preSelectedMesh = null;
+            let nearestDistance = Infinity;
+            const eligible = actor => sport.isDisplayed(actor) && this.selectionRequest.eligible(actor);
             sport.actors.forEach(mesh => {
-                if (!mesh.material) return;
-                if (mesh.material && mesh.material.uniforms && mesh.material.uniforms.isPreSelected) mesh.material.uniforms.isPreSelected.value = false;
-
-                if (!mesh.userData.useBoundingBox) return;
+                if (!mesh.userData.useBoundingBox || !eligible(mesh)) return;
                 const hitbox = mesh.userData.hitbox;
                 if (hitbox && hitbox.delta) this.v3tmp2.copy(hitbox.delta);
                 else this.v3tmp2.set(0, 0, 0);
@@ -134,183 +123,78 @@ export class ObjectSelector {
                         this.v3tmp3.set(hitbox.width, hitbox.height, hitbox.depth)) :
                     new Box3().setFromObject(mesh);
 
-                if (this.rayCaster.ray.intersectsBox(bbox)) {
-                    if (mesh.material && mesh.material.uniforms) {
-                        // console.log("SELECT : " + mesh.name);
-
-                        mesh.material.uniforms.isPreSelected.value = true;
+                const point = this.rayCaster.ray.intersectBox(bbox, this.v3tmp3);
+                if (point) {
+                    const distance = this.rayCaster.ray.origin.distanceTo(point);
+                    if (distance < nearestDistance) {
+                        nearestDistance = distance;
                         this.preSelectedMesh = mesh;
                     }
                 }
             });
-            if (this.preSelectedMesh === null) {
-                const intersects = this.rayCaster.intersectObjects(sport.actorsNoBoundingBox, true);
-                if (intersects.length > 0) {
-                    const mesh = intersects[0].object;
-                    // mesh.scale.set(2, 2, 2);
-                    if (mesh.material.uniforms) {
-                        // console.log("SELECT : " + mesh.name);
-
-                        mesh.material.uniforms.isPreSelected.value = true;
-                        this.preSelectedMesh = mesh;
-                    }
+            const candidates = sport.actorsNoBoundingBox.filter(eligible);
+            const candidateSet = new Set(candidates);
+            for (const hit of this.rayCaster.intersectObjects(candidates, true)) {
+                if (hit.distance >= nearestDistance) break;
+                let actor = hit.object;
+                while (actor && !candidateSet.has(actor)) actor = actor.parent;
+                if (actor) {
+                    this.preSelectedMesh = actor;
+                    break;
                 }
             }
-
-            // console.log("Mouse Pos : " + JSON.stringify(this.mouse))
-        }
-
-        this.confirmSelection = () => {
-            if (this.selectedMesh) this.selectedMesh.material.uniforms.isSelected.value = false;
-            if (this.preSelectedMesh) this.preSelectedMesh.material.uniforms.isPreSelected.value = false;
-            this.selectedMesh = this.preSelectedMesh;
-            this.preSelectedMesh = null;
-            if (this.selectedMesh) this.selectedMesh.material.uniforms.isSelected.value = true;
-        }
+            this.setHighlight(this.preSelectedMesh, 'isPreSelected', true);
+        };
 
         const onMouseDown = (event) => {
-            if (event.which == 1) {
+            if (event.button === 0) {
                 this.mouseDownCameraPos.copy(config.camera.position);
                 // this.mouseDownTime = config.getTimeAbsolute();
             }
         }
         const onMouseUp = (event) => {
-            if (referentMover.mesh !== undefined) return;
-            if (event.which == 1) {
-                // const currentTime = config.getTimeAbsolute();
-                if (this.mouseDownCameraPos.distanceToSquared(config.camera.position) >= 1e-2) return;
-                this.confirmSelection();
-            }
-
+            if (!this.selectionRequest || referentMover.mesh !== undefined || event.button !== 0) return;
+            if (this.mouseDownCameraPos.distanceToSquared(config.camera.position) >= 1e-2) return;
+            onMouseMove(event);
+            if (!this.preSelectedMesh) return;
+            const actor = this.preSelectedMesh;
+            const { onSelect } = this.selectionRequest;
+            this.cancelSelection();
+            onSelect(actor);
         }
 
         config.renderer.domElement.addEventListener("mousemove", onMouseMove);
         config.renderer.domElement.addEventListener("mousedown", onMouseDown);
         config.renderer.domElement.addEventListener("mouseup", onMouseUp);
-    }
-
-    fitSelectionPanelToViewport(container) {
-        fitPanelToViewport(container);
-    }
-
-    _removePanel(panel) {
-        if (panel && panel.isConnected) {
-            panel.remove();
-        }
-    }
-
-    _closeModePanel() {
-        this._removePanel(this.modePanelElement);
-        this.modePanelElement = null;
-    }
-
-    _closeRelationshipPanel() {
-        this._closeModePanel();
-        this._removePanel(this.relationshipPanelElement);
-        this.relationshipPanelElement = null;
-    }
-
-    _closeSelectionPanel() {
-        this._closeRelationshipPanel();
-        this._removePanel(this.selectionPannelElement);
-        this.selectionPannelElement = null;
-        this.selectionPannelDisplayed = false;
-        this._removeDocumentClickHandler();
-    }
-
-    _installDocumentClickHandler() {
-        if (this._documentClickHandler) return;
-        this._documentClickHandler = (event) => {
-            if (referentMover.mesh !== undefined) return;
-            const target = event.target;
-            // If click is inside any panel, ignore
-            if (this.selectionPannelElement && this.selectionPannelElement.contains(target)) return;
-            if (this.relationshipPanelElement && this.relationshipPanelElement.contains(target)) return;
-            if (this.modePanelElement && this.modePanelElement.contains(target)) return;
-
-            // Otherwise close panels
-            this._closeSelectionPanel();
+        this.removeListeners = () => {
+            config.renderer.domElement.removeEventListener("mousemove", onMouseMove);
+            config.renderer.domElement.removeEventListener("mousedown", onMouseDown);
+            config.renderer.domElement.removeEventListener("mouseup", onMouseUp);
         };
-        document.addEventListener('mousedown', this._documentClickHandler);
+        this.toolbar = createAuthoringToolbar({ sport, selector: this, referentMover });
     }
 
-    _removeDocumentClickHandler() {
-        if (!this._documentClickHandler) return;
-        document.removeEventListener('mousedown', this._documentClickHandler);
-        this._documentClickHandler = null;
+    setHighlight(actor, name, value) {
+        const uniform = actor?.material?.uniforms?.[name];
+        if (uniform) uniform.value = value;
     }
 
-    updateSelectionPannel() {
-        const parent = config.renderer?.domElement?.parentElement || document.body;
-
-        if (!sport.directReferentSelection) {
-            if (this.selectionPannelDisplayed && this.selectionPannelElement?.dataset.panelMode !== 'actor-list') {
-                this._closeSelectionPanel();
-            }
-            if (!this.selectionPannelDisplayed) {
-                this.selectionPannelDisplayed = true;
-                this.selectionPannelElement = createSelectionPanel({
-                    actorListMode: true,
-                    parent,
-                    closeSelectionPanel: () => this._closeSelectionPanel(),
-                    closeRelationshipPanel: () => this._closeRelationshipPanel(),
-                    closeModePanel: () => this._closeModePanel(),
-                    onRelationshipPanelCreated: (panel) => {
-                        this.relationshipPanelElement = panel;
-                    },
-                    onModePanelCreated: (panel) => {
-                        this.modePanelElement = panel;
-                    },
-                });
-                this._installDocumentClickHandler();
-            }
-            return;
-        }
-
-        if (this.selectionPannelDisplayed && this.selectionPannelElement && this.selectedMesh) {
-            const existingMeshId = this.selectionPannelElement.dataset?.meshUuid;
-            if (existingMeshId !== this.selectedMesh.uuid) {
-                this.selectionPannelElement.remove();
-                this.selectionPannelElement = null;
-                this.selectionPannelDisplayed = false;
-            }
-        }
-
-        if (!this.selectionPannelDisplayed && this.selectedMesh != null) {
-            this.selectionPannelDisplayed = true;
-            this.selectionPannelElement = createSelectionPanel({
-                selectedMesh: this.selectedMesh,
-                mouse: this.mouse,
-                parent,
-                closeSelectionPanel: () => this._closeSelectionPanel(),
-                closeRelationshipPanel: () => this._closeRelationshipPanel(),
-                closeModePanel: () => this._closeModePanel(),
-                onRelationshipPanelCreated: (panel) => {
-                    this.relationshipPanelElement = panel;
-                },
-                onModePanelCreated: (panel) => {
-                    this.modePanelElement = panel;
-                },
-            });
-            this.selectionPannelElement.dataset.meshUuid = this.selectedMesh.uuid;
-            this._installDocumentClickHandler();
-        } else if (this.selectionPannelDisplayed && this.selectedMesh === null) {
-            this._closeSelectionPanel();
-        }
+    requestSelection(eligible, onSelect) {
+        this.cancelSelection();
+        this.selectionRequest = { eligible, onSelect };
     }
 
-    configureUI() {
-        configureSelector({
-            selectorName: "Select Actors Mode",
-            variableParent: this,
-            variableName: "selectActorsMode",
-            variableEnum: EnableModes,
-            selectorType: SelectorTypes.SELECT,
-            callback: (value) => {
-                this.preSelectedMesh = null;
-                this.confirmSelection();
-            }
-        });
+    cancelSelection() {
+        this.setHighlight(this.preSelectedMesh, 'isPreSelected', false);
+        this.preSelectedMesh = null;
+        this.selectionRequest = null;
+    }
+
+    dispose() {
+        this.cancelSelection();
+        this.toolbar?.dispose();
+        this.removeListeners?.();
+        if (referentMover.mesh !== undefined) referentMover.end();
     }
 }
 

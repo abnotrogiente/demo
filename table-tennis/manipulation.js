@@ -55,6 +55,7 @@ export class ReferentMover {
     */
     setControl(selectedMesh, toolName) {
         if (!this.transformControls) this.init();
+        if (this.mesh !== undefined) this.end();
         this.mesh = selectedMesh;
         this.screenSpace = sport.hasCharacteristic(selectedMesh, ReferentsCharacteristics.SCREEN_SPACE);
 
