@@ -87,10 +87,12 @@ export function initUI(video, players, cvHelper, physics) {
     });
 
     const showVideoCheckbox = document.getElementById("show-video-checkbox");
+    showVideoCheckbox.checked = config.params.showVideo;
     showVideoCheckbox.addEventListener("change", () => {
         console.log("show video : " + showVideoCheckbox.checked);
         config.params.showVideo = showVideoCheckbox.checked;
-        if (!cvHelper.showVideo) cvHelper.clearCanvas();
+        cvHelper.setVideoVisible(config.params.showVideo);
+        players.setVideoVisible(config.params.showVideo);
     });
 
     const calibrationButton = document.getElementById("calibration-button");

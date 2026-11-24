@@ -406,11 +406,19 @@ export class Players {
         this.canvas_2D.style.left = "0";
         this.canvas_2D.style.zIndex = 9999;
         this.canvas_2D.style.pointerEvents = "none";
+        this.setVideoVisible(config.params.showVideo);
+    }
+
+    setVideoVisible(visible) {
+        if (!this.canvas_2D) return;
+        this.canvas_2D.hidden = !visible;
+        if (!visible) this.ctx_2D.clearRect(0, 0, this.canvas_2D.width, this.canvas_2D.height);
     }
 
 
     detectFrame(dt) {
         if (!this.video.webcamVideo) return;
+        this.canvas_2D.hidden = !config.params.showVideo;
         this.ctx_2D.clearRect(0, 0, this.canvas_2D.width, this.canvas_2D.height);
         if (config.isReplaying) {
             this.playRecording(config.replayTimer.getElapsedTime());
